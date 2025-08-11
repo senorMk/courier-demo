@@ -5,7 +5,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 import { LogsService } from './logs/logs.service';
 
-@Controller()
+@Controller('api/v1')
 export class AppController {
   constructor(private logs: LogsService) {}
 

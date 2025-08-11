@@ -14,8 +14,9 @@ enum Role {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  username String   @unique
+  id       Int         @id @default(autoincrement())
+  username String      @unique
+  email    String      @unique
   password String
   role     Role
   logs     AccessLog[]
@@ -27,4 +28,6 @@ model AccessLog {
   action    String
   success   Boolean
   timestamp DateTime @default(now())
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
 }
