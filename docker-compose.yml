@@ -31,9 +31,9 @@ services:
       timeout: 5s
       retries: 10
 
-  # --- App (pulls image built in CI and pushed to GHCR) ---
+  # --- App (image built in CI & pushed to GHCR) ---
   app:
-    image: ghcr.io/platinumproject2025/platinum-backend:dev
+    image: ghcr.io/platinumproject2025/platinum-backend:dev   # must be lowercase
     container_name: platinum-app
     env_file: .env
     depends_on:
@@ -44,6 +44,9 @@ services:
     ports:
       - "3000:3000"
     restart: always
+    # If your image has no default CMD, uncomment one:
+    # command: ["npm","run","start:prod"]
+    # command: ["node","dist/main.js"]
 
 volumes:
   postgres_data:
