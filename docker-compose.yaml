@@ -33,7 +33,7 @@ services:
 
   # --- App (pulls image built in CI and pushed to GHCR) ---
   app:
-    image: ghcr.io/Platinumproject2025/platinum-backend:dev
+    image: ghcr.io/platinumproject2025/platinum-backend:dev
     container_name: platinum-app
     env_file: .env
     depends_on:
