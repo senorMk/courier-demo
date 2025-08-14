@@ -1,21 +1,49 @@
 services:
+  # --- Redis (queue/cache) ---
   redis:
+    image: redis:7-alpine
     container_name: redis_testqueues
-    image: 'redis:latest'
     ports:
-      - '6379:6379'
+      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
+  # --- PostgreSQL ---
   postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     container_name: platinum-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: platinum
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-platinum}
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-platinum}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- App (pulls image built in CI and pushed to GHCR) ---
+  app:
+    image: ghcr.io/Platinumproject2025/platinum-backend:dev
+    container_name: platinum-app
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: always
 
 volumes:
   postgres_data:
