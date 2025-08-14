@@ -2,7 +2,7 @@ name: Build & Deploy (GHCR)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [dev]
 
 permissions:
   contents: read
@@ -46,12 +46,23 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            set -Eeuo pipefail
             cd ~/projects/platinum-backend
-            # Login to GHCR on the VPS for this session
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # If GHCR is PRIVATE, log in on the VPS for this session:
+            if [ -n "${{ secrets.GHCR_READ_TOKEN }}" ]; then
+              echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
+            fi
+
+            # Pull latest app image and (re)start services
             docker compose pull
             docker compose up -d
+
+            # Optional: clean up old images
             docker image prune -f
+
+            # Quick status
+            docker compose ps
