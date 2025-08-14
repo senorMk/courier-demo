@@ -9,7 +9,7 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/${{ github.repository }}
+  GHCR_IMAGE: ghcr.io/platinumproject2025/platinum-backend
 
 jobs:
   build-and-push:
