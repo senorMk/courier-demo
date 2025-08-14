@@ -1,5 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
@@ -29,6 +30,7 @@ async function bootstrap() {
     }),
   });
 
+  const logger = new Logger();
 
   const config = new DocumentBuilder()
     .setTitle("Platinum Backend API")
@@ -38,6 +40,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("explorer", app, document);
 
-  await app.listen(3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  logger.log(`Application listening on port ${port}`);
 }
 bootstrap();
