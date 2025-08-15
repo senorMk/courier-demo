@@ -1,5 +1,4 @@
 services:
-  # --- Redis (queue/cache) ---
   redis:
     image: redis:7-alpine
     container_name: redis_testqueues
@@ -12,7 +11,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # --- PostgreSQL ---
   postgres:
     image: postgres:17-alpine
     container_name: platinum-db
@@ -30,10 +28,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 40s
 
-  # --- App (image built in CI & pushed to GHCR) ---
   app:
-    image: ghcr.io/platinumproject2025/platinum-backend:dev   # must be lowercase
+    image: ghcr.io/platinumproject2025/platinum-backend:dev
     container_name: platinum-app
     env_file: .env
     depends_on:
@@ -41,12 +39,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"   # only exposed internally, not to host
     restart: always
-    # If your image has no default CMD, uncomment one:
-    # command: ["npm","run","start:prod"]
-    # command: ["node","dist/main.js"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: platinum-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/letsencrypt
+    depends_on:
+      - app
+    restart: always
 
 volumes:
   postgres_data:
