@@ -46,23 +46,26 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
+          # Optional
+          # key: ${{ secrets.SSH_KEY }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -Eeuo pipefail
             cd ~/projects/platinum-backend
 
-            # If GHCR is PRIVATE, log in on the VPS for this session:
-            if [ -n "${{ secrets.GHCR_READ_TOKEN }}" ]; then
-              echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
-            fi
+            # (Optional) pick a single compose file to avoid the warning:
+            COMPOSE_FILE=docker-compose.yml
 
-            # Pull latest app image and (re)start services
-            docker compose pull
-            docker compose up -d
+            # Login to GHCR for this session (private package)
+            echo "${{ secrets.GHCR_READ_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
 
-            # Optional: clean up old images
-            docker image prune -f
+            # Pull and (re)start
+            sudo docker compose -f ${COMPOSE_FILE} pull
+            sudo docker compose -f ${COMPOSE_FILE} up -d
 
-            # Quick status
-            docker compose ps
+            # Housekeeping
+            sudo docker image prune -f
+
+            # Status
+            sudo docker compose -f ${COMPOSE_FILE} ps
