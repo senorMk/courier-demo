@@ -67,14 +67,22 @@ jobs:
             cd ~/projects/pcs-zambia
 
             COMPOSE_FILE=docker-compose.yml
+            export COMPOSE_PROJECT_NAME=pcs-zambia
 
             # Login to GHCR for this session (private packages)
             echo "${{ secrets.GHCR_READ_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
 
-            # Pull latest images for backend & frontend (and infra if changed)
-            sudo docker compose -f ${COMPOSE_FILE} pull
+            # Stop any old stack (either with our project name or leftovers with fixed names)
+            sudo docker compose -f ${COMPOSE_FILE} down --remove-orphans || true
 
-            # Restart stack
+            # (safety) remove legacy fixed-name containers if they still exist
+            sudo docker rm -f platinum-db redis_testqueues platinum-app platinum-nginx 2>/dev/null || true
+
+            # Ensure external volume exists (no-op if it already exists)
+            sudo docker volume create postgres_data >/dev/null
+
+            # Pull and (re)start
+            sudo docker compose -f ${COMPOSE_FILE} pull
             sudo docker compose -f ${COMPOSE_FILE} up -d
 
             # Housekeeping
