@@ -49,12 +49,15 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/certs:/etc/letsencrypt
     depends_on:
-      - app
-    restart: always
+      app:
+        condition: service_started
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+      - ./nginx/certs/.well-known:/acme-webroot/.well-known:rw
 
 volumes:
   postgres_data:
