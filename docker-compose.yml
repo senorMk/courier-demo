@@ -1,9 +1,11 @@
+version: "3.9"
+
 services:
+  # ---------- Infra ----------
   redis:
     image: redis:7-alpine
     container_name: redis_testqueues
-    ports:
-      - "6379:6379"
+    ports: ["6379:6379"]
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -18,8 +20,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-platinum}
-    ports:
-      - "5432:5432"
+    ports: ["5432:5432"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
@@ -30,19 +31,42 @@ services:
       retries: 10
       start_period: 40s
 
+  # ---------- Backend (NestJS) ----------
   app:
-    image: ghcr.io/platinumproject2025/platinum-backend:dev
+    image: ghcr.io/platinumproject2025/pcs-zambia-backend:dev
     container_name: platinum-app
+    # If your env file lives in ./backend/.env, point to it:
+    # env_file: ./backend/.env
+    # Otherwise keep the root .env:
     env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    expose:
-      - "3000"   # only exposed internally, not to host
+    expose: ["3000"]   # nginx talks to http://app:3000
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
+  # ---------- Frontend (Angular, static) ----------
+  frontend:
+    image: ghcr.io/platinumproject2025/pcs-zambia-frontend:dev
+    container_name: pcs-frontend
+    expose: ["80"]     # nginx talks to http://frontend
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ---------- Edge Reverse Proxy ----------
   nginx:
     image: nginx:alpine
     container_name: platinum-nginx
@@ -52,12 +76,13 @@ services:
     depends_on:
       app:
         condition: service_started
+      frontend:
+        condition: service_started
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-
       - /etc/letsencrypt:/etc/letsencrypt:ro
-
       - ./nginx/certs/.well-known:/acme-webroot/.well-known:rw
+    restart: always
 
 volumes:
   postgres_data:
