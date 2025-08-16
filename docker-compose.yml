@@ -4,7 +4,6 @@ services:
   # ---------- Infra ----------
   redis:
     image: redis:7-alpine
-    container_name: redis_testqueues
     ports: ["6379:6379"]
     restart: always
     healthcheck:
@@ -15,7 +14,6 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: platinum-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -34,7 +32,6 @@ services:
   # ---------- Backend (NestJS) ----------
   app:
     image: ghcr.io/platinumproject2025/pcs-zambia-backend:dev
-    container_name: platinum-app
     # If your env file lives in ./backend/.env, point to it:
     # env_file: ./backend/.env
     # Otherwise keep the root .env:
@@ -56,7 +53,6 @@ services:
   # ---------- Frontend (Angular, static) ----------
   frontend:
     image: ghcr.io/platinumproject2025/pcs-zambia-frontend:dev
-    container_name: pcs-frontend
     expose: ["80"]     # nginx talks to http://frontend
     restart: always
     healthcheck:
@@ -69,7 +65,6 @@ services:
   # ---------- Edge Reverse Proxy ----------
   nginx:
     image: nginx:alpine
-    container_name: platinum-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -86,4 +81,5 @@ services:
 
 volumes:
   postgres_data:
+    external: true
     name: postgres_data
