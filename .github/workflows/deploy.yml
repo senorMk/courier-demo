@@ -9,7 +9,9 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/platinumproject2025/platinum-backend
+  # Change owner if needed
+  GHCR_BACKEND: ghcr.io/platinumproject2025/pcs-zambia-backend
+  GHCR_FRONTEND: ghcr.io/platinumproject2025/pcs-zambia-frontend
 
 jobs:
   build-and-push:
@@ -27,15 +29,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push (tag dev and dev-SHA)
+      # ---- Backend ----
+      - name: Build & push BACKEND (dev + dev-SHA)
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.GHCR_IMAGE }}:dev
-            ${{ env.GHCR_IMAGE }}:dev-${{ github.sha }}
+            ${{ env.GHCR_BACKEND }}:dev
+            ${{ env.GHCR_BACKEND }}:dev-${{ github.sha }}
+
+      # ---- Frontend ----
+      - name: Build & push FRONTEND (dev + dev-SHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.GHCR_FRONTEND }}:dev
+            ${{ env.GHCR_FRONTEND }}:dev-${{ github.sha }}
 
   deploy:
     needs: build-and-push
@@ -46,22 +60,21 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          # Optional
-          # key: ${{ secrets.SSH_KEY }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -Eeuo pipefail
-            cd ~/projects/platinum-backend
+            cd ~/projects/pcs-zambia
 
-            # (Optional) pick a single compose file to avoid the warning:
             COMPOSE_FILE=docker-compose.yml
 
-            # Login to GHCR for this session (private package)
+            # Login to GHCR for this session (private packages)
             echo "${{ secrets.GHCR_READ_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
 
-            # Pull and (re)start
+            # Pull latest images for backend & frontend (and infra if changed)
             sudo docker compose -f ${COMPOSE_FILE} pull
+
+            # Restart stack
             sudo docker compose -f ${COMPOSE_FILE} up -d
 
             # Housekeeping
