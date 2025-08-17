@@ -10,9 +10,11 @@ This repository contains the backend and frontend for the Platinum Courier Servi
 
 ## 1. Start infrastructure services
 
-PostgreSQL and Redis are provided via Docker. From the project root run:
+PostgreSQL and Redis are provided via Docker. Before starting the containers,
+create the persistent volume that Postgres uses:
 
 ```bash
+docker volume create postgres_data
 docker compose up -d postgres redis
 ```
 
