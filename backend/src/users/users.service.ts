@@ -7,22 +7,20 @@ import { PrismaService } from "../prisma/prisma.service";
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(username: string, email: string, password: string, role: Role) {
+  async create(email: string, password: string, role: Role) {
     return this.prisma.user.create({
       data: {
-        username,
         email,
         password: await bcrypt.hash(password, 10),
-        role,
+        roleId: role.id,
       },
     });
   }
 
-  findByUsername(username: string) {
-    return this.prisma.user.findUnique({ where: { username } });
-  }
-
   findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: { role: true },
+    });
   }
 }

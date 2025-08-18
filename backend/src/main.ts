@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
@@ -39,6 +39,19 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("explorer", app, document);
+
+  app.enableCors({
+    origin: [
+      "http://localhost:4200",
+      "https://pcs-zambia.com",
+      "https://www.pcs-zambia.com",
+      /^https?:\/\/([a-z0-9-]+\.)?pcs-zambia\.com$/i, // allow any subdomain
+    ],
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: 86400,
+  });
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
