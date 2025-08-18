@@ -94,7 +94,6 @@ export class AuthSignInComponent implements OnInit {
     // Sign in
     this._authService.signIn(this.signInForm.value).subscribe(
       (response) => {
-        console.log("Sign-in successful:", response);
         // Set the redirect url.
         // The '/signed-in-redirect' is a dummy url to catch the request and redirect the user
         // to the correct page after a successful sign in. This way, that url can be set via
@@ -107,8 +106,6 @@ export class AuthSignInComponent implements OnInit {
         this._router.navigateByUrl(redirectURL);
       },
       (error) => {
-        console.log("Sign-in failed:", error);
-
         // Re-enable the form
         this.signInForm.enable();
 
