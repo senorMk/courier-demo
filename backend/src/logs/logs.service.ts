@@ -5,15 +5,15 @@ import { PrismaService } from '../prisma/prisma.service';
 export class LogsService {
   constructor(private prisma: PrismaService) {}
 
-  async logLoginAttempt(username: string, success: boolean) {
+  async logLoginAttempt(email: string, success: boolean) {
     await this.prisma.accessLog.create({
-      data: { username, action: 'login_attempt', success },
+      data: { email, action: 'login_attempt', success },
     });
   }
 
-  async logAction(username: string, action: string) {
+  async logAction(email: string, action: string) {
     await this.prisma.accessLog.create({
-      data: { username, action, success: true },
+      data: { email, action, success: true },
     });
   }
 
