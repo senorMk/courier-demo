@@ -47,4 +47,18 @@ export class CustomerController {
       Number(pageSize)
     );
   }
+
+  /**
+   * Search customers by first name, last name, id number, email, or phone number
+   * @param query search string
+   */
+  @Get("search")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async searchCustomers(@Query("q") q: string) {
+    if (!q || q.trim().length === 0) {
+      return [];
+    }
+    return this.customerService.searchCustomers(q);
+  }
 }

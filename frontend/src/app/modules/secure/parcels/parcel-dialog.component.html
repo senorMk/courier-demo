@@ -3,14 +3,34 @@
 </h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-form-field appearance="fill">
-    <mat-label>Customer ID</mat-label>
-    <input matInput formControlName="customerId"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+    <mat-label>Customer</mat-label>
+    <input type="text" matInput [formControl]="form.controls['customerId']" [matAutocomplete]="autoCustomer"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+      (input)="onCustomerInput($event.target.value)" autocomplete="off" />
+    <mat-autocomplete #autoCustomer="matAutocomplete" (optionSelected)="onCustomerSelected($event.option.value)"
+      [displayWith]="customerDisplayFn">
+      <mat-option *ngFor="let customer of filteredCustomers$ | async" [value]="customer">
+        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
+        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
+            *ngIf="customer.emailAddress"> {{
+            customer.emailAddress }}</span></span>
+      </mat-option>
+    </mat-autocomplete>
   </mat-form-field>
   <mat-form-field appearance="fill">
-    <mat-label>Receiver ID</mat-label>
-    <input matInput formControlName="receiverId"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+    <mat-label>Receiver</mat-label>
+    <input type="text" matInput [formControl]="form.controls['receiverId']" [matAutocomplete]="autoReceiver"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+      (input)="onReceiverInput($event.target.value)" autocomplete="off" />
+    <mat-autocomplete #autoReceiver="matAutocomplete" (optionSelected)="onReceiverSelected($event.option.value)"
+      [displayWith]="receiverDisplayFn">
+      <mat-option *ngFor="let customer of filteredReceivers$ | async" [value]="customer">
+        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
+        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
+            *ngIf="customer.emailAddress"> {{
+            customer.emailAddress }}</span></span>
+      </mat-option>
+    </mat-autocomplete>
   </mat-form-field>
   <mat-form-field appearance="fill">
     <mat-label>Destination ID</mat-label>
