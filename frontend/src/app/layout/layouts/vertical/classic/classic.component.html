@@ -3,7 +3,7 @@
 
 <!-- Navigation -->
 <fuse-vertical-navigation
-    class="dark bg-gray-900 print:hidden"
+    class="bg-white print:hidden border-r border-gray-200"
     [mode]="isScreenSmall ? 'over' : 'side'"
     [name]="'mainNavigation'"
     [navigation]="navigation.default"
@@ -12,8 +12,18 @@
     <!-- Navigation header hook -->
     <ng-container fuseVerticalNavigationContentHeader>
         <!-- Logo -->
-        <div style="padding: 20px;">
-            <h1>LOGO</h1>
+        <div class="px-6 py-4">
+            <a class="flex items-center space-x-2" routerLink="/">
+                <!-- Primary logo (SVG) -->
+                <img
+                    src="images/logo/Platinum Logo.jpg"
+                    alt="Platinum Courier Services"
+                    class="h-10 w-auto select-none object-contain"
+                    draggable="false"
+                />
+                <!-- Optional text version (uncomment if needed) -->
+                <!-- <img src="images/logo/logo-text.svg" alt="Platinum Courier Services" class="h-8 w-auto hidden md:block" /> -->
+            </a>
         </div>
     </ng-container>
 </fuse-vertical-navigation>

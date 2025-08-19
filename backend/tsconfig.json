@@ -10,7 +10,11 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "incremental": true
+    "incremental": true,
+    "types": ["node"]
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "prisma/**/*.ts"
+  ]
 }

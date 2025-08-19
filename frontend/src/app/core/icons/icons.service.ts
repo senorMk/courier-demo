@@ -51,5 +51,22 @@ export class IconsService {
                 'icons/heroicons-mini.svg'
             )
         );
+
+        // Register custom single SVG icons (navigation)
+        const customIcons = [
+            'dashboard',
+            'parcels-history',
+            'live-tracking',
+            'revenue',
+        ];
+        customIcons.forEach((name) => {
+            matIconRegistry.addSvgIconInNamespace(
+                'custom',
+                name,
+                domSanitizer.bypassSecurityTrustResourceUrl(
+                    `icons/custom/${name}.svg`
+                )
+            );
+        });
     }
 }

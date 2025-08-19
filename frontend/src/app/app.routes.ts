@@ -118,6 +118,18 @@ export const appRoutes: Route[] = [
             (m) => m.DashboardModule
           ),
       },
+      {
+        path: 'parcels-history',
+        loadComponent: () => import('app/modules/secure/parcels-history/parcels-history.component').then(m => m.ParcelsHistoryComponent)
+      },
+      {
+        path: 'live-tracking',
+        loadComponent: () => import('app/modules/secure/live-tracking/live-tracking.component').then(m => m.LiveTrackingComponent)
+      },
+      {
+        path: 'revenue',
+        loadComponent: () => import('app/modules/secure/revenue/revenue.component').then(m => m.RevenueComponent)
+      },
     ],
   },
 ];
