@@ -30,34 +30,6 @@ export const defaultNavigation: FuseNavigationItem[] = [
     icon : 'custom:revenue',
         link : '/secure/revenue',
     },
-    {
-        id   : 'customers',
-        title: 'Customers',
-        type : 'basic',
-    icon : 'custom:customers',
-        link : '/secure/customers',
-    },
-    {
-        id   : 'destinations',
-        title: 'Destinations',
-        type : 'basic',
-    icon : 'custom:destinations',
-        link : '/secure/destinations',
-    },
-    {
-        id   : 'parcels',
-        title: 'Parcels',
-        type : 'basic',
-    icon : 'custom:parcels',
-        link : '/secure/parcels',
-    },
-    {
-        id   : 'routes',
-        title: 'Routes',
-        type : 'basic',
-    icon : 'custom:routes',
-        link : '/secure/routes',
-    },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
     {
@@ -87,34 +59,6 @@ export const compactNavigation: FuseNavigationItem[] = [
         type : 'basic',
     icon : 'custom:revenue',
         link : '/secure/revenue',
-    },
-    {
-        id   : 'customers',
-        title: 'Customers',
-        type : 'basic',
-    icon : 'custom:customers',
-        link : '/secure/customers',
-    },
-    {
-        id   : 'destinations',
-        title: 'Destinations',
-        type : 'basic',
-    icon : 'custom:destinations',
-        link : '/secure/destinations',
-    },
-    {
-        id   : 'parcels',
-        title: 'Parcels',
-        type : 'basic',
-    icon : 'custom:parcels',
-        link : '/secure/parcels',
-    },
-    {
-        id   : 'routes',
-        title: 'Routes',
-        type : 'basic',
-    icon : 'custom:routes',
-        link : '/secure/routes',
     },
 ];
 export const futuristicNavigation: FuseNavigationItem[] = [
@@ -146,34 +90,6 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     icon : 'custom:revenue',
         link : '/secure/revenue',
     },
-    {
-        id   : 'customers',
-        title: 'Customers',
-        type : 'basic',
-    icon : 'custom:customers',
-        link : '/secure/customers',
-    },
-    {
-        id   : 'destinations',
-        title: 'Destinations',
-        type : 'basic',
-    icon : 'custom:destinations',
-        link : '/secure/destinations',
-    },
-    {
-        id   : 'parcels',
-        title: 'Parcels',
-        type : 'basic',
-    icon : 'custom:parcels',
-        link : '/secure/parcels',
-    },
-    {
-        id   : 'routes',
-        title: 'Routes',
-        type : 'basic',
-    icon : 'custom:routes',
-        link : '/secure/routes',
-    },
 ];
 export const horizontalNavigation: FuseNavigationItem[] = [
     {
@@ -203,33 +119,5 @@ export const horizontalNavigation: FuseNavigationItem[] = [
         type : 'basic',
     icon : 'custom:revenue',
         link : '/secure/revenue',
-    },
-    {
-        id   : 'customers',
-        title: 'Customers',
-        type : 'basic',
-    icon : 'custom:customers',
-        link : '/secure/customers',
-    },
-    {
-        id   : 'destinations',
-        title: 'Destinations',
-        type : 'basic',
-    icon : 'custom:destinations',
-        link : '/secure/destinations',
-    },
-    {
-        id   : 'parcels',
-        title: 'Parcels',
-        type : 'basic',
-    icon : 'custom:parcels',
-        link : '/secure/parcels',
-    },
-    {
-        id   : 'routes',
-        title: 'Routes',
-        type : 'basic',
-    icon : 'custom:routes',
-        link : '/secure/routes',
     },
 ];
