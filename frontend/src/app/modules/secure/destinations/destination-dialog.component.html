@@ -1,0 +1,23 @@
+<h1 mat-dialog-title>Create Destination</h1>
+<div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
+  <mat-form-field appearance="fill">
+    <mat-label>Code</mat-label>
+    <input matInput formControlName="code" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="name" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Branch Code</mat-label>
+    <input matInput formControlName="branchCode" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Route ID</mat-label>
+    <input matInput formControlName="routeId" />
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="flex justify-end gap-2">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="loading">Save</button>
+</div>
