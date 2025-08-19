@@ -18,11 +18,10 @@ export class CustomerController {
       phoneNumber: string;
       emailAddress?: string;
       idNumber?: string;
-      type: "SENDER" | "RECEIVER";
     }
   ) {
-    const { firstName, lastName, phoneNumber, type } = body;
-    if (!firstName || !lastName || !phoneNumber || !type) {
+    const { firstName, lastName, phoneNumber } = body;
+    if (!firstName || !lastName || !phoneNumber) {
       throw new BadRequestException('Missing required customer property');
     }
     return this.customerService.createCustomer(body);

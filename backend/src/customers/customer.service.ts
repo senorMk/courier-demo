@@ -12,7 +12,6 @@ export class CustomerService {
     phoneNumber: string;
     emailAddress?: string;
     idNumber?: string;
-    type: 'SENDER' | 'RECEIVER';
   }): Promise<Customer> {
     return this.prisma.customer.create({ data });
   }

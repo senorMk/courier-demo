@@ -12,6 +12,7 @@ import environmentSchema from './config/env.validation';
 import { HealthController } from "./health.controller";
 import { CustomerModule } from './customers/customer.module';
 import { ParcelModule } from './parcels/parcel.module';
+import { RoutesModule } from './routes/routes.module';
 
 
 @Module({
@@ -27,7 +28,8 @@ import { ParcelModule } from './parcels/parcel.module';
     UsersModule,
     LogsModule,
     CustomerModule,
-    ParcelModule
+    ParcelModule,
+    RoutesModule
   ],
   controllers: [AppController, HealthController],
 })
