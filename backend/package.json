@@ -11,6 +11,7 @@
     "start:prod": "node dist/main",
     "prisma:dev": "npx prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "npx prisma migrate deploy --schema prisma/schema.prisma",
+    "seed:admin": "ts-node -r tsconfig-paths/register prisma/seed-admin.ts",
     "test": "jest"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "class-validator": "^0.14.0",
     "joi": "^18.0.0",
     "nest-winston": "^1.10.2",
+    "nodemon": "^3.1.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -41,7 +43,7 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/testing": "^10.0.0",
     "@types/express": "^4.17.17",
-    "@types/node": "^20.3.1",
+    "@types/node": "^20.19.11",
     "@types/passport-jwt": "^3.0.8",
     "jest": "^29.5.0",
     "ts-jest": "^29.0.5",

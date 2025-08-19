@@ -1,56 +1,69 @@
-import { Component, OnInit } from "@angular/core";
+
 import { MatDialog } from "@angular/material/dialog";
 import { ApexOptions } from "ng-apexcharts";
-import {
-  FuseNavigationService,
-  FuseVerticalNavigationComponent,
-} from "@fuse/components/navigation";
+
 import { Platform } from "@angular/cdk/platform";
 import { UserService } from "app/core/user/user.service";
 import { DashboardService } from "./dashboard.service";
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
+import { NavigationService } from 'app/core/navigation/navigation.service';
+import { Navigation } from 'app/core/navigation/navigation.types';
+
 
 @Component({
-  selector: "administrator-dashboard",
-  templateUrl: "./dashboard.component.html",
-  styleUrls: ["./dashboard.component.scss"],
+    selector   : 'administrator-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls  : ['./dashboard.component.scss'],
 })
-export class DashboardComponent implements OnInit {
-  loggedInUser;
+export class DashboardComponent implements OnInit, OnDestroy
+{
 
-  constructor(private _fuseNavigationService: FuseNavigationService) {}
+    loggedInUser;
+    navigation: Navigation;
+    private _unsubscribeAll: Subject<any> = new Subject<any>();
+    UserService: UserService;
 
-  openLeftDrawerMenu() {
-    // Get the navigation
-    const navigation =
-      this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>(
-        "mainNavigation"
-      );
-    if (navigation) {
-      // Toggle the opened status
-      navigation.toggle();
+    constructor(
+        private _fuseNavigationService: FuseNavigationService,
+        private _navigationService: NavigationService,
+        private _userService: UserService,
+      
+    )
+    {
     }
-  }
 
-  isRunningOnMobile() {
-    // if ( this._platform.ANDROID || this._platform.IOS || !this._platform.isBrowser )
-    // {
-    //     return true;
-    // }
-    // return false;
-  }
+    ngOnInit(): void
+    {
+        
+      let lastLogin = this.loggedInUser.lastLogin;
 
-  ngOnInit(): void {
-    let lastLogin = this.loggedInUser.lastLogin;
-  }
+      
 
-  // Automatically adds +1 to month result
-  dateDifference(dateFrom, dateTo) {
-    let rawDifference =
-      dateTo.getMonth() -
-      dateFrom.getMonth() +
-      12 * (dateTo.getFullYear() - dateFrom.getFullYear());
-    return rawDifference + 1;
-  }
+      this._navigationService.navigation$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((navigation: Navigation) =>
+            {
+                this.navigation = navigation;
+            }
+          );
+    }
 
-  onToggleButtonChange(view: string): void {}
+    ngOnDestroy(): void
+    {
+        this._unsubscribeAll.next(null);
+        this._unsubscribeAll.complete();
+    }
+
+    openLeftDrawerMenu(): void
+    {
+        const mainNavigation = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');
+
+        if ( mainNavigation )
+        {
+            mainNavigation.toggle();
+        }
+    }
 }
