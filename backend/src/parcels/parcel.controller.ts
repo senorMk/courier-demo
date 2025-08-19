@@ -1,3 +1,4 @@
+import { Query, Get } from "@nestjs/common";
 import {
   Body,
   Controller,
@@ -26,5 +27,18 @@ export class ParcelController {
     }
   ) {
     return this.parcelService.createParcel(body);
+  }
+
+  @Get("paginated")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getPaginated(
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10
+  ) {
+    return this.parcelService.getParcelsPaginated(
+      Number(page),
+      Number(pageSize)
+    );
   }
 }

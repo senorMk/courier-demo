@@ -48,4 +48,19 @@ export class ParcelService {
     // Optionally, you can return the parcel with tracking code info
     return parcel;
   }
+
+  async getParcelsPaginated(page: number = 1, pageSize: number = 10) {
+  const skip = (page - 1) * pageSize;
+  const [data, total] = await Promise.all([
+    this.prisma.parcel.findMany({ skip, take: pageSize }),
+    this.prisma.parcel.count(),
+  ]);
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
 }

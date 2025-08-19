@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Customer } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { Customer } from "@prisma/client";
 
 @Injectable()
 export class CustomerService {
@@ -14,5 +14,20 @@ export class CustomerService {
     idNumber?: string;
   }): Promise<Customer> {
     return this.prisma.customer.create({ data });
+  }
+
+  async getCustomersPaginated(page: number = 1, pageSize: number = 10) {
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await Promise.all([
+      this.prisma.customer.findMany({ skip, take: pageSize }),
+      this.prisma.customer.count(),
+    ]);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 }
