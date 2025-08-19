@@ -4,6 +4,7 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { DestinationsService, Destination } from './destinations.service';
 import { DestinationDialogComponent } from './destination-dialog.component';
+import { MatTableModule } from '@angular/material/table';
 
 @Component({
   selector: 'app-destinations',
@@ -11,6 +12,7 @@ import { DestinationDialogComponent } from './destination-dialog.component';
   styleUrls: ['./destinations.component.scss'],
   standalone: true,
   imports: [
+    MatTableModule,
     MatPaginatorModule,
     // ...other modules if needed...
   ],

@@ -30,7 +30,7 @@ export class CustomersComponent implements OnInit {
 
   loadData(pageIndex: number = 0, pageSize: number = 10): void {
     this._service.getCustomers(pageIndex, pageSize).subscribe((data) => {
-      this.dataSource.data = data.items || [];
+      this.dataSource.data = data.data || [];
       if (this.paginator) {
         this.paginator.length = data.total || this.dataSource.data.length;
         this.dataSource.paginator = this.paginator;

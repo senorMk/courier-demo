@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { CustomersService } from './customers.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-customer-dialog',
@@ -11,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   imports: [
     MatFormFieldModule,
     // ...other modules if needed...
+  ReactiveFormsModule,
   ],
 })
 export class CustomerDialogComponent {

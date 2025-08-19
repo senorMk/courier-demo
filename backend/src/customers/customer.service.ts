@@ -17,6 +17,7 @@ export class CustomerService {
   }
 
   async getCustomersPaginated(page: number = 1, pageSize: number = 10) {
+    page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({ skip, take: pageSize }),

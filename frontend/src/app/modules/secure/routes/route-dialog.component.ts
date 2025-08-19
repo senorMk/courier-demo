@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { FormBuilder, FormGroup, Validators } from "@angular/forms";
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from "@angular/forms";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from '@angular/material/table';
@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   templateUrl: "./route-dialog.component.html",
   standalone: true,
   imports: [
+    ReactiveFormsModule,
     MatFormFieldModule,
     MatPaginatorModule,
     MatTableModule,

@@ -51,7 +51,20 @@ export class RoutesController {
     return this.routesService.createDestination(body);
   }
 
-  @Get("paginated")
+  @Get("destinations/paginated")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getDestinationsPaginated(
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10
+  ) {
+    return this.routesService.getDestinationsPaginated(
+      Number(page),
+      Number(pageSize)
+    );
+  }
+
+  @Get("routes/paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", ["managing-director"])
   async getPaginated(

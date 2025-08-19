@@ -28,7 +28,24 @@ export class RoutesService {
     return this.prisma.destination.create({ data });
   }
 
+  async getDestinationsPaginated(page: number = 1, pageSize: number = 10) {
+    page = Math.max(1, page);
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await Promise.all([
+      this.prisma.destination.findMany({ skip, take: pageSize }),
+      this.prisma.destination.count(),
+    ]);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
   async getRoutesPaginated(page: number = 1, pageSize: number = 10) {
+    page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
       this.prisma.route.findMany({ skip, take: pageSize }),
