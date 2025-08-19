@@ -1,0 +1,27 @@
+<h1 mat-dialog-title>Create Customer</h1>
+<div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
+  <mat-form-field appearance="fill">
+    <mat-label>First Name</mat-label>
+    <input matInput formControlName="firstName" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Last Name</mat-label>
+    <input matInput formControlName="lastName" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Phone Number</mat-label>
+    <input matInput formControlName="phoneNumber" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Email</mat-label>
+    <input matInput formControlName="emailAddress" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>ID Number</mat-label>
+    <input matInput formControlName="idNumber" />
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="flex justify-end gap-2">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="loading">Save</button>
+</div>
