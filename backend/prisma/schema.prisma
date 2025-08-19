@@ -14,7 +14,7 @@ generator client {
 
 model Office {
   id         String   @id @default(uuid())
-  branchCode String
+  branchCode String   @unique
   officeType String
   name       String
   parcels    Parcel[]
@@ -59,8 +59,9 @@ model Customer {
   id              String       @id @default(uuid())
   firstName       String
   lastName        String
-  phoneNumber     String
-  idNumber        String?
+  emailAddress    String?      @unique
+  phoneNumber     String       @unique
+  idNumber        String?      @unique
   type            CustomerType
   sentParcels     Parcel[]     @relation("Sender")
   receivedParcels Parcel[]     @relation("Receiver")
@@ -75,14 +76,14 @@ model TrackingCode {
   branchCode      String
   parcelId        String   @unique
   parcel          Parcel   @relation(fields: [parcelId], references: [id])
-  plainTextCode   String
+  plainTextCode   String   @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
 model Parcel {
   id            String        @id @default(uuid())
-  parcelNumber  Int      @unique @default(autoincrement())
+  parcelNumber  Int           @unique @default(autoincrement())
   customerId    String
   receiverId    String
   destinationId String
@@ -111,8 +112,7 @@ model ParcelItem {
 model Route {
   id           String        @id @default(uuid())
   code         String        @unique
-  name         String
-  // e.g., code: "CB", name: "Copperbelt Route"
+  name         String        @unique
   destinations Destination[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -121,8 +121,7 @@ model Route {
 model Destination {
   id          String       @id @default(uuid())
   code        String       @unique
-  name        String
-  // e.g., code: "ND0001", name: "Ndola Main Branch"
+  name        String       @unique
   routeId     String
   route       Route        @relation(fields: [routeId], references: [id])
   branchCodes BranchCode[]
@@ -133,8 +132,7 @@ model Destination {
 model BranchCode {
   id            String      @id @default(uuid())
   code          String      @unique
-  name          String
-  // e.g., code: "MG", name: "Ndola Main Gateway"
+  name          String      @unique
   destinationId String
   destination   Destination @relation(fields: [destinationId], references: [id])
   createdAt     DateTime    @default(now())
