@@ -1,3 +1,4 @@
+import { Query, Get } from "@nestjs/common";
 import {
   Body,
   Controller,
@@ -48,5 +49,18 @@ export class RoutesController {
     }
   ) {
     return this.routesService.createDestination(body);
+  }
+
+  @Get("paginated")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getPaginated(
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10
+  ) {
+    return this.routesService.getRoutesPaginated(
+      Number(page),
+      Number(pageSize)
+    );
   }
 }

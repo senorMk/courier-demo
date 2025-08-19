@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 // Define OfficeType as a string literal type matching your schema
-type OfficeType = 'BRANCH' | 'AGENCY' | 'OTHER'; // Replace with actual enum values from your schema
+type OfficeType = "BRANCH" | "AGENCY" | "OTHER"; // Replace with actual enum values from your schema
 
 @Injectable()
 export class RoutesService {
@@ -26,5 +26,20 @@ export class RoutesService {
     routeId: string;
   }) {
     return this.prisma.destination.create({ data });
+  }
+
+  async getRoutesPaginated(page: number = 1, pageSize: number = 10) {
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await Promise.all([
+      this.prisma.route.findMany({ skip, take: pageSize }),
+      this.prisma.route.count(),
+    ]);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 }
