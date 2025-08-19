@@ -1,3 +1,8 @@
+enum CustomerType {
+  SENDER
+  RECEIVER
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -7,20 +12,33 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Office {
+  id         String @id @default(uuid())
+  branchCode String
+  officeType String
+  name       String
+  parcels    Parcel[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model Role {
-  id   String  @id @default(uuid())
-  name String  @unique
-  users User[]
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {
-  id       String      @id @default(uuid())
-  email    String      @unique
-  password String
-  roleId   String
-  role     Role        @relation(fields: [roleId], references: [id])
-  logs     AccessLog[]
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  roleId    String
+  role      Role        @relation(fields: [roleId], references: [id])
+  logs      AccessLog[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 model AccessLog {
@@ -31,4 +49,56 @@ model AccessLog {
   timestamp DateTime @default(now())
   User      User?    @relation(fields: [userId], references: [id])
   userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  phoneNumber String
+  idNumber    String?
+  type        CustomerType
+  sentParcels     Parcel[] @relation("Sender")
+  receivedParcels Parcel[] @relation("Receiver")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model TrackingCode {
+  id              String   @id @default(uuid())
+  routeCode       String
+  destinationCode String
+  branchCode      String
+  parcelNumber    Int      @unique @default(autoincrement())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Parcel {
+  id            String   @id @default(uuid())
+  customerId    String
+  receiverId    String
+  destinationId String
+  items         ParcelItem[]
+  customer      Customer @relation("Sender", fields: [customerId], references: [id])
+  receiver      Customer @relation("Receiver", fields: [receiverId], references: [id])
+  destination   Office   @relation(fields: [destinationId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ParcelItem {
+  id           String   @id @default(uuid())
+  quantity     Int
+  description  String
+  pricePerUnit Float
+  value        Float
+  amount       Float
+  parcelId     String
+  parcel       Parcel   @relation(fields: [parcelId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
