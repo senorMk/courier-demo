@@ -1,6 +1,9 @@
 <div class="flex flex-col gap-4" style="width: 100%; padding: 20px;">
   <div class="flex justify-end">
-  <button mat-raised-button (click)="openCreateDialog()" style="background-color: #fff; color: #000; border: 1px solid #ccc; padding: 20px;">Create Parcel</button>
+    <button mat-raised-button (click)="openCreateDialog()" class="custom-primary-btn">
+      <mat-icon style="color: #fff;">add</mat-icon>
+      Create Parcel
+    </button>
   </div>
   <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" style="width: 100%">
     <ng-container matColumnDef="parcelNumber">

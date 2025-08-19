@@ -3,17 +3,23 @@ import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatDialog } from "@angular/material/dialog";
 import { MatPaginatorModule } from "@angular/material/paginator";
-import { MatTableModule } from '@angular/material/table';
+import { MatTableModule } from "@angular/material/table";
 import { ParcelsService, Parcel } from "./parcels.service";
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { ParcelDialogComponent } from "./parcel-dialog.component";
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: "app-parcels",
   templateUrl: "./parcels.component.html",
   styleUrls: ["./parcels.component.scss"],
   standalone: true,
-  imports: [MatFormFieldModule, MatPaginatorModule, MatTableModule],
+  imports: [
+    MatFormFieldModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatIconModule,
+  ],
 })
 export class ParcelsComponent implements OnInit {
   displayedColumns: string[] = [
@@ -45,7 +51,9 @@ export class ParcelsComponent implements OnInit {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this._dialog.open(ParcelDialogComponent);
+    const dialogRef = this._dialog.open(ParcelDialogComponent, {
+      width: "400px",
+    });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadData();

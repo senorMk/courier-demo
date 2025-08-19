@@ -1,20 +1,30 @@
 import { Component } from "@angular/core";
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from "@angular/forms";
-import { MatDialogRef } from "@angular/material/dialog";
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from "@angular/forms";
+import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ParcelsService } from "./parcels.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
+import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
   selector: "app-parcel-dialog",
   templateUrl: "./parcel-dialog.component.html",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
     MatFormFieldModule,
+    MatInputModule,
+    ReactiveFormsModule,
     MatPaginatorModule,
     MatTableModule,
+    MatDialogModule,
+    MatButtonModule
   ],
 })
 export class ParcelDialogComponent {
