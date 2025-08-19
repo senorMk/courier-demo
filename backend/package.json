@@ -8,7 +8,7 @@
     "start:dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/main.ts",
     "build": "nest build",
     "deploy": "npm install && npm run prisma:deploy && npm run start:prod",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main.js",
     "prisma:dev": "npx prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "npx prisma migrate deploy --schema prisma/schema.prisma",
     "seed:admin": "ts-node -r tsconfig-paths/register prisma/seed-admin.ts",
