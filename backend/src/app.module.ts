@@ -9,6 +9,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { IConfiguration } from './env.configuration.interface';
 import configuration from './config/env.configuration';
 import environmentSchema from './config/env.validation';
+import { HealthController } from "./health.controller";
+
 
 @Module({
   imports: [
@@ -23,6 +25,6 @@ import environmentSchema from './config/env.validation';
     UsersModule,
     LogsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
 })
 export class AppModule {}
