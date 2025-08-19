@@ -1,11 +1,21 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
-import { RoutesService } from './routes.service';
+import { Component } from "@angular/core";
+import { FormBuilder, FormGroup, Validators } from "@angular/forms";
+import { MatTableDataSource } from "@angular/material/table";
+import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatTableModule } from '@angular/material/table';
+import { MatDialogRef } from "@angular/material/dialog";
+import { RoutesService } from "./routes.service";
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
-  selector: 'app-route-dialog',
-  templateUrl: './route-dialog.component.html'
+  selector: "app-route-dialog",
+  templateUrl: "./route-dialog.component.html",
+  standalone: true,
+  imports: [
+    MatFormFieldModule,
+    MatPaginatorModule,
+    MatTableModule,
+  ],
 })
 export class RouteDialogComponent {
   form: FormGroup;
@@ -17,8 +27,8 @@ export class RouteDialogComponent {
     private _dialogRef: MatDialogRef<RouteDialogComponent>
   ) {
     this.form = this._fb.group({
-      code: ['', Validators.required],
-      name: ['', Validators.required]
+      code: ["", Validators.required],
+      name: ["", Validators.required],
     });
   }
 
@@ -34,7 +44,7 @@ export class RouteDialogComponent {
       },
       error: () => {
         this.loading = false;
-      }
+      },
     });
   }
 }

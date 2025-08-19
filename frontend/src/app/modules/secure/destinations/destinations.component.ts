@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { DestinationsService, Destination } from './destinations.service';
 import { DestinationDialogComponent } from './destination-dialog.component';
@@ -8,7 +8,12 @@ import { DestinationDialogComponent } from './destination-dialog.component';
 @Component({
   selector: 'app-destinations',
   templateUrl: './destinations.component.html',
-  styleUrls: ['./destinations.component.scss']
+  styleUrls: ['./destinations.component.scss'],
+  standalone: true,
+  imports: [
+    MatPaginatorModule,
+    // ...other modules if needed...
+  ],
 })
 export class DestinationsComponent implements OnInit {
   displayedColumns: string[] = ['code', 'name', 'branchCode', 'routeId'];

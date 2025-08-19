@@ -1,21 +1,22 @@
-import { NgModule } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { parcelsRoutes } from './parcels.routing';
-import { ParcelsComponent } from './parcels.component';
-import { ParcelDialogComponent } from './parcel-dialog.component';
-import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { ReactiveFormsModule } from '@angular/forms';
-import { ParcelsService } from './parcels.service';
+import { NgModule } from "@angular/core";
+import { RouterModule } from "@angular/router";
+import { parcelsRoutes } from "./parcels.routing";
+import { ParcelsComponent } from "./parcels.component";
+import { ParcelDialogComponent } from "./parcel-dialog.component";
+import { CommonModule } from "@angular/common";
+import { MatTableModule } from "@angular/material/table";
+import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatButtonModule } from "@angular/material/button";
+import { MatDialogModule } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { ReactiveFormsModule } from "@angular/forms";
+import { ParcelsService } from "./parcels.service";
 
 @NgModule({
-  declarations: [ParcelsComponent, ParcelDialogComponent],
   imports: [
+    ParcelsComponent,
+    ParcelDialogComponent,
     RouterModule.forChild(parcelsRoutes),
     CommonModule,
     MatTableModule,
@@ -24,8 +25,8 @@ import { ParcelsService } from './parcels.service';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
   ],
-  providers: [ParcelsService]
+  providers: [ParcelsService],
 })
 export class ParcelsModule {}

@@ -1,14 +1,20 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { CustomersService, Customer } from './customers.service';
 import { CustomerDialogComponent } from './customer-dialog.component';
+import { MatTableModule } from '@angular/material/table';
 
 @Component({
   selector: 'app-customers',
   templateUrl: './customers.component.html',
-  styleUrls: ['./customers.component.scss']
+  styleUrls: ['./customers.component.scss'],
+  standalone: true,
+  imports: [
+    MatPaginatorModule,
+    MatTableModule,
+  ],
 })
 export class CustomersComponent implements OnInit {
   displayedColumns: string[] = ['firstName', 'lastName', 'phoneNumber', 'emailAddress', 'idNumber'];

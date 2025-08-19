@@ -14,8 +14,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RoutesService } from './routes.service';
 
 @NgModule({
-  declarations: [RoutesComponent, RouteDialogComponent],
   imports: [
+    RoutesComponent,
+    RouteDialogComponent,
     RouterModule.forChild(routesRoutes),
     CommonModule,
     MatTableModule,

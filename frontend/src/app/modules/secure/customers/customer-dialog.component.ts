@@ -2,10 +2,16 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { CustomersService } from './customers.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-customer-dialog',
-  templateUrl: './customer-dialog.component.html'
+  templateUrl: './customer-dialog.component.html',
+  standalone: true,
+  imports: [
+    MatFormFieldModule,
+    // ...other modules if needed...
+  ],
 })
 export class CustomerDialogComponent {
   form: FormGroup;

@@ -1,21 +1,28 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatDialog } from '@angular/material/dialog';
-import { RoutesService, RouteItem } from './routes.service';
-import { RouteDialogComponent } from './route-dialog.component';
+import { Component, OnInit, ViewChild } from "@angular/core";
+import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatTableDataSource } from "@angular/material/table";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatTableModule } from '@angular/material/table';
+import { MatDialog } from "@angular/material/dialog";
+import { RoutesService, RouteItem } from "./routes.service";
+import { RouteDialogComponent } from "./route-dialog.component";
 
 @Component({
-  selector: 'app-routes',
-  templateUrl: './routes.component.html',
-  styleUrls: ['./routes.component.scss']
+  selector: "app-routes",
+  templateUrl: "./routes.component.html",
+  styleUrls: ["./routes.component.scss"],
+  standalone: true,
+  imports: [MatPaginatorModule, MatTableModule],
 })
 export class RoutesComponent implements OnInit {
-  displayedColumns: string[] = ['code', 'name'];
+  displayedColumns: string[] = ["code", "name"];
   dataSource = new MatTableDataSource<RouteItem>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
-  constructor(private _service: RoutesService, private _dialog: MatDialog) {}
+  constructor(
+    private _service: RoutesService,
+    private _dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
