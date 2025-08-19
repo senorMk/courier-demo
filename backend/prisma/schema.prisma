@@ -1,6 +1,6 @@
-enum CustomerType {
-  SENDER
-  RECEIVER
+enum OfficeType {
+  SENDING
+  RECEIVING
 }
 
 datasource db {
@@ -13,13 +13,13 @@ generator client {
 }
 
 model Office {
-  id         String @id @default(uuid())
-  branchCode String
-  officeType String
+  id         String     @id @default(uuid())
+  branchCode String     @unique
+  officeType OfficeType
   name       String
   parcels    Parcel[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
 model Role {
@@ -34,6 +34,8 @@ model User {
   id        String      @id @default(uuid())
   email     String      @unique
   password  String
+  firstName String?
+  lastName  String?
   roleId    String
   role      Role        @relation(fields: [roleId], references: [id])
   logs      AccessLog[]
@@ -54,40 +56,45 @@ model AccessLog {
 }
 
 model Customer {
-  id          String   @id @default(uuid())
-  firstName   String
-  lastName    String
-  phoneNumber String
-  idNumber    String?
-  type        CustomerType
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  emailAddress    String?  @unique
+  phoneNumber     String   @unique
+  idNumber        String?  @unique
   sentParcels     Parcel[] @relation("Sender")
   receivedParcels Parcel[] @relation("Receiver")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
-
 
 model TrackingCode {
   id              String   @id @default(uuid())
   routeCode       String
   destinationCode String
   branchCode      String
-  parcelNumber    Int      @unique @default(autoincrement())
+  parcelId        String   @unique
+  parcel          Parcel   @relation(fields: [parcelId], references: [id])
+  plainTextCode   String   @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
 model Parcel {
-  id            String   @id @default(uuid())
+  id            String        @id @default(uuid())
+  parcelNumber  Int           @unique @default(autoincrement())
   customerId    String
   receiverId    String
   destinationId String
   items         ParcelItem[]
-  customer      Customer @relation("Sender", fields: [customerId], references: [id])
-  receiver      Customer @relation("Receiver", fields: [receiverId], references: [id])
-  destination   Office   @relation(fields: [destinationId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  customer      Customer      @relation("Sender", fields: [customerId], references: [id])
+  receiver      Customer      @relation("Receiver", fields: [receiverId], references: [id])
+  destination   Destination   @relation(fields: [destinationId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  TrackingCode  TrackingCode?
+  Office        Office?       @relation(fields: [officeId], references: [id])
+  officeId      String?
 }
 
 model ParcelItem {
@@ -101,4 +108,36 @@ model ParcelItem {
   parcel       Parcel   @relation(fields: [parcelId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Route {
+  id           String        @id @default(uuid())
+  code         String        @unique
+  name         String        @unique
+  destinations Destination[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Destination {
+  id          String       @id @default(uuid())
+  code        String       @unique
+  name        String       @unique
+  branchCode  String       @unique
+  routeId     String
+  route       Route        @relation(fields: [routeId], references: [id])
+  branchCodes BranchCode[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Parcel      Parcel[]
+}
+
+model BranchCode {
+  id            String      @id @default(uuid())
+  code          String      @unique
+  name          String      @unique
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }

@@ -10,6 +10,9 @@ import { IConfiguration } from './env.configuration.interface';
 import configuration from './config/env.configuration';
 import environmentSchema from './config/env.validation';
 import { HealthController } from "./health.controller";
+import { CustomerModule } from './customers/customer.module';
+import { ParcelModule } from './parcels/parcel.module';
+import { RoutesModule } from './routes/routes.module';
 
 
 @Module({
@@ -24,6 +27,9 @@ import { HealthController } from "./health.controller";
     AuthModule,
     UsersModule,
     LogsModule,
+    CustomerModule,
+    ParcelModule,
+    RoutesModule
   ],
   controllers: [AppController, HealthController],
 })
