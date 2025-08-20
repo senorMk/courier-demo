@@ -35,6 +35,10 @@ export class ParcelsService {
     );
   }
 
+  getParcelItems(parcelId: string): Observable<ParcelItem[]> {
+    return this._httpClient.get<ParcelItem[]>(`${this.baseUrl}/v1/parcels/${parcelId}/items`);
+  }
+
   createParcel(data: {
     customerId: string;
     receiverId: string;

@@ -50,7 +50,8 @@ export class ParcelItemDialogComponent {
     this.form.valueChanges.subscribe((val) => {
       const qty = Number(val.quantity) || 0;
       const price = Number(val.pricePerUnit) || 0;
-      this.form.patchValue({ amount: qty * price }, { emitEvent: false });
+      const value = Number(val.value) || 0;
+      this.form.patchValue({ amount: qty * price * value }, { emitEvent: false });
     });
   }
 
