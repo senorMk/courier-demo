@@ -11,7 +11,7 @@ export interface RouteItem {
 
 @Injectable({ providedIn: "root" })
 export class RoutesSearchService {
-  private baseUrl = environment.apiURL;
+  private baseUrl = environment.serverURL;
   constructor(private _http: HttpClient) {}
 
   searchRoutes(query: string): Observable<RouteItem[]> {

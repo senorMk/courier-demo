@@ -18,10 +18,10 @@ export class CustomersService {
 
   getCustomers(pageIndex = 0, pageSize = 10): Observable<{data: Customer[]; total: number}> {
     const params = `?page=${pageIndex}&pageSize=${pageSize}`;
-    return this._httpClient.get<{data: Customer[]; total: number}>(`${environment.apiURL}/v1/customers/paginated${params}`);
+    return this._httpClient.get<{data: Customer[]; total: number}>(`${environment.serverURL}/v1/customers/paginated${params}`);
   }
 
   createCustomer(data: Customer): Observable<Customer> {
-    return this._httpClient.post<Customer>(`${environment.apiURL}/v1/customers/create`, data);
+    return this._httpClient.post<Customer>(`${environment.serverURL}/v1/customers/create`, data);
   }
 }

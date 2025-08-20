@@ -6,7 +6,7 @@ export const environment = {
   production: false,
   hmr: false,
   serverURL: "http://localhost:3000/api",
-  apiURL: "http://localhost:3000/api",
+  serverURL: "http://localhost:3000/api",
   headers: {
     "Content-Type": "application/json",
   },

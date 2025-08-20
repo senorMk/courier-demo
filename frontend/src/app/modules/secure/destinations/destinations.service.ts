@@ -21,13 +21,13 @@ export class DestinationsService {
   ): Observable<{ data: Destination[]; total: number }> {
     const params = `?page=${pageIndex}&size=${pageSize}`;
     return this._httpClient.get<{ data: Destination[]; total: number }>(
-      `${environment.apiURL}/v1/routes/offices/paginated${params}`
+      `${environment.serverURL}/v1/routes/offices/paginated${params}`
     );
   }
 
   createDestination(data: Destination): Observable<Destination> {
     return this._httpClient.post<Destination>(
-      `${environment.apiURL}/v1/routes/office/create`,
+      `${environment.serverURL}/v1/routes/office/create`,
       data
     );
   }
