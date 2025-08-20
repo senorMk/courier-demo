@@ -6,6 +6,8 @@ import { Platform } from "@angular/cdk/platform";
 import { UserService } from "app/core/user/user.service";
 import { DashboardService } from "./dashboard.service";
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
@@ -14,9 +16,11 @@ import { Navigation } from 'app/core/navigation/navigation.types';
 
 
 @Component({
-    selector   : 'administrator-dashboard',
-    templateUrl: './dashboard.component.html',
-    styleUrls  : ['./dashboard.component.scss'],
+  selector   : 'administrator-dashboard',
+  templateUrl: './dashboard.component.html',
+  styleUrls  : ['./dashboard.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatIconModule],
 })
 export class DashboardComponent implements OnInit, OnDestroy
 {

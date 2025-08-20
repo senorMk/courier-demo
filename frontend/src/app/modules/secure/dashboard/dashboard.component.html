@@ -14,60 +14,48 @@
 
         <!-- Top Row Dashboard Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full min-w-0 dashboard-tiles">
-            <!-- Metric 1 Tile -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">
-                        Processing
+            <!-- Processing -->
+            <div class="flex flex-col flex-auto p-5 rounded-2xl border border-amber-200 bg-amber-50">
+                <div class="flex items-start justify-between w-full">
+                    <div class="text-[11px] font-semibold tracking-wide text-amber-600 uppercase">Processing</div>
+                    <div class="flex items-center justify-center h-9 w-9 rounded-full border border-amber-200 bg-white text-amber-500">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:clock"></mat-icon>
                     </div>
                 </div>
-                <div class="flex flex-col items-center mt-2">
-                    <div class="text-6xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
-                        {{ 2 }}
-                    </div>
-                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-amber-700">{{ 2 }}</div>
             </div>
 
-            <!-- Metric 2 Tile -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">
-                        In Transit
+            <!-- In Transit -->
+            <div class="flex flex-col flex-auto p-5 rounded-2xl border border-blue-200 bg-blue-50">
+                <div class="flex items-start justify-between w-full">
+                    <div class="text-[11px] font-semibold tracking-wide text-blue-600 uppercase">In Transit</div>
+                    <div class="flex items-center justify-center h-9 w-9 rounded-full border border-blue-200 bg-white text-blue-600">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:truck"></mat-icon>
                     </div>
                 </div>
-                <div class="flex flex-col items-center mt-2">
-                    <div class="text-6xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
-                        {{ 4 }}
-                    </div>
-                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-blue-700">{{ 4 }}</div>
             </div>
 
-            <!-- Metric 3 Tile -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">
-                        Delivered
+            <!-- Delivered -->
+            <div class="flex flex-col flex-auto p-5 rounded-2xl border border-green-200 bg-green-50">
+                <div class="flex items-start justify-between w-full">
+                    <div class="text-[11px] font-semibold tracking-wide text-green-600 uppercase">Delivered</div>
+                    <div class="flex items-center justify-center h-9 w-9 rounded-full border border-green-200 bg-white text-green-600">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:check-circle"></mat-icon>
                     </div>
                 </div>
-                <div class="flex flex-col items-center mt-2">
-                    <div class="text-6xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
-                        {{ 2 }}
-                    </div>
-                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-green-700">{{ 2 }}</div>
             </div>
 
-            <!-- Metric 4 Tile -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">
-                        Total Process
+            <!-- Total Processed -->
+            <div class="flex flex-col flex-auto p-5 rounded-2xl border border-gray-200 bg-gray-50">
+                <div class="flex items-start justify-between w-full">
+                    <div class="text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Total Processed</div>
+                    <div class="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:cube"></mat-icon>
                     </div>
                 </div>
-                <div class="flex flex-col items-center mt-2">
-                    <div class="text-6xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
-                        {{ 5 }}
-                    </div>
-                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-gray-800">{{ 8 }}</div>
             </div>
         </div>
     </div>
