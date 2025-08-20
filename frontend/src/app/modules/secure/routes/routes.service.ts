@@ -11,7 +11,7 @@ export interface RouteItem {
 
 @Injectable()
 export class RoutesService {
-  private baseUrl = environment.apiURL;
+  private baseUrl = environment.serverURL;
 
   constructor(private _httpClient: HttpClient) {}
 

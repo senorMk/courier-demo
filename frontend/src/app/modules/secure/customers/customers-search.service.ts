@@ -17,7 +17,7 @@ export class CustomersSearchService {
   constructor(private _http: HttpClient) {}
 
   searchCustomers(query: string) {
-    const baseUrl = environment.apiURL;
+    const baseUrl = environment.serverURL;
     return this._http.get<Customer[]>(`${baseUrl}/v1/customers/search?q=${encodeURIComponent(query)}`);
   }
 }

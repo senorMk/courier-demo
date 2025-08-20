@@ -13,7 +13,7 @@ export interface Parcel {
 
 @Injectable()
 export class ParcelsService {
-  private baseUrl = environment.apiURL;
+  private baseUrl = environment.serverURL;
   constructor(private _httpClient: HttpClient) {}
 
   getParcels(

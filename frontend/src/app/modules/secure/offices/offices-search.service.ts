@@ -15,7 +15,7 @@ export class OfficesSearchService {
   constructor(private _http: HttpClient) {}
 
   searchOffices(query: string): Observable<Office[]> {
-    const baseUrl = environment.apiURL;
+    const baseUrl = environment.serverURL;
     return this._http.get<Office[]>(`${baseUrl}/v1/routes/offices/search?q=${encodeURIComponent(query)}`);
   }
 }
