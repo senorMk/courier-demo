@@ -13,6 +13,10 @@ import {
 } from "../customers/customers-search.service";
 import { Observable, BehaviorSubject, of } from "rxjs";
 import { debounceTime, switchMap, catchError, tap } from "rxjs/operators";
+import {
+  OfficesSearchService,
+  Office,
+} from "../offices/offices-search.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
@@ -42,22 +46,39 @@ export class ParcelDialogComponent {
   loading = false;
   filteredCustomers$: Observable<Customer[]> = of([]);
   filteredReceivers$: Observable<Customer[]> = of([]);
+  filteredOffices$: Observable<Office[]> = of([]);
   private customerInput$ = new BehaviorSubject<string>("");
   private receiverInput$ = new BehaviorSubject<string>("");
+  private officeInput$ = new BehaviorSubject<string>("");
   private customersCache: Record<string, Customer> = {};
   private receiversCache: Record<string, Customer> = {};
+  private officesCache: Record<string, Office> = {};
 
   constructor(
     private _fb: FormBuilder,
     private _service: ParcelsService,
     private _dialogRef: MatDialogRef<ParcelDialogComponent>,
-    private _customersSearch: CustomersSearchService
+    private _customersSearch: CustomersSearchService,
+    private _officesSearch: OfficesSearchService
   ) {
     this.form = this._fb.group({
       customerId: ["", Validators.required],
       receiverId: ["", Validators.required],
-      destinationId: ["", Validators.required],
+      officeId: ["", Validators.required],
     });
+    this.filteredOffices$ = this.officeInput$.pipe(
+      debounceTime(300),
+      switchMap((q) =>
+        q
+          ? this._officesSearch.searchOffices(q).pipe(
+              tap((offices) =>
+                offices.forEach((o) => (this.officesCache[o.id] = o))
+              ),
+              catchError(() => of([]))
+            )
+          : of([])
+      )
+    );
 
     this.filteredCustomers$ = this.customerInput$.pipe(
       debounceTime(300),
@@ -86,6 +107,25 @@ export class ParcelDialogComponent {
       )
     );
   }
+
+  onOfficeInput(value: string) {
+    this.officeInput$.next(value);
+  }
+
+  onOfficeSelected(office: Office) {
+    this.form.controls["officeId"].setValue(office.id);
+    this.officesCache[office.id] = office;
+  }
+
+  officeDisplayFn = (office: Office | string | null): string => {
+    if (!office) return "";
+    if (typeof office === "string") {
+      return this.officesCache[office]?.name
+        ? this.officesCache[office].name
+        : office;
+    }
+    return office.name;
+  };
 
   onCustomerInput(value: string) {
     this.customerInput$.next(value);

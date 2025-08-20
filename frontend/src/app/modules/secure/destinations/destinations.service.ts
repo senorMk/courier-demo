@@ -18,16 +18,16 @@ export class DestinationsService {
   getDestinations(
     pageIndex = 0,
     pageSize = 10
-  ): Observable<{ items: Destination[]; total: number }> {
+  ): Observable<{ data: Destination[]; total: number }> {
     const params = `?page=${pageIndex}&size=${pageSize}`;
-    return this._httpClient.get<{ items: Destination[]; total: number }>(
-      `${environment.apiURL}/v1/routes/destinations${params}`
+    return this._httpClient.get<{ data: Destination[]; total: number }>(
+      `${environment.apiURL}/v1/routes/offices/paginated${params}`
     );
   }
 
   createDestination(data: Destination): Observable<Destination> {
     return this._httpClient.post<Destination>(
-      `${environment.apiURL}/v1/routes/destination/create`,
+      `${environment.apiURL}/v1/routes/office/create`,
       data
     );
   }

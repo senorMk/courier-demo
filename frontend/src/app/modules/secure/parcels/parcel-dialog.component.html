@@ -33,9 +33,18 @@
     </mat-autocomplete>
   </mat-form-field>
   <mat-form-field appearance="fill">
-    <mat-label>Destination ID</mat-label>
-    <input matInput formControlName="destinationId"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+    <mat-label>Destination</mat-label>
+    <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+      (input)="onOfficeInput($event.target.value)" autocomplete="off" />
+    <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
+      [displayWith]="officeDisplayFn">
+      <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
+        <span>{{ office.name }}</span>
+        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
+            *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
+      </mat-option>
+    </mat-autocomplete>
   </mat-form-field>
 </div>
 <div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
