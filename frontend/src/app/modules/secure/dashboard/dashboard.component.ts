@@ -57,6 +57,15 @@ export class DashboardComponent implements OnInit, OnDestroy
         this._unsubscribeAll.complete();
     }
 
+   // Automatically adds +1 to month result
+  dateDifference(dateFrom, dateTo) {
+    let rawDifference =
+      dateTo.getMonth() -
+      dateFrom.getMonth() +
+      12 * (dateTo.getFullYear() - dateFrom.getFullYear());
+    return rawDifference + 1;
+  }
+
     openLeftDrawerMenu(): void
     {
         const mainNavigation = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');

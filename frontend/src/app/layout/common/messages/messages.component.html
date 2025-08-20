@@ -5,7 +5,7 @@
             class="absolute left-0 right-0 top-0 flex h-3 items-center justify-center"
         >
             <span
-                class="ml-4 mt-2.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1 text-xs font-medium text-indigo-50"
+                class="ml-4 mt-2.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-medium text-blue-50"
             >
                 {{ unreadCount }}
             </span>
@@ -21,7 +21,7 @@
     >
         <!-- Header -->
         <div
-            class="flex shrink-0 items-center bg-primary py-4 pl-6 pr-4 text-on-primary"
+            class="flex shrink-0 items-center bg-blue-600 py-4 pl-6 pr-4 text-white"
         >
             <div class="-ml-1 mr-3 sm:hidden">
                 <button mat-icon-button (click)="closePanel()">
@@ -109,7 +109,7 @@
                                 [ngClass]="{
                                     'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100':
                                         message.read,
-                                    'bg-primary': !message.read,
+                                    'bg-blue-600': !message.read,
                                 }"
                             ></span>
                         </button>
@@ -177,10 +177,10 @@
                     class="flex flex-auto flex-col items-center justify-center px-8 py-12 sm:justify-start"
                 >
                     <div
-                        class="flex h-14 w-14 flex-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-600"
+                        class="flex h-14 w-14 flex-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-600"
                     >
                         <mat-icon
-                            class="text-primary-700 dark:text-primary-50"
+                            class="text-blue-700 dark:text-blue-50"
                             [svgIcon]="'heroicons_outline:inbox'"
                         ></mat-icon>
                     </div>

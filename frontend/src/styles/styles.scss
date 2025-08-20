@@ -1,4 +1,45 @@
 /* ----------------------------------------------------------------------------------------------------- */
+/* Active navigation item blue tint */
+/* Active item: stronger bluish pill with subtle shadow (higher specificity) */
+fuse-vertical-navigation-basic-item.fuse-vertical-navigation-item-active > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item,
+fuse-vertical-navigation-basic-item > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item.fuse-vertical-navigation-item-active,
+fuse-vertical-navigation-aside-item.fuse-vertical-navigation-item-active > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item,
+fuse-vertical-navigation-aside-item > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item.fuse-vertical-navigation-item-active {
+	background: #e9f2ff !important;
+	color: #0b53b8 !important;
+	font-weight: 600;
+	border-radius: 10px;
+	transition: background .18s ease;
+}
+
+/* Active hover slightly deeper */
+fuse-vertical-navigation-basic-item.fuse-vertical-navigation-item-active > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item:hover,
+fuse-vertical-navigation-aside-item.fuse-vertical-navigation-item-active > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item:hover {
+	background: #dceaff !important;
+}
+
+/* Hover state for non-active items: subtle */
+/* Hover (non-active) */
+fuse-vertical-navigation-basic-item:not(.fuse-vertical-navigation-item-active) > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item:hover,
+fuse-vertical-navigation-aside-item:not(.fuse-vertical-navigation-item-active) > .fuse-vertical-navigation-item-wrapper .fuse-vertical-navigation-item:hover {
+	background: #f5f8fc;
+	border-radius: 10px;
+}
+
+/* Icon color adjustments inside active item */
+fuse-vertical-navigation-basic-item.fuse-vertical-navigation-item-active mat-icon,
+fuse-vertical-navigation-basic-item.fuse-vertical-navigation-item-active svg,
+fuse-vertical-navigation-aside-item.fuse-vertical-navigation-item-active mat-icon,
+fuse-vertical-navigation-aside-item.fuse-vertical-navigation-item-active svg {
+	color: #0b53b8 !important;
+	stroke: #0b53b8 !important;
+}
+
+/* Optional: ensure icon container (if any) doesn't retain old neutral background */
+fuse-vertical-navigation-basic-item.fuse-vertical-navigation-item-active .fuse-vertical-navigation-item-icon,
+fuse-vertical-navigation-aside-item.fuse-vertical-navigation-item-active .fuse-vertical-navigation-item-icon {
+	background: transparent;
+}
 @import './custom-buttons.css';
 /*  @ Import/write your custom styles here.
 /*  @ Styles from this file will override 'vendors.scss' and Fuse's base styles.
