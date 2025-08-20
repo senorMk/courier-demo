@@ -8,6 +8,10 @@ import { ParcelsService, Parcel } from "./parcels.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ParcelDialogComponent } from "./parcel-dialog.component";
 import { MatIconModule } from "@angular/material/icon";
+import { SelectionModel } from "@angular/cdk/collections";
+import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
+import { MatButtonModule } from "@angular/material/button";
+import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -19,16 +23,20 @@ import { MatIconModule } from "@angular/material/icon";
     MatPaginatorModule,
     MatTableModule,
     MatIconModule,
+    MatCheckboxModule,
+    MatButtonModule,
   ],
 })
 export class ParcelsComponent implements OnInit {
   displayedColumns: string[] = [
+    "select",
     "parcelNumber",
     "customerId",
     "receiverId",
     "destinationId",
   ];
   dataSource = new MatTableDataSource<Parcel>([]);
+  selection = new SelectionModel<Parcel>(false, []);
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
   constructor(
@@ -57,6 +65,35 @@ export class ParcelsComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadData();
+      }
+    });
+  }
+
+  onSelect(row: Parcel, event: MatCheckboxChange): void {
+    if (event.checked) {
+      this.selection.clear();
+      this.selection.select(row);
+    } else {
+      this.selection.deselect(row);
+    }
+  }
+
+  get selectedParcel(): Parcel | null {
+    return this.selection.hasValue() ? this.selection.selected[0] : null;
+  }
+
+  openAddItemDialog(): void {
+    const parcel = this.selectedParcel;
+    if (!parcel || !parcel.id) {
+      return;
+    }
+    const dialogRef = this._dialog.open(ParcelItemDialogComponent, {
+      width: "400px",
+      data: { parcelId: parcel.id },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        // Optionally reload or handle after item addition
       }
     });
   }
