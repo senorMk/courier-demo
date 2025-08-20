@@ -23,6 +23,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatRippleModule } from "@angular/material/core";
+import { ParcelsService } from "../parcels/parcels.service";
 
 @NgModule({
   imports: [
@@ -49,6 +50,6 @@ import { MatRippleModule } from "@angular/material/core";
     FormsModule,
     ReactiveFormsModule,
   ],
-  providers: [DashboardService, MatSnackBar],
+  providers: [DashboardService, MatSnackBar, ParcelsService],
 })
 export class DashboardModule {}

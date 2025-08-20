@@ -78,6 +78,11 @@ export class ParcelService {
               officeType: true,
             },
           },
+          TrackingCode: {
+            select: {
+              plainTextCode: true,
+            },
+          },
         },
       }),
       this.prisma.parcel.count(),
@@ -106,6 +111,12 @@ export class ParcelService {
         ...data,
         parcelId,
       },
+    });
+  }
+
+  async getParcelItems(parcelId: string): Promise<ParcelItem[]> {
+    return this.prisma.parcelItem.findMany({
+      where: { parcelId },
     });
   }
 }

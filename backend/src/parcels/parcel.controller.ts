@@ -59,4 +59,11 @@ export class ParcelController {
   ) {
     return this.parcelService.addParcelItem(parcelId, body);
   }
+
+  @Get(":parcelId/items")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getParcelItems(@Param("parcelId") parcelId: string) {
+    return this.parcelService.getParcelItems(parcelId);
+  }
 }

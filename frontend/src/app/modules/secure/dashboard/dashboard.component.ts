@@ -1,67 +1,91 @@
-
 import { MatDialog } from "@angular/material/dialog";
 import { ApexOptions } from "ng-apexcharts";
-
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { Platform } from "@angular/cdk/platform";
+import { MatPaginator } from "@angular/material/paginator";
 import { UserService } from "app/core/user/user.service";
 import { DashboardService } from "./dashboard.service";
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
-import { NavigationService } from 'app/core/navigation/navigation.service';
-import { Navigation } from 'app/core/navigation/navigation.types';
-
+import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ParcelsService, Parcel } from "../parcels/parcels.service";
+import { CommonModule } from "@angular/common";
+import { MatIconModule } from "@angular/material/icon";
+import { Subject } from "rxjs";
+import { takeUntil } from "rxjs/operators";
+import {
+  FuseNavigationService,
+  FuseVerticalNavigationComponent,
+} from "@fuse/components/navigation";
+import { NavigationService } from "app/core/navigation/navigation.service";
+import { Navigation } from "app/core/navigation/navigation.types";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatButtonModule } from "@angular/material/button";
+import { MatPaginatorModule } from "@angular/material/paginator";
 
 @Component({
-  selector   : 'administrator-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls  : ['./dashboard.component.scss'],
+  selector: "administrator-dashboard",
+  templateUrl: "./dashboard.component.html",
+  styleUrls: ["./dashboard.component.scss"],
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatFormFieldModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatIconModule,
+    MatCheckboxModule,
+    MatButtonModule,
+  ],
 })
-export class DashboardComponent implements OnInit, OnDestroy
-{
+export class DashboardComponent implements OnInit, OnDestroy {
+  loggedInUser;
+  navigation: Navigation;
+  private _unsubscribeAll: Subject<any> = new Subject<any>();
+  UserService: UserService;
+  dataSource = new MatTableDataSource<Parcel>([]);
+  displayedColumns: string[] = [
+    "trackingCode",
+    "parcelNumber",
+    "customerId",
+    "receiverId",
+    "destinationId",
+  ];
+  @ViewChild(MatPaginator) paginator: MatPaginator;
 
-    loggedInUser;
-    navigation: Navigation;
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
-    UserService: UserService;
+  constructor(
+    private _fuseNavigationService: FuseNavigationService,
+    private _navigationService: NavigationService,
+    private _userService: UserService,
+    private _service: ParcelsService
+  ) {}
 
-    constructor(
-        private _fuseNavigationService: FuseNavigationService,
-        private _navigationService: NavigationService,
-        private _userService: UserService,
-      
-    )
-    {
-    }
+  ngOnInit(): void {
+    // let lastLogin = this.loggedInUser.lastLogin;
+    this._navigationService.navigation$
+      .pipe(takeUntil(this._unsubscribeAll))
+      .subscribe((navigation: Navigation) => {
+        this.navigation = navigation;
+      });
 
-    ngOnInit(): void
-    {
-        
-      let lastLogin = this.loggedInUser.lastLogin;
+    this.loadData();
+  }
 
-      
+  loadData(pageIndex: number = 0, pageSize: number = 10): void {
+    this._service.getParcels(pageIndex, pageSize).subscribe((data) => {
+      this.dataSource.data = data.data || [];
+      if (this.paginator) {
+        this.paginator.length = data.total || this.dataSource.data.length;
+        this.dataSource.paginator = this.paginator;
+      }
+    });
+  }
 
-      this._navigationService.navigation$
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((navigation: Navigation) =>
-            {
-                this.navigation = navigation;
-            }
-          );
-    }
+  ngOnDestroy(): void {
+    this._unsubscribeAll.next(null);
+    this._unsubscribeAll.complete();
+  }
 
-    ngOnDestroy(): void
-    {
-        this._unsubscribeAll.next(null);
-        this._unsubscribeAll.complete();
-    }
-
-   // Automatically adds +1 to month result
+  // Automatically adds +1 to month result
   dateDifference(dateFrom, dateTo) {
     let rawDifference =
       dateTo.getMonth() -
@@ -70,13 +94,14 @@ export class DashboardComponent implements OnInit, OnDestroy
     return rawDifference + 1;
   }
 
-    openLeftDrawerMenu(): void
-    {
-        const mainNavigation = this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>('mainNavigation');
+  openLeftDrawerMenu(): void {
+    const mainNavigation =
+      this._fuseNavigationService.getComponent<FuseVerticalNavigationComponent>(
+        "mainNavigation"
+      );
 
-        if ( mainNavigation )
-        {
-            mainNavigation.toggle();
-        }
+    if (mainNavigation) {
+      mainNavigation.toggle();
     }
+  }
 }
