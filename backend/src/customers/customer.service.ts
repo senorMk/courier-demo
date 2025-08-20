@@ -31,6 +31,7 @@ export class CustomerService {
       totalPages: Math.ceil(total / pageSize),
     };
   }
+
   /**
    * Search customers by first name, last name, id number, email, or phone number
    * Limited to 50 results

@@ -23,7 +23,7 @@ export class ParcelController {
     body: {
       customerId: string;
       receiverId: string;
-      destinationId: string;
+      officeId: string;
     }
   ) {
     return this.parcelService.createParcel(body);

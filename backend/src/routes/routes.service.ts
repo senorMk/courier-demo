@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { OfficeType, Prisma } from "@prisma/client";
 // Define OfficeType as a string literal type matching your schema
-type OfficeType = "BRANCH" | "AGENCY" | "OTHER"; // Replace with actual enum values from your schema
 
 @Injectable()
 export class RoutesService {
@@ -13,27 +13,26 @@ export class RoutesService {
 
   async createOffice(data: {
     branchCode: string;
-    officeType: "SENDING" | "RECEIVING";
-    name: string;
-  }) {
-    return this.prisma.office.create({ data });
-  }
-
-  async createDestination(data: {
-    code: string;
-    branchCode: string;
+    officeType: OfficeType; // use Prisma enum
     name: string;
     routeId: string;
   }) {
-    return this.prisma.destination.create({ data });
+    return this.prisma.office.create({
+      data: {
+        branchCode: data.branchCode,
+        officeType: data.officeType, // must be OfficeType.SENDING etc.
+        name: data.name,
+        route: { connect: { id: data.routeId } },
+      },
+    });
   }
 
-  async getDestinationsPaginated(page: number = 1, pageSize: number = 10) {
+  async getOfficesPaginated(page: number = 1, pageSize: number = 10) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
-      this.prisma.destination.findMany({ skip, take: pageSize }),
-      this.prisma.destination.count(),
+      this.prisma.office.findMany({ skip, take: pageSize }),
+      this.prisma.office.count(),
     ]);
     return {
       data,
@@ -58,5 +57,35 @@ export class RoutesService {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  /**
+   * Search offices by branch code, office type, or name
+   * Limited to 50 results
+   */
+  async searchOffices(q: string) {
+    return this.prisma.office.findMany({
+      where: {
+        OR: [
+          { branchCode: { contains: q, mode: "insensitive" } },
+          { name: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      take: 50,
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async searchRoutes(q: string) {
+    return this.prisma.route.findMany({
+      where: {
+        OR: [
+          { code: { contains: q, mode: "insensitive" } },
+          { name: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      take: 50,
+      orderBy: { createdAt: "desc" },
+    });
   }
 }
