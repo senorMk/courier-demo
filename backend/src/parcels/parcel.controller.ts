@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Post,
+  Param,
   UseGuards,
   SetMetadata,
   BadRequestException,
@@ -40,5 +41,22 @@ export class ParcelController {
       Number(page),
       Number(pageSize)
     );
+  }
+
+  @Post(":parcelId/items")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async addItem(
+    @Param("parcelId") parcelId: string,
+    @Body()
+    body: {
+      quantity: number;
+      description: string;
+      pricePerUnit: number;
+      value: number;
+      amount: number;
+    }
+  ) {
+    return this.parcelService.addParcelItem(parcelId, body);
   }
 }
