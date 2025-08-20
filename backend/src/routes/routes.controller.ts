@@ -10,6 +10,7 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { RoutesService } from "./routes.service";
 import { RolesGuard } from "../common/guards/roles.guard";
+import { OfficeType } from "@prisma/client";
 
 @Controller("api/v1/routes")
 export class RoutesController {
@@ -20,35 +21,6 @@ export class RoutesController {
   @SetMetadata("roles", ["managing-director"])
   async createRoute(@Body() body: { code: string; name: string }) {
     return this.routesService.createRoute(body);
-  }
-
-  @Post("office/create")
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
-  async createOffice(
-    @Body()
-    body: {
-      branchCode: string;
-      officeType: "SENDING" | "RECEIVING";
-      name: string;
-    }
-  ) {
-    return this.routesService.createOffice(body);
-  }
-
-  @Post("destination/create")
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
-  async createDestination(
-    @Body()
-    body: {
-      code: string;
-      branchCode: string;
-      name: string;
-      routeId: string;
-    }
-  ) {
-    return this.routesService.createDestination(body);
   }
 
   @Get("paginated")
@@ -62,5 +34,57 @@ export class RoutesController {
       Number(page),
       Number(pageSize)
     );
+  }
+
+  @Get("search")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async searchRoutes(@Query("q") q: string) {
+    if (!q || q.trim().length === 0) {
+      return [];
+    }
+    return this.routesService.searchRoutes(q);
+  }
+
+  @Post("office/create")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async createOffice(
+    @Body()
+    body: {
+      branchCode: string;
+      officeType: OfficeType;
+      routeId: string;
+      name: string;
+    }
+  ) {
+    return this.routesService.createOffice(body);
+  }
+
+  @Get("offices/paginated")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getOfficesPaginated(
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10
+  ) {
+    return this.routesService.getOfficesPaginated(
+      Number(page),
+      Number(pageSize)
+    );
+  }
+
+  /**
+   * Search offices by branch code, office type, or name
+   * @param query search string
+   */
+  @Get("offices/search")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async searchOffices(@Query("q") q: string) {
+    if (!q || q.trim().length === 0) {
+      return [];
+    }
+    return this.routesService.searchOffices(q);
   }
 }

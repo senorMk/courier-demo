@@ -1,0 +1,42 @@
+<h1 mat-dialog-title
+  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create
+  Customer
+</h1>
+<div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
+  <mat-form-field appearance="fill">
+    <mat-label>First Name</mat-label>
+    <input matInput formControlName="firstName"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Last Name</mat-label>
+    <input matInput formControlName="lastName"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Phone Number</mat-label>
+    <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+    <input matInput formControlName="phoneNumber"
+      maxlength="9"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Email</mat-label>
+    <input matInput formControlName="emailAddress"
+      type="email"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>ID Number</mat-label>
+    <input matInput formControlName="idNumber"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+  </mat-form-field>
+</div>
+<div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
+  <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()" cdkFocusInitial
+    class="custom-primary-btn">Save</button>
+  <button mat-flat-button [mat-dialog-close]="false"
+    style="border: 1.5px solid #888; background: transparent;">Cancel</button>
+</div>

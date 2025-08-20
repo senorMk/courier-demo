@@ -17,6 +17,7 @@ export class CustomerService {
   }
 
   async getCustomersPaginated(page: number = 1, pageSize: number = 10) {
+    page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({ skip, take: pageSize }),
@@ -29,5 +30,25 @@ export class CustomerService {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  /**
+   * Search customers by first name, last name, id number, email, or phone number
+   * Limited to 50 results
+   */
+  async searchCustomers(q: string) {
+    return this.prisma.customer.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName: { contains: q, mode: "insensitive" } },
+          { idNumber: { contains: q, mode: "insensitive" } },
+          { emailAddress: { contains: q, mode: "insensitive" } },
+          { phoneNumber: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      take: 50,
+      orderBy: { createdAt: "desc" },
+    });
   }
 }

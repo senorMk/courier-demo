@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { Parcel } from "@prisma/client";
+import { Office, Parcel } from "@prisma/client";
 
 @Injectable()
 export class ParcelService {
@@ -9,19 +9,19 @@ export class ParcelService {
   async createParcel(data: {
     customerId: string;
     receiverId: string;
-    destinationId: string;
+    officeId: string;
   }): Promise<Parcel> {
-    const destination = await this.prisma.destination.findUnique({
-      where: { id: data.destinationId },
+    const office: Office = await this.prisma.office.findUnique({
+      where: { id: data.officeId },
     });
-    if (!destination) {
-      throw new Error("Destination not found");
+    if (!office) {
+      throw new Error("Office not found");
     }
 
     const parcel = await this.prisma.parcel.create({ data });
 
     const route = await this.prisma.route.findUnique({
-      where: { id: destination.routeId },
+      where: { id: office.routeId },
     });
 
     if (!route) {
@@ -29,8 +29,8 @@ export class ParcelService {
     }
 
     const routeCode = route.code;
-    const destinationCode = destination.code;
-    const branchCode = destination.branchCode;
+    const destinationCode = office.branchCode;
+    const branchCode = office.branchCode;
     const parcelNumber = parcel.parcelNumber;
     const plainTextCode = `${routeCode}-${destinationCode}-${branchCode}-${parcelNumber}`;
 
@@ -50,17 +50,44 @@ export class ParcelService {
   }
 
   async getParcelsPaginated(page: number = 1, pageSize: number = 10) {
-  const skip = (page - 1) * pageSize;
-  const [data, total] = await Promise.all([
-    this.prisma.parcel.findMany({ skip, take: pageSize }),
-    this.prisma.parcel.count(),
-  ]);
-  return {
-    data,
-    total,
-    page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
-  };
-}
+    page = Math.max(1, page);
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await Promise.all([
+      this.prisma.parcel.findMany({
+        skip,
+        take: pageSize,
+        include: {
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              emailAddress: true,
+            },
+          },
+          receiver: {
+            select: {
+              firstName: true,
+              lastName: true,
+              emailAddress: true,
+            },
+          },
+          office: {
+            select: {
+              branchCode: true,
+              name: true,
+              officeType: true,
+            },
+          },
+        },
+      }),
+      this.prisma.parcel.count(),
+    ]);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
 }
