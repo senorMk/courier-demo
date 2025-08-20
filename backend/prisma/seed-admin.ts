@@ -1,15 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as dotenv from 'dotenv';
 
-// Override via env if needed
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@pcs-zambia.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '#udiURvxQt1KYWEs';
+// Load environment variables from ../.env (backend root) before reading them
+dotenv.config();
+
+// Required environment variables (no hardcoded fallbacks)
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_ROLE_NAME = process.env.ADMIN_ROLE || 'managing-director';
+
+
+if (!ADMIN_EMAIL) {
+  throw new Error('ADMIN_EMAIL env var is required (set it in backend/.env)');
+}
+if (!ADMIN_PASSWORD) {
+  throw new Error('ADMIN_PASSWORD env var is required (set it in backend/.env)');
+}
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding admin user...');
+  console.log('Seeding admin user (email: ' + ADMIN_EMAIL + ', role: ' + ADMIN_ROLE_NAME + ')...');
   // Ensure role exists
   let role = await prisma.role.findUnique({ where: { name: ADMIN_ROLE_NAME } });
   if (!role) {
