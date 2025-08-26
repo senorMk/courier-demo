@@ -30,6 +30,8 @@ model User {
   lastName  String?
   roleId    String
   role      Role        @relation(fields: [roleId], references: [id])
+  officeId  String?
+  office    Office?     @relation(fields: [officeId], references: [id])
   logs      AccessLog[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -120,6 +122,7 @@ model Office {
   route       Route        @relation(fields: [routeId], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  User        User[]
 }
 
 model BranchCode {
