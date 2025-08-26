@@ -119,32 +119,53 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'parcels-history',
-        loadComponent: () => import('app/modules/secure/parcels-history/parcels-history.component').then(m => m.ParcelsHistoryComponent)
+        path: "parcels-history",
+        loadComponent: () =>
+          import(
+            "app/modules/secure/parcels-history/parcels-history.component"
+          ).then((m) => m.ParcelsHistoryComponent),
       },
       {
-        path: 'live-tracking',
-        loadComponent: () => import('app/modules/secure/live-tracking/live-tracking.component').then(m => m.LiveTrackingComponent)
+        path: "live-tracking",
+        loadComponent: () =>
+          import(
+            "app/modules/secure/live-tracking/live-tracking.component"
+          ).then((m) => m.LiveTrackingComponent),
       },
       {
-        path: 'revenue',
-        loadComponent: () => import('app/modules/secure/revenue/revenue.component').then(m => m.RevenueComponent)
+        path: "revenue",
+        loadComponent: () =>
+          import("app/modules/secure/revenue/revenue.component").then(
+            (m) => m.RevenueComponent
+          ),
       },
       {
-        path: 'customers',
-        loadChildren: () => import('app/modules/secure/customers/customers.module').then(m => m.CustomersModule)
+        path: "customers",
+        loadChildren: () =>
+          import("app/modules/secure/customers/customers.module").then(
+            (m) => m.CustomersModule
+          ),
       },
       {
-        path: 'destinations',
-        loadChildren: () => import('app/modules/secure/destinations/destinations.module').then(m => m.DestinationsModule)
+        path: "destinations",
+        loadChildren: () =>
+          import("app/modules/secure/destinations/destinations.module").then(
+            (m) => m.DestinationsModule
+          ),
       },
       {
-        path: 'parcels',
-        loadChildren: () => import('app/modules/secure/parcels/parcels.module').then(m => m.ParcelsModule)
+        path: "parcels",
+        loadChildren: () =>
+          import("app/modules/secure/parcels/parcels.module").then(
+            (m) => m.ParcelsModule
+          ),
       },
       {
-        path: 'routes',
-        loadChildren: () => import('app/modules/secure/routes/routes.module').then(m => m.RoutesModule)
+        path: "routes",
+        loadChildren: () =>
+          import("app/modules/secure/routes/routes.module").then(
+            (m) => m.RoutesModule
+          ),
       },
     ],
   },
