@@ -10,6 +10,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
     link: "/secure/dashboard",
   },
   {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qr-code",
+    link: "/secure/scanning",
+  },
+  {
     id: "parcels-history",
     title: "Parcels History",
     type: "basic",
@@ -45,6 +52,13 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qr-code",
+    link: "/secure/scanning",
   },
   {
     id: "parcels-history",
@@ -84,6 +98,13 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     link: "/secure/dashboard",
   },
   {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "custom:routes",
+    link: "/secure/scanning",
+  },
+  {
     id: "parcels-history",
     title: "Parcels History",
     type: "basic",
@@ -119,6 +140,13 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "custom:routes",
+    link: "/secure/scanning",
   },
   {
     id: "parcels-history",

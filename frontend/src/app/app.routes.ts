@@ -146,6 +146,10 @@ export const appRoutes: Route[] = [
         path: 'routes',
         loadChildren: () => import('app/modules/secure/routes/routes.module').then(m => m.RoutesModule)
       },
+      {
+        path: 'scanning',
+  loadChildren: () => import('app/modules/secure/scanning/scanning.routes')
+      },
     ],
   },
 ];

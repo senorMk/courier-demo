@@ -33,6 +33,9 @@ export class AuthService {
       email: user.email,
       sub: user.id,
       role: user.role?.name || user.role, // support both populated and flat role
+      officeId: user.officeId || user.office?.id || null,
+      firstName: (user as any).firstName || null,
+      lastName: (user as any).lastName || null,
     };
     await this.logsService.logAction(user.email, "login");
     return {

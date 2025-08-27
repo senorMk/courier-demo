@@ -23,16 +23,20 @@ model Role {
 }
 
 model User {
-  id        String      @id @default(uuid())
-  email     String      @unique
-  password  String
-  firstName String?
-  lastName  String?
-  roleId    String
-  role      Role        @relation(fields: [roleId], references: [id])
-  logs      AccessLog[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id               String            @id @default(uuid())
+  email            String            @unique
+  password         String
+  firstName        String?
+  lastName         String?
+  roleId           String
+  officeId         String? // references Office.id (TEXT)
+  role             Role              @relation(fields: [roleId], references: [id])
+  office           Office?           @relation(fields: [officeId], references: [id])
+  logs             AccessLog[]
+  scanningSessions ScanningSession[] @relation("UserScanningSessions")
+  scans            ScannedParcel[]   @relation("UserParcelScans")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model AccessLog {
@@ -73,18 +77,19 @@ model TrackingCode {
 }
 
 model Parcel {
-  id           String        @id @default(uuid())
-  parcelNumber Int           @unique @default(autoincrement())
+  id           String          @id @default(uuid())
+  parcelNumber Int             @unique @default(autoincrement())
   customerId   String
   receiverId   String
   officeId     String
   items        ParcelItem[]
-  customer     Customer      @relation("Sender", fields: [customerId], references: [id])
-  receiver     Customer      @relation("Receiver", fields: [receiverId], references: [id])
-  office       Office        @relation(fields: [officeId], references: [id])
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  customer     Customer        @relation("Sender", fields: [customerId], references: [id])
+  receiver     Customer        @relation("Receiver", fields: [receiverId], references: [id])
+  office       Office          @relation(fields: [officeId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   TrackingCode TrackingCode?
+  scans        ScannedParcel[] @relation("ParcelScans")
 }
 
 model ParcelItem {
@@ -101,25 +106,28 @@ model ParcelItem {
 }
 
 model Route {
-  id        String   @id @default(uuid())
-  code      String   @unique
-  name      String   @unique
-  offices   Office[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String            @id @default(uuid())
+  code             String            @unique
+  name             String            @unique
+  offices          Office[]
+  scanningSessions ScanningSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Office {
-  id          String       @id @default(uuid())
-  branchCode  String       @unique
-  officeType  OfficeType
-  name        String
-  branchCodes BranchCode[]
-  parcels     Parcel[]
-  routeId     String
-  route       Route        @relation(fields: [routeId], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String            @id @default(uuid())
+  branchCode       String            @unique
+  officeType       OfficeType
+  name             String
+  branchCodes      BranchCode[]
+  parcels          Parcel[]
+  users            User[]
+  routeId          String
+  route            Route             @relation(fields: [routeId], references: [id])
+  scanningSessions ScanningSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model BranchCode {
@@ -130,4 +138,36 @@ model BranchCode {
   office    Office   @relation(fields: [officeId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ScanningSession {
+  id          String          @id @default(uuid())
+  routeId     String
+  officeId    String
+  staffId     String // references User.id
+  mode        String // 'bag' | 'individual'
+  mailBagCode String?         @unique
+  startedAt   DateTime        @default(now())
+  closedAt    DateTime?
+  scans       ScannedParcel[]
+  user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
+  office      Office          @relation(fields: [officeId], references: [id])
+  route       Route           @relation(fields: [routeId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ScannedParcel {
+  id                String          @id @default(uuid())
+  scanningSessionId String
+  parcelId          String
+  scannedAt         DateTime        @default(now())
+  scannedById       String // User.id
+  scanningSession   ScanningSession @relation(fields: [scanningSessionId], references: [id])
+  parcel            Parcel          @relation("ParcelScans", fields: [parcelId], references: [id])
+  scannedBy         User            @relation("UserParcelScans", fields: [scannedById], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([scanningSessionId, parcelId])
 }
