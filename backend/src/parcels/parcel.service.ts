@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { Office, Parcel } from "@prisma/client";
+import { Office, Parcel, ParcelItem } from "@prisma/client";
 
 @Injectable()
 export class ParcelService {
@@ -78,6 +78,11 @@ export class ParcelService {
               officeType: true,
             },
           },
+          TrackingCode: {
+            select: {
+              plainTextCode: true,
+            },
+          },
         },
       }),
       this.prisma.parcel.count(),
@@ -89,5 +94,29 @@ export class ParcelService {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  async addParcelItem(
+    parcelId: string,
+    data: {
+      quantity: number;
+      description: string;
+      pricePerUnit: number;
+      value: number;
+      amount: number;
+    }
+  ): Promise<ParcelItem> {
+    return this.prisma.parcelItem.create({
+      data: {
+        ...data,
+        parcelId,
+      },
+    });
+  }
+
+  async getParcelItems(parcelId: string): Promise<ParcelItem[]> {
+    return this.prisma.parcelItem.findMany({
+      where: { parcelId },
+    });
   }
 }

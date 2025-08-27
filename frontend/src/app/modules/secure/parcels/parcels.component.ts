@@ -8,6 +8,15 @@ import { ParcelsService, Parcel } from "./parcels.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ParcelDialogComponent } from "./parcel-dialog.component";
 import { MatIconModule } from "@angular/material/icon";
+import { SelectionModel } from "@angular/cdk/collections";
+import {
+  MatCheckboxChange,
+  MatCheckboxModule,
+} from "@angular/material/checkbox";
+import { MatButtonModule } from "@angular/material/button";
+import { CommonModule } from "@angular/common";
+import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
+import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -15,20 +24,27 @@ import { MatIconModule } from "@angular/material/icon";
   styleUrls: ["./parcels.component.scss"],
   standalone: true,
   imports: [
+    CommonModule,
     MatFormFieldModule,
     MatPaginatorModule,
     MatTableModule,
     MatIconModule,
+    MatCheckboxModule,
+    MatButtonModule,
   ],
 })
 export class ParcelsComponent implements OnInit {
   displayedColumns: string[] = [
+    "select",
+    "trackingCode",
     "parcelNumber",
     "customerId",
     "receiverId",
     "destinationId",
   ];
   dataSource = new MatTableDataSource<Parcel>([]);
+  selection = new SelectionModel<Parcel>(false, []);
+  selectedParcel: Parcel | null = null;
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
   constructor(
@@ -58,6 +74,45 @@ export class ParcelsComponent implements OnInit {
       if (result) {
         this.loadData();
       }
+    });
+  }
+
+  onSelect(row: Parcel, event: MatCheckboxChange): void {
+    if (event.checked) {
+      this.selection.clear();
+      this.selection.select(row);
+      this.selectedParcel = row;
+    } else {
+      this.selection.deselect(row);
+      this.selectedParcel = null;
+    }
+  }
+
+  openAddItemDialog(): void {
+    const parcel = this.selectedParcel;
+    if (!parcel || !parcel.id) {
+      return;
+    }
+    const dialogRef = this._dialog.open(ParcelItemDialogComponent, {
+      width: "400px",
+      data: { parcelId: parcel.id },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        // Optionally reload or handle after item addition
+      }
+    });
+  }
+
+  openViewItemsDialog(): void {
+    const parcel = this.selectedParcel;
+    if (!parcel || !parcel.id) {
+      return;
+    }
+    // You can replace ParcelItemDialogComponent with a dedicated view dialog if needed
+    this._dialog.open(ParcelItemsViewDialogComponent, {
+      width: "600px",
+      data: { parcelId: parcel.id, viewOnly: true },
     });
   }
 }

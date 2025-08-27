@@ -23,6 +23,7 @@ model Role {
 }
 
 model User {
+<<<<<<< HEAD
   id               String            @id @default(uuid())
   email            String            @unique
   password         String
@@ -37,6 +38,20 @@ model User {
   scans            ScannedParcel[]   @relation("UserParcelScans")
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+=======
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  firstName String?
+  lastName  String?
+  roleId    String
+  role      Role        @relation(fields: [roleId], references: [id])
+  officeId  String?
+  office    Office?     @relation(fields: [officeId], references: [id])
+  logs      AccessLog[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+>>>>>>> upstream/dev
 }
 
 model AccessLog {
@@ -116,6 +131,7 @@ model Route {
 }
 
 model Office {
+<<<<<<< HEAD
   id               String            @id @default(uuid())
   branchCode       String            @unique
   officeType       OfficeType
@@ -128,6 +144,19 @@ model Office {
   scanningSessions ScanningSession[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+=======
+  id          String       @id @default(uuid())
+  branchCode  String       @unique
+  officeType  OfficeType
+  name        String
+  branchCodes BranchCode[]
+  parcels     Parcel[]
+  routeId     String
+  route       Route        @relation(fields: [routeId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  User        User[]
+>>>>>>> upstream/dev
 }
 
 model BranchCode {

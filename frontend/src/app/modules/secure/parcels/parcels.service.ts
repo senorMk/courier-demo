@@ -11,6 +11,15 @@ export interface Parcel {
   destinationId: string;
 }
 
+export interface ParcelItem {
+  id?: string;
+  quantity: number;
+  description: string;
+  pricePerUnit: number;
+  value: number;
+  amount: number;
+}
+
 @Injectable()
 export class ParcelsService {
   private baseUrl = environment.serverURL;
@@ -26,6 +35,10 @@ export class ParcelsService {
     );
   }
 
+  getParcelItems(parcelId: string): Observable<ParcelItem[]> {
+    return this._httpClient.get<ParcelItem[]>(`${this.baseUrl}/v1/parcels/${parcelId}/items`);
+  }
+
   createParcel(data: {
     customerId: string;
     receiverId: string;
@@ -33,6 +46,16 @@ export class ParcelsService {
   }): Observable<Parcel> {
     return this._httpClient.post<Parcel>(
       `${this.baseUrl}/v1/parcels/create`,
+      data
+    );
+  }
+
+  createParcelItem(
+    parcelId: string,
+    data: ParcelItem
+  ): Observable<ParcelItem> {
+    return this._httpClient.post<ParcelItem>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/items`,
       data
     );
   }
