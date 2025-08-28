@@ -1,0 +1,91 @@
+<div class="p-6 lg:p-10 space-y-8" *ngIf="session(); else notFound">
+  <!-- Header / Meta -->
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+        <mat-icon fontIcon="qr_code_scanner" class="text-blue-600"></mat-icon>
+        Active Scanning
+      </h1>
+      <div class="mt-1 flex flex-wrap gap-3 text-[11px] text-gray-500">
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 font-mono">ID {{ session()?.id }}</span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 capitalize">{{ session()?.mode }} mode</span>
+  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 text-emerald-700">Route {{ session()?.routeId }}</span>
+  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-violet-50 text-violet-700">Staff {{ session()?.staffId }}</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button mat-stroked-button color="primary" (click)="closeSession()" class="!px-6">Close & Review</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+    <!-- Left: Scanning & parcels -->
+    <div class="xl:col-span-3 space-y-8">
+      <!-- Scan input card -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4 relative overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none [mask-image:radial-gradient(circle_at_30%_20%,black,transparent)] bg-gradient-to-br from-blue-50 via-transparent to-transparent"></div>
+        <div class="relative">
+          <label class="flex items-center gap-2 text-sm font-medium mb-2">
+            <mat-icon fontIcon="barcode_reader" class="text-blue-600"></mat-icon>
+            Scan or enter parcel barcode
+          </label>
+          <div class="flex gap-3">
+            <input autofocus type="text" [ngModel]="barcodeInput()" (ngModelChange)="barcodeInput.set($event)" (keydown.enter)="scan()" placeholder="e.g. PCZ123456789" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white/80 backdrop-blur" />
+            <button mat-flat-button color="primary" class="!px-8" (click)="scan()">Add</button>
+          </div>
+          <div *ngIf="error()" class="text-xs text-red-600 mt-2 flex items-center gap-1">
+            <mat-icon fontIcon="error" class="!text-base"></mat-icon>{{ error() }}
+          </div>
+          <p class="text-[11px] text-gray-400 mt-2">Press Enter after typing a code. Duplicates are rejected.</p>
+        </div>
+      </div>
+
+      <!-- Parcels list -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-sm font-semibold tracking-wide text-gray-700 uppercase">Parcels ({{ session()?.parcels.length }})</h2>
+          <div class="text-[11px] text-gray-400">{{ session()?.parcels.length ? 'Latest first' : 'No parcels yet' }}</div>
+        </div>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div *ngFor="let p of session()?.parcels.slice().reverse()" class="group relative">
+            <div class="font-mono text-[11px] tracking-tight px-3 py-2 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200 text-blue-800 flex items-center justify-between gap-2">
+              <span class="truncate">{{ p }}</span>
+              <button type="button" (click)="scanningService.removeParcel(sessionId(), p)" class="opacity-0 group-hover:opacity-100 transition text-red-500 hover:text-red-600">
+                <mat-icon fontIcon="close" class="!text-sm"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Mail bag & notes -->
+    <div class="space-y-6">
+      <app-mailbag-summary [session]="session()" />
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-200 rounded-2xl p-6 text-xs space-y-4 shadow-md">
+        <div class="flex items-center gap-2 text-slate-50 font-semibold text-sm">
+          <mat-icon fontIcon="tips_and_updates" class="text-amber-400"></mat-icon> Tips
+        </div>
+        <ul class="list-disc pl-4 space-y-1 marker:text-slate-500">
+          <li>Focus stays on the input so you can keep scanning.</li>
+          <li>Remove a parcel by hovering and clicking the close icon.</li>
+          <li>Closing session generates a delivery note preview.</li>
+          <li>Mail bag mode demands minimum of 10 parcels.</li>
+        </ul>
+      </div>
+      <div class="rounded-2xl border border-dashed border-gray-300 text-center p-5 text-[11px] text-gray-500">
+        Future: live validation, weight capture, handheld scanner integration.
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #notFound>
+  <div class="p-10 text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-medium mb-4">
+      <mat-icon fontIcon="error"></mat-icon> Session not found
+    </div>
+    <p class="text-gray-500 text-sm mb-6">The scanning session could not be located or has expired.</p>
+    <a mat-stroked-button color="primary" routerLink="/secure/scanning">Start New Session</a>
+  </div>
+</ng-template>

@@ -13,6 +13,7 @@ import { HealthController } from "./health.controller";
 import { CustomerModule } from './customers/customer.module';
 import { ParcelModule } from './parcels/parcel.module';
 import { RoutesModule } from './routes/routes.module';
+import { ScanningModule } from './scanning/scanning.module';
 
 
 @Module({
@@ -29,7 +30,8 @@ import { RoutesModule } from './routes/routes.module';
     LogsModule,
     CustomerModule,
     ParcelModule,
-    RoutesModule
+  RoutesModule,
+  ScanningModule
   ],
   controllers: [AppController, HealthController],
 })
