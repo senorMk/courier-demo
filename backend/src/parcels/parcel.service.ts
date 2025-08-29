@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Office, Parcel, ParcelItem } from "@prisma/client";
+import { generateBarcodeForId } from "../utils/barcode-generator";
 
 @Injectable()
 export class ParcelService {
@@ -44,6 +45,13 @@ export class ParcelService {
         plainTextCode,
       },
     });
+
+    // Create bar code PNG - Cached for performance
+    await generateBarcodeForId(
+      parcel.id,
+      "parcel",
+      `./barcodes/parcel-${parcel.id}.png`
+    );
 
     // Optionally, you can return the parcel with tracking code info
     return parcel;
