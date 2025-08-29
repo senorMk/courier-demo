@@ -26,6 +26,7 @@
         "apexcharts": "4.3.0",
         "crypto-js": "4.2.0",
         "highlight.js": "11.11.1",
+        "jwt-decode": "^4.0.0",
         "lodash-es": "4.17.21",
         "luxon": "3.5.0",
         "ng-apexcharts": "1.15.0",

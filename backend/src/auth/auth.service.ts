@@ -36,6 +36,7 @@ export class AuthService {
       officeId: user.officeId || user.office?.id || null,
       firstName: (user as any).firstName || null,
       lastName: (user as any).lastName || null,
+      createdAt: (user as any).createdAt || null,
     };
     await this.logsService.logAction(user.email, "login");
     return {
