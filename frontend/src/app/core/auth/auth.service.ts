@@ -4,12 +4,15 @@ import { AuthUtils } from "app/core/auth/auth.utils";
 import { UserService } from "app/core/user/user.service";
 import { environment } from "../../../environments/environment";
 import { catchError, Observable, of, switchMap, throwError } from "rxjs";
+import { UserSelectionService } from "app/services/user-selection.service";
+import { decodeJwt } from "../utils/jwt.util";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
   private _authenticated: boolean = false;
   private _httpClient = inject(HttpClient);
   private _userService = inject(UserService);
+  private userSelectionService = inject(UserSelectionService);
 
   // -----------------------------------------------------------------------------------------------------
   // @ Accessors
@@ -71,6 +74,20 @@ export class AuthService {
 
           // Store the user on the user service
           this._userService.user = response.user;
+
+          const payload = decodeJwt(response.access_token);
+
+          let user = {
+            role: payload.role,
+            token: response.access_token,
+            email: payload.email,
+            createdAt: response.createdAt,
+            userId: payload.sub,
+            firstName: response.firstName,
+            lastName: response.lastName,
+          };
+
+          this.userSelectionService.setUser(user);
 
           // Return a new observable with the response
           return of(response);
@@ -177,6 +194,6 @@ export class AuthService {
 
     // TODO: Implement refresh token mechanism
     // If the access token exists, and it didn't expire, sign in using it
-    return of(true)
+    return of(true);
   }
 }
