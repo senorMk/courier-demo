@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ScanningService } from './scanning.service';
-import { Request } from 'express';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { SetMetadata } from '@nestjs/common';
-import { Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Query } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { ScanningService } from "./scanning.service";
+import { Request } from "express";
+import { RolesGuard } from "../common/guards/roles.guard";
+import { SetMetadata } from "@nestjs/common";
+import { Req } from "@nestjs/common";
 
 interface JwtUser {
   sub: string;
@@ -12,34 +13,61 @@ interface JwtUser {
   role: string;
 }
 
-@Controller('api/v1/scanning')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
-@SetMetadata('roles', ['managing-director'])
+@Controller("api/v1/scanning")
+@UseGuards(AuthGuard("jwt"), RolesGuard)
+@SetMetadata("roles", ["managing-director"])
 export class ScanningController {
   constructor(private service: ScanningService) {}
 
-  @Post('start')
-  async start(@Req() req: Request, @Body() body: { routeId: string; officeId?: string; mode: 'bag' | 'individual'; staffId?: string }) {
+  @Post("start")
+  async start(
+    @Req() req: Request,
+    @Body()
+    body: {
+      routeId: string;
+      officeId?: string;
+      mode: "bag" | "individual";
+      staffId?: string;
+    }
+  ) {
     const user = req.user as JwtUser;
     const officeId = body.officeId || user.officeId;
-    if (!officeId) throw new Error('Office context required');
+    if (!officeId) throw new Error("Office context required");
     const staffId = body.staffId || user.sub;
-    return this.service.startSession(staffId, officeId, body.routeId, body.mode);
+    return this.service.startSession(
+      staffId,
+      officeId,
+      body.routeId,
+      body.mode
+    );
   }
 
-  @Post(':id/scan')
-  async scan(@Req() req: Request, @Param('id') id: string, @Body() body: { parcelId: string }) {
+  @Post(":id/scan")
+  async scan(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: { parcelId: string }
+  ) {
     const user = req.user as JwtUser;
     return this.service.scanParcel(id, body.parcelId, user.sub);
   }
 
-  @Post(':id/close')
-  async close(@Param('id') id: string) {
+  @Post(":id/close")
+  async close(@Param("id") id: string) {
     return this.service.closeSession(id);
   }
 
-  @Get(':id')
-  async get(@Param('id') id: string) {
+  @Get(":id")
+  async get(@Param("id") id: string) {
     return this.service.getSession(id);
+  }
+
+  @Get("paginated")
+  async getPaginated(
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10,
+    @Query("officeId") officeId?: string
+  ) {
+    return this.service.getPaginatedSessions(page, pageSize, officeId);
   }
 }
