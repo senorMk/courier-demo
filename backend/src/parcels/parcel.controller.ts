@@ -11,6 +11,11 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { RolesGuard } from "src/common/guards/roles.guard";
 import { ParcelService } from "./parcel.service";
+import { Response } from "express";
+import { Res } from "@nestjs/common";
+import * as fs from "fs";
+import * as path from "path";
+import * as archiver from "archiver";
 
 @Controller("api/v1/parcels")
 export class ParcelController {
@@ -26,6 +31,12 @@ export class ParcelController {
           customerId: string;
           receiverId: string;
           officeId: string;
+          size?: "SMALL" | "MEDIUM" | "LARGE";
+          payment?: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
         }
       | {
           customer: {
@@ -43,6 +54,12 @@ export class ParcelController {
             idNumber?: string;
           };
           officeId: string;
+          size: "SMALL" | "MEDIUM" | "LARGE";
+          payment: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
         }
   ) {
     return this.parcelService.createParcel(body);
@@ -83,5 +100,83 @@ export class ParcelController {
   @SetMetadata("roles", ["managing-director"])
   async getParcelItems(@Param("parcelId") parcelId: string) {
     return this.parcelService.getParcelItems(parcelId);
+  }
+
+  @Get(":parcelId/receipts/download")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async downloadReceipts(
+    @Param("parcelId") parcelId: string,
+    @Res() res: Response
+  ) {
+    const receiptsDir = path.resolve(process.cwd(), "receipts");
+    const files = [
+      path.join(receiptsDir, `parcel-${parcelId}-sender.pdf`),
+      path.join(receiptsDir, `parcel-${parcelId}-sticker.pdf`),
+      path.join(receiptsDir, `parcel-${parcelId}-accounts.pdf`),
+    ];
+
+    try {
+      const {
+        generateReceiptsForParcel,
+      } = require("../utils/receipt-generator");
+      await generateReceiptsForParcel(parcelId);
+    } catch (e) {}
+
+    res.setHeader("Content-Type", "application/zip, application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=parcel-${parcelId}-receipts.zip`
+    );
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.on("error", (err) => res.status(500).end(String(err)));
+    archive.pipe(res);
+
+    for (const f of files) {
+      if (fs.existsSync(f)) {
+        archive.file(f, { name: path.basename(f) });
+      }
+    }
+    await archive.finalize();
+  }
+
+  @Get(":parcelId/receipts/:type")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async downloadReceipt(
+    @Param("parcelId") parcelId: string,
+    @Param("type") type: string,
+    @Res() res: Response
+  ) {
+    const valid = ["sender", "sticker", "accounts"];
+    if (!valid.includes(type)) {
+      throw new BadRequestException("Invalid receipt type");
+    }
+    const receiptsDir = path.resolve(process.cwd(), "receipts");
+    const filePath = path.join(receiptsDir, `parcel-${parcelId}-${type}.pdf`);
+    try {
+      const {
+        generateReceiptsForParcel,
+      } = require("../utils/receipt-generator");
+      await generateReceiptsForParcel(parcelId);
+    } catch (e) {}
+
+    if (!fs.existsSync(filePath)) {
+      throw new BadRequestException("Receipt not available");
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename=parcel-${parcelId}-${type}.pdf`
+    );
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    fs.createReadStream(filePath).pipe(res);
   }
 }
