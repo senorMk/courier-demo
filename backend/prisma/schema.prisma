@@ -82,6 +82,7 @@ model Parcel {
   customerId   String
   receiverId   String
   officeId     String
+  size         ParcelSize      @default(MEDIUM)
   items        ParcelItem[]
   customer     Customer        @relation("Sender", fields: [customerId], references: [id])
   receiver     Customer        @relation("Receiver", fields: [receiverId], references: [id])
@@ -90,6 +91,7 @@ model Parcel {
   updatedAt    DateTime        @updatedAt
   TrackingCode TrackingCode?
   scans        ScannedParcel[] @relation("ParcelScans")
+  payment      Payment?
 }
 
 model ParcelItem {
@@ -103,6 +105,30 @@ model ParcelItem {
   parcel       Parcel   @relation(fields: [parcelId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+enum ParcelSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  parcelId  String        @unique
+  parcel    Parcel        @relation(fields: [parcelId], references: [id])
+  amount    Float
+  method    PaymentMethod
+  reference String?
+  paidAt    DateTime      @default(now())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model Route {
