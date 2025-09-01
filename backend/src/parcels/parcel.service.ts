@@ -7,11 +7,31 @@ import { generateBarcodeForId } from "../utils/barcode-generator";
 export class ParcelService {
   constructor(private prisma: PrismaService) {}
 
-  async createParcel(data: {
-    customerId: string;
-    receiverId: string;
-    officeId: string;
-  }): Promise<Parcel> {
+  async createParcel(
+    data:
+      | {
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+        }
+      | {
+          customer: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          receiver: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          officeId: string;
+        }
+  ): Promise<Parcel> {
     const office: Office = await this.prisma.office.findUnique({
       where: { id: data.officeId },
     });
@@ -19,7 +39,60 @@ export class ParcelService {
       throw new Error("Office not found");
     }
 
-    const parcel = await this.prisma.parcel.create({ data });
+    // Determine whether we received IDs or nested customer objects
+    let customerId: string;
+    let receiverId: string;
+
+    if ('customerId' in data && 'receiverId' in data) {
+      customerId = data.customerId;
+      receiverId = data.receiverId;
+    } else {
+      const payload = data as any;
+      const [customer, receiver] = await Promise.all([
+        this.prisma.customer.upsert({
+          where: { phoneNumber: payload.customer.phoneNumber },
+          create: {
+            firstName: payload.customer.firstName,
+            lastName: payload.customer.lastName,
+            phoneNumber: payload.customer.phoneNumber,
+            emailAddress: payload.customer.emailAddress || null,
+            idNumber: payload.customer.idNumber || null,
+          },
+          update: {
+            firstName: payload.customer.firstName,
+            lastName: payload.customer.lastName,
+            emailAddress: payload.customer.emailAddress || null,
+            idNumber: payload.customer.idNumber || null,
+          },
+        }),
+        this.prisma.customer.upsert({
+          where: { phoneNumber: payload.receiver.phoneNumber },
+          create: {
+            firstName: payload.receiver.firstName,
+            lastName: payload.receiver.lastName,
+            phoneNumber: payload.receiver.phoneNumber,
+            emailAddress: payload.receiver.emailAddress || null,
+            idNumber: payload.receiver.idNumber || null,
+          },
+          update: {
+            firstName: payload.receiver.firstName,
+            lastName: payload.receiver.lastName,
+            emailAddress: payload.receiver.emailAddress || null,
+            idNumber: payload.receiver.idNumber || null,
+          },
+        }),
+      ]);
+      customerId = customer.id;
+      receiverId = receiver.id;
+    }
+
+    const parcel = await this.prisma.parcel.create({
+      data: {
+        customerId,
+        receiverId,
+        officeId: (data as any).officeId,
+      },
+    });
 
     const route = await this.prisma.route.findUnique({
       where: { id: office.routeId },

@@ -68,7 +68,7 @@ export class ParcelsComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this._dialog.open(ParcelDialogComponent, {
-      width: "400px",
+      width: "700px",
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {

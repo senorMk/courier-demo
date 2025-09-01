@@ -21,11 +21,29 @@ export class ParcelController {
   @SetMetadata("roles", ["managing-director"])
   async create(
     @Body()
-    body: {
-      customerId: string;
-      receiverId: string;
-      officeId: string;
-    }
+    body:
+      | {
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+        }
+      | {
+          customer: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          receiver: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          officeId: string;
+        }
   ) {
     return this.parcelService.createParcel(body);
   }

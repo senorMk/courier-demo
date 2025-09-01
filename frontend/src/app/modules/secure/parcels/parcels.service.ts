@@ -11,6 +11,14 @@ export interface Parcel {
   destinationId: string;
 }
 
+export interface CustomerPayload {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  emailAddress?: string;
+  idNumber?: string;
+}
+
 export interface ParcelItem {
   id?: string;
   quantity: number;
@@ -39,11 +47,19 @@ export class ParcelsService {
     return this._httpClient.get<ParcelItem[]>(`${this.baseUrl}/v1/parcels/${parcelId}/items`);
   }
 
-  createParcel(data: {
-    customerId: string;
-    receiverId: string;
-    officeId: string;
-  }): Observable<Parcel> {
+  createParcel(
+    data:
+      | {
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+        }
+      | {
+          customer: CustomerPayload;
+          receiver: CustomerPayload;
+          officeId: string;
+        }
+  ): Observable<Parcel> {
     return this._httpClient.post<Parcel>(
       `${this.baseUrl}/v1/parcels/create`,
       data

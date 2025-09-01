@@ -2,54 +2,111 @@
   style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create Parcel
 </h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
-  <mat-form-field appearance="fill">
-    <mat-label>Customer</mat-label>
-    <input type="text" matInput [formControl]="form.controls['customerId']" [matAutocomplete]="autoCustomer"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onCustomerInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoCustomer="matAutocomplete" (optionSelected)="onCustomerSelected($event.option.value)"
-      [displayWith]="customerDisplayFn">
-      <mat-option *ngFor="let customer of filteredCustomers$ | async" [value]="customer">
-        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
-            *ngIf="customer.emailAddress"> {{
-            customer.emailAddress }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
-  <mat-form-field appearance="fill">
-    <mat-label>Receiver</mat-label>
-    <input type="text" matInput [formControl]="form.controls['receiverId']" [matAutocomplete]="autoReceiver"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onReceiverInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoReceiver="matAutocomplete" (optionSelected)="onReceiverSelected($event.option.value)"
-      [displayWith]="receiverDisplayFn">
-      <mat-option *ngFor="let customer of filteredReceivers$ | async" [value]="customer">
-        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
-            *ngIf="customer.emailAddress"> {{
-            customer.emailAddress }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
-  <mat-form-field appearance="fill">
-    <mat-label>Destination</mat-label>
-    <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onOfficeInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
-      [displayWith]="officeDisplayFn">
-      <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
-        <span>{{ office.name }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
-            *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
+  <mat-horizontal-stepper [linear]="true" #stepper>
+    <mat-step [stepControl]="form.controls['customer']" label="Sender">
+      <form [formGroup]="form.controls['customer']">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="fill">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Phone Number</mat-label>
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>ID Number</mat-label>
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+        </div>
+      </form>
+      <div class="flex justify-end gap-2 mt-2">
+        <button mat-stroked-button matStepperNext>Next</button>
+      </div>
+    </mat-step>
+
+    <mat-step [stepControl]="form.controls['receiver']" label="Receiver">
+      <form [formGroup]="form.controls['receiver']">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="fill">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Phone Number</mat-label>
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>ID Number</mat-label>
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+        </div>
+      </form>
+      <div class="flex justify-between gap-2 mt-2">
+        <button mat-stroked-button matStepperPrevious>Back</button>
+        <button mat-stroked-button matStepperNext>Next</button>
+      </div>
+    </mat-step>
+
+    <mat-step [stepControl]="form.controls['officeId']" label="Destination">
+      <div class="flex flex-col gap-4">
+        <mat-form-field appearance="fill">
+          <mat-label>Destination</mat-label>
+          <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
+            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+            (input)="onOfficeInput($event.target.value)" autocomplete="off" />
+          <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
+            [displayWith]="officeDisplayFn">
+            <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
+              <span>{{ office.name }}</span>
+              <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
+                  *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <div class="text-sm" style="font-family: 'Inter', sans-serif;">
+          <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
+          <div>Sender: {{ form.value.customer.firstName }} {{ form.value.customer.lastName }} · +260{{ form.value.customer.phoneNumber }}</div>
+          <div>Receiver: {{ form.value.receiver.firstName }} {{ form.value.receiver.lastName }} · +260{{ form.value.receiver.phoneNumber }}</div>
+        </div>
+      </div>
+
+      <div class="flex justify-between gap-2 mt-2">
+        <button mat-stroked-button matStepperPrevious>Back</button>
+        <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()" class="custom-primary-btn">Save</button>
+      </div>
+    </mat-step>
+  </mat-horizontal-stepper>
 </div>
 <div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
-  <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()" cdkFocusInitial
-    class="custom-primary-btn">Save</button>
-  <button mat-flat-button [mat-dialog-close]="false"
-    style="border: 1.5px solid #888; background: transparent;">Cancel</button>
+  <button mat-flat-button [mat-dialog-close]="false" style="border: 1.5px solid #888; background: transparent;">Cancel</button>
 </div>
