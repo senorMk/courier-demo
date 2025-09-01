@@ -43,6 +43,29 @@
         <td mat-cell *matCellDef="let element">{{ element?.office?.name }} {{ element?.office?.branchCode }}</td>
       </ng-container>
 
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button [matMenuTriggerFor]="downloadMenu" matTooltip="Download Receipt">
+            <mat-icon>download</mat-icon>
+          </button>
+          <mat-menu #downloadMenu="matMenu">
+            <button mat-menu-item (click)="downloadReceipt(element, 'sender')">
+              <mat-icon>person</mat-icon>
+              <span>Sender Copy</span>
+            </button>
+            <button mat-menu-item (click)="downloadReceipt(element, 'sticker')">
+              <mat-icon>local_printshop</mat-icon>
+              <span>Sticker</span>
+            </button>
+            <button mat-menu-item (click)="downloadReceipt(element, 'accounts')">
+              <mat-icon>receipt_long</mat-icon>
+              <span>Accounts Copy</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
