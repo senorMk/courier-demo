@@ -132,3 +132,6 @@ dist
 
 # barcodes
 barcodes/
+
+# PDF receipts
+receipts/
