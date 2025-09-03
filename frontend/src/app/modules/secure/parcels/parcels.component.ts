@@ -15,8 +15,11 @@ import {
 } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
 import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 
 @Component({
   selector: "app-parcels",
@@ -31,6 +34,9 @@ import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.compo
     MatIconModule,
     MatCheckboxModule,
     MatButtonModule,
+    MatSnackBarModule,
+    MatTooltipModule,
+    MatMenuModule,
   ],
 })
 export class ParcelsComponent implements OnInit {
@@ -41,6 +47,7 @@ export class ParcelsComponent implements OnInit {
     "customerId",
     "receiverId",
     "destinationId",
+    "actions",
   ];
   dataSource = new MatTableDataSource<Parcel>([]);
   selection = new SelectionModel<Parcel>(false, []);
@@ -49,7 +56,8 @@ export class ParcelsComponent implements OnInit {
 
   constructor(
     private _service: ParcelsService,
-    private _dialog: MatDialog
+    private _dialog: MatDialog,
+    private _snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -68,7 +76,7 @@ export class ParcelsComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this._dialog.open(ParcelDialogComponent, {
-      width: "400px",
+      width: "700px",
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
@@ -113,6 +121,41 @@ export class ParcelsComponent implements OnInit {
     this._dialog.open(ParcelItemsViewDialogComponent, {
       width: "600px",
       data: { parcelId: parcel.id, viewOnly: true },
+    });
+  }
+
+  downloadReceipts(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) return;
+    this._service.downloadReceiptsZip(id).subscribe({
+      next: (blob) => {
+        const a = document.createElement('a');
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `parcel-${id}-receipts.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this._snackBar.open('Failed to download receipts', 'Close', { duration: 3000, verticalPosition: 'top' });
+      }
+    });
+  }
+
+  downloadReceipt(row: Parcel, type: 'sender' | 'sticker' | 'accounts'): void {
+    const id = (row as any)?.id;
+    if (!id) return;
+    this._service.downloadReceipt(id, type).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      },
+      error: () => {
+        this._snackBar.open('Failed to download receipt', 'Close', { duration: 3000, verticalPosition: 'top' });
+      }
     });
   }
 }

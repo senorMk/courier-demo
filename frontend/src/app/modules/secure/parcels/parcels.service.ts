@@ -11,6 +11,16 @@ export interface Parcel {
   destinationId: string;
 }
 
+export interface CustomerPayload {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  emailAddress?: string;
+  idNumber?: string;
+}
+
+export type PaymentMethod = 'CASH' | 'MOBILE_MONEY' | 'CARD';
+
 export interface ParcelItem {
   id?: string;
   quantity: number;
@@ -39,15 +49,37 @@ export class ParcelsService {
     return this._httpClient.get<ParcelItem[]>(`${this.baseUrl}/v1/parcels/${parcelId}/items`);
   }
 
-  createParcel(data: {
-    customerId: string;
-    receiverId: string;
-    officeId: string;
-  }): Observable<Parcel> {
+  createParcel(
+    data:
+      | {
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+          size?: string;
+          payment?: { method: PaymentMethod; amount: number; reference?: string };
+        }
+      | {
+          customer: CustomerPayload;
+          receiver: CustomerPayload;
+          officeId: string;
+          size: 'SMALL' | 'MEDIUM' | 'LARGE';
+          payment: { method: PaymentMethod; amount: number; reference?: string };
+        }
+  ): Observable<Parcel> {
     return this._httpClient.post<Parcel>(
       `${this.baseUrl}/v1/parcels/create`,
       data
     );
+  }
+
+  downloadReceiptsZip(parcelId: string): Observable<Blob> {
+    const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/download`;
+    return this._httpClient.get(url, { responseType: 'blob' });
+  }
+
+  downloadReceipt(parcelId: string, type: 'sender' | 'sticker' | 'accounts'): Observable<Blob> {
+    const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/${type}`;
+    return this._httpClient.get(url, { responseType: 'blob' });
   }
 
   createParcelItem(
@@ -58,5 +90,9 @@ export class ParcelsService {
       `${this.baseUrl}/v1/parcels/${parcelId}/items`,
       data
     );
+  }
+
+  markCollected(parcelId: string) {
+    return this._httpClient.post(`${this.baseUrl}/v1/parcels/${parcelId}/collect`, {});
   }
 }

@@ -7,10 +7,6 @@ import {
 } from "@angular/forms";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ParcelsService } from "./parcels.service";
-import {
-  CustomersSearchService,
-  Customer,
-} from "../customers/customers-search.service";
 import { Observable, BehaviorSubject, of } from "rxjs";
 import { debounceTime, switchMap, catchError, tap } from "rxjs/operators";
 import {
@@ -22,7 +18,10 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatStepperModule } from "@angular/material/stepper";
+import { MatSelectModule } from "@angular/material/select";
 import { CommonModule } from "@angular/common";
 
 @Component({
@@ -38,33 +37,55 @@ import { CommonModule } from "@angular/common";
     MatTableModule,
     MatDialogModule,
     MatButtonModule,
+    MatSnackBarModule,
     MatAutocompleteModule,
+    MatStepperModule,
+    MatSelectModule,
   ],
 })
 export class ParcelDialogComponent {
   form: FormGroup;
   loading = false;
-  filteredCustomers$: Observable<Customer[]> = of([]);
-  filteredReceivers$: Observable<Customer[]> = of([]);
   filteredOffices$: Observable<Office[]> = of([]);
-  private customerInput$ = new BehaviorSubject<string>("");
-  private receiverInput$ = new BehaviorSubject<string>("");
+  // Keep office autocomplete only
   private officeInput$ = new BehaviorSubject<string>("");
-  private customersCache: Record<string, Customer> = {};
-  private receiversCache: Record<string, Customer> = {};
   private officesCache: Record<string, Office> = {};
 
   constructor(
     private _fb: FormBuilder,
     private _service: ParcelsService,
     private _dialogRef: MatDialogRef<ParcelDialogComponent>,
-    private _customersSearch: CustomersSearchService,
-    private _officesSearch: OfficesSearchService
+    private _officesSearch: OfficesSearchService,
+    private _snackBar: MatSnackBar
   ) {
     this.form = this._fb.group({
-      customerId: ["", Validators.required],
-      receiverId: ["", Validators.required],
+      customer: this._fb.group({
+        firstName: ["", Validators.required],
+        lastName: ["", Validators.required],
+        phoneNumber: [
+          "",
+          [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
+        ],
+        emailAddress: [""],
+        idNumber: [""],
+      }),
+      receiver: this._fb.group({
+        firstName: ["", Validators.required],
+        lastName: ["", Validators.required],
+        phoneNumber: [
+          "",
+          [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
+        ],
+        emailAddress: [""],
+        idNumber: [""],
+      }),
       officeId: ["", Validators.required],
+      size: ["MEDIUM", Validators.required],
+      payment: this._fb.group({
+        method: ["CASH", Validators.required],
+        amount: [null, [Validators.required, Validators.min(0)]],
+        reference: [""],
+      }),
     });
     this.filteredOffices$ = this.officeInput$.pipe(
       debounceTime(300),
@@ -73,33 +94,6 @@ export class ParcelDialogComponent {
           ? this._officesSearch.searchOffices(q).pipe(
               tap((offices) =>
                 offices.forEach((o) => (this.officesCache[o.id] = o))
-              ),
-              catchError(() => of([]))
-            )
-          : of([])
-      )
-    );
-
-    this.filteredCustomers$ = this.customerInput$.pipe(
-      debounceTime(300),
-      switchMap((q) =>
-        q
-          ? this._customersSearch.searchCustomers(q).pipe(
-              tap((customers) =>
-                customers.forEach((c) => (this.customersCache[c.id] = c))
-              ),
-              catchError(() => of([]))
-            )
-          : of([])
-      )
-    );
-    this.filteredReceivers$ = this.receiverInput$.pipe(
-      debounceTime(300),
-      switchMap((q) =>
-        q
-          ? this._customersSearch.searchCustomers(q).pipe(
-              tap((customers) =>
-                customers.forEach((c) => (this.receiversCache[c.id] = c))
               ),
               catchError(() => of([]))
             )
@@ -127,58 +121,44 @@ export class ParcelDialogComponent {
     return office.name;
   };
 
-  onCustomerInput(value: string) {
-    this.customerInput$.next(value);
-  }
-
-  onReceiverInput(value: string) {
-    this.receiverInput$.next(value);
-  }
-
-  onCustomerSelected(customer: Customer) {
-    this.form.controls["customerId"].setValue(customer.id);
-    this.customersCache[customer.id] = customer;
-  }
-
-  onReceiverSelected(customer: Customer) {
-    this.form.controls["receiverId"].setValue(customer.id);
-    this.receiversCache[customer.id] = customer;
-  }
-
-  customerDisplayFn = (customer: Customer | string | null): string => {
-    if (!customer) return "";
-    if (typeof customer === "string") {
-      return this.customersCache[customer]?.firstName &&
-        this.customersCache[customer]?.lastName
-        ? `${this.customersCache[customer].firstName} ${this.customersCache[customer].lastName}`
-        : customer;
-    }
-    return `${customer.firstName} ${customer.lastName}`;
-  };
-
-  receiverDisplayFn = (customer: Customer | string | null): string => {
-    if (!customer) return "";
-    if (typeof customer === "string") {
-      return this.receiversCache[customer]?.firstName &&
-        this.receiversCache[customer]?.lastName
-        ? `${this.receiversCache[customer].firstName} ${this.receiversCache[customer].lastName}`
-        : customer;
-    }
-    return `${customer.firstName} ${customer.lastName}`;
-  };
-
   save(): void {
     if (this.form.invalid) {
       return;
     }
     this.loading = true;
-    this._service.createParcel(this.form.value).subscribe({
-      next: () => {
+    const payload = this.form.value as any;
+    this._service.createParcel(payload).subscribe({
+      next: (created) => {
         this.loading = false;
+        const parcelId = (created as any)?.id;
+        const ref = this._snackBar.open('Parcel created', 'Download Receipts', {
+          duration: 6000,
+          verticalPosition: 'top',
+        });
+        ref.onAction().subscribe(() => {
+          if (!parcelId) return;
+          this._service.downloadReceiptsZip(parcelId).subscribe({
+            next: (blob) => {
+              const a = document.createElement('a');
+              const url = window.URL.createObjectURL(blob);
+              a.href = url;
+              a.download = `parcel-${parcelId}-receipts.zip`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            },
+          });
+        });
         this._dialogRef.close(true);
       },
       error: () => {
         this.loading = false;
+        this._snackBar.open(
+          "Failed to create parcel. Please try again.",
+          "Close",
+          { duration: 4000, verticalPosition: "top" }
+        );
       },
     });
   }

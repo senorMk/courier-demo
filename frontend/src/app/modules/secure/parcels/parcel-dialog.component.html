@@ -2,54 +2,165 @@
   style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create Parcel
 </h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
-  <mat-form-field appearance="fill">
-    <mat-label>Customer</mat-label>
-    <input type="text" matInput [formControl]="form.controls['customerId']" [matAutocomplete]="autoCustomer"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onCustomerInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoCustomer="matAutocomplete" (optionSelected)="onCustomerSelected($event.option.value)"
-      [displayWith]="customerDisplayFn">
-      <mat-option *ngFor="let customer of filteredCustomers$ | async" [value]="customer">
-        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
-            *ngIf="customer.emailAddress"> {{
-            customer.emailAddress }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
-  <mat-form-field appearance="fill">
-    <mat-label>Receiver</mat-label>
-    <input type="text" matInput [formControl]="form.controls['receiverId']" [matAutocomplete]="autoReceiver"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onReceiverInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoReceiver="matAutocomplete" (optionSelected)="onReceiverSelected($event.option.value)"
-      [displayWith]="receiverDisplayFn">
-      <mat-option *ngFor="let customer of filteredReceivers$ | async" [value]="customer">
-        <span>{{ customer.firstName }} {{ customer.lastName }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ customer.phoneNumber }}<span
-            *ngIf="customer.emailAddress"> {{
-            customer.emailAddress }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
-  <mat-form-field appearance="fill">
-    <mat-label>Destination</mat-label>
-    <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onOfficeInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
-      [displayWith]="officeDisplayFn">
-      <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
-        <span>{{ office.name }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
-            *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
+  <mat-horizontal-stepper [linear]="true" #stepper>
+    <mat-step [stepControl]="form.controls['customer']" label="Sender">
+      <form [formGroup]="form.controls['customer']">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="fill">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.firstName')?.hasError('required')">First name is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.lastName')?.hasError('required')">Last name is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Phone Number</mat-label>
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('required')">Phone number is required</mat-error>
+            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g. 971234567)</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>ID Number</mat-label>
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+        </div>
+      </form>
+      <div class="flex justify-end gap-2 mt-2">
+        <button mat-stroked-button matStepperNext [disabled]="form.controls['customer'].invalid">Next</button>
+      </div>
+    </mat-step>
+
+    <mat-step [stepControl]="form.controls['receiver']" label="Receiver">
+      <form [formGroup]="form.controls['receiver']">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="fill">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">First name is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.lastName')?.hasError('required')">Last name is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Phone Number</mat-label>
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('required')">Phone number is required</mat-error>
+            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g. 971234567)</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>ID Number</mat-label>
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+        </div>
+      </form>
+      <div class="flex justify-between gap-2 mt-2">
+        <button mat-stroked-button matStepperPrevious>Back</button>
+        <button mat-stroked-button matStepperNext [disabled]="form.controls['receiver'].invalid">Next</button>
+      </div>
+    </mat-step>
+
+    <mat-step [stepControl]="form.controls['officeId']" label="Details & Payment">
+      <div class="flex flex-col gap-4">
+        <mat-form-field appearance="fill">
+          <mat-label>Destination</mat-label>
+          <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
+            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+            (input)="onOfficeInput($event.target.value)" autocomplete="off" />
+          <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
+            [displayWith]="officeDisplayFn">
+            <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
+              <span>{{ office.name }}</span>
+              <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
+                  *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
+            </mat-option>
+          </mat-autocomplete>
+          <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
+        </mat-form-field>
+
+        <div>
+          <div style="font-weight: 600; font-family: 'Inter', sans-serif; margin: 4px 0 6px;">Parcel Size</div>
+          <mat-form-field appearance="fill" style="width: 240px;">
+            <mat-label>Size</mat-label>
+            <mat-select [formControl]="form.controls['size']">
+              <mat-option value="SMALL">Small</mat-option>
+              <mat-option value="MEDIUM">Medium</mat-option>
+              <mat-option value="LARGE">Large</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls['size'].hasError('required')">Size is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div [formGroup]="form.controls['payment']">
+          <div style="font-weight: 600; font-family: 'Inter', sans-serif; margin: 4px 0 6px;">Payment</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <mat-form-field appearance="fill">
+              <mat-label>Method</mat-label>
+              <mat-select formControlName="method">
+                <mat-option value="CASH">Cash</mat-option>
+                <mat-option value="MOBILE_MONEY">Mobile Money</mat-option>
+                <mat-option value="CARD">Card</mat-option>
+              </mat-select>
+              <mat-error *ngIf="form.get('payment.method')?.hasError('required')">Payment method is required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>Amount</mat-label>
+              <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">ZMW</span>
+              <input matInput type="number" min="0" formControlName="amount"
+                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+              <mat-error *ngIf="form.get('payment.amount')?.hasError('required')">Amount is required</mat-error>
+              <mat-error *ngIf="form.get('payment.amount')?.hasError('min')">Amount must be positive</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>Reference</mat-label>
+              <input matInput formControlName="reference"
+                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="text-sm" style="font-family: 'Inter', sans-serif;">
+          <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
+          <div>Sender: {{ form.value.customer.firstName }} {{ form.value.customer.lastName }} · +260{{ form.value.customer.phoneNumber }}</div>
+          <div>Receiver: {{ form.value.receiver.firstName }} {{ form.value.receiver.lastName }} · +260{{ form.value.receiver.phoneNumber }}</div>
+          <div>Size: {{ form.value.size }} · Amount: ZMW {{ form.value.payment?.amount }} ({{ form.value.payment?.method }})</div>
+        </div>
+      </div>
+
+      <div class="flex justify-between gap-2 mt-2">
+        <button mat-stroked-button matStepperPrevious>Back</button>
+        <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()" class="custom-primary-btn"
+          [disabled]="form.controls['officeId'].invalid || form.controls['size'].invalid || form.controls['payment'].invalid || loading">
+          Save
+        </button>
+      </div>
+    </mat-step>
+  </mat-horizontal-stepper>
 </div>
 <div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
-  <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()" cdkFocusInitial
-    class="custom-primary-btn">Save</button>
-  <button mat-flat-button [mat-dialog-close]="false"
-    style="border: 1.5px solid #888; background: transparent;">Cancel</button>
+  <button mat-flat-button [mat-dialog-close]="false" style="border: 1.5px solid #888; background: transparent;">Cancel</button>
 </div>

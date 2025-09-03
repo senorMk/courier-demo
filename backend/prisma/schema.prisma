@@ -82,6 +82,8 @@ model Parcel {
   customerId   String
   receiverId   String
   officeId     String
+  status       ParcelStatus    @default(PENDING)
+  size         ParcelSize      @default(MEDIUM)
   items        ParcelItem[]
   customer     Customer        @relation("Sender", fields: [customerId], references: [id])
   receiver     Customer        @relation("Receiver", fields: [receiverId], references: [id])
@@ -90,6 +92,8 @@ model Parcel {
   updatedAt    DateTime        @updatedAt
   TrackingCode TrackingCode?
   scans        ScannedParcel[] @relation("ParcelScans")
+  payment      Payment?
+  complaints   Complaint[]
 }
 
 model ParcelItem {
@@ -105,12 +109,71 @@ model ParcelItem {
   updatedAt    DateTime @updatedAt
 }
 
+enum ParcelSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum ParcelStatus {
+  PENDING
+  READY_FOR_COLLECTION
+  COLLECTED
+  DAMAGED
+}
+
+model Complaint {
+  id        String   @id @default(uuid())
+  parcelId  String
+  parcel    Parcel   @relation(fields: [parcelId], references: [id])
+  reason    String?
+  status    ComplaintStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    ComplaintEvent[]
+}
+
+enum ComplaintStatus {
+  OPEN
+  CLOSED
+}
+
+model ComplaintEvent {
+  id           String           @id @default(uuid())
+  complaintId  String
+  complaint    Complaint        @relation(fields: [complaintId], references: [id])
+  action       String
+  fromStatus   ComplaintStatus?
+  toStatus     ComplaintStatus?
+  note         String?
+  createdAt    DateTime         @default(now())
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  parcelId  String        @unique
+  parcel    Parcel        @relation(fields: [parcelId], references: [id])
+  amount    Float
+  method    PaymentMethod
+  reference String?
+  paidAt    DateTime      @default(now())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
 model Route {
   id               String            @id @default(uuid())
   code             String            @unique
   name             String            @unique
   offices          Office[]
   scanningSessions ScanningSession[]
+  trips            Trip[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
@@ -124,6 +187,7 @@ model Office {
   parcels          Parcel[]
   users            User[]
   scanningSessions ScanningSession[]
+  trips            Trip[]
   routeId          String
   route            Route             @relation(fields: [routeId], references: [id])
   createdAt        DateTime          @default(now())
@@ -149,12 +213,60 @@ model ScanningSession {
   mailBagCode String?         @unique
   startedAt   DateTime        @default(now())
   closedAt    DateTime?
+  tripId      String?
+  trip        Trip?           @relation(fields: [tripId], references: [id])
   scans       ScannedParcel[]
   user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
   office      Office          @relation(fields: [officeId], references: [id])
   route       Route           @relation(fields: [routeId], references: [id])
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+enum TripStatus {
+  PLANNED
+  LOADING
+  IN_TRANSIT
+  COMPLETED
+}
+
+model Trip {
+  id          String           @id @default(uuid())
+  routeId     String
+  officeId    String
+  driverName  String
+  truckReg    String
+  status      TripStatus       @default(PLANNED)
+  plannedAt   DateTime         @default(now())
+  departedAt  DateTime?
+  completedAt DateTime?
+  route       Route            @relation(fields: [routeId], references: [id])
+  office      Office           @relation(fields: [officeId], references: [id])
+  sessions    ScanningSession[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Driver {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  phoneNumber   String?  @unique
+  licenseNumber String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Truck {
+  id        String   @id @default(uuid())
+  registration String @unique
+  make      String?
+  model     String?
+  capacity  Float?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ScannedParcel {

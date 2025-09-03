@@ -56,7 +56,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private _fuseNavigationService: FuseNavigationService,
     private _navigationService: NavigationService,
     private _userService: UserService,
-    private _service: ParcelsService
+    private _parcelsService: ParcelsService,
+    private _dashboard: DashboardService
   ) {}
 
   ngOnInit(): void {
@@ -68,16 +69,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
     this.loadData();
+    this.loadSummaryCards();
   }
 
   loadData(pageIndex: number = 0, pageSize: number = 10): void {
-    this._service.getParcels(pageIndex, pageSize).subscribe((data) => {
+    this._parcelsService.getParcels(pageIndex, pageSize).subscribe((data) => {
       this.dataSource.data = data.data || [];
       if (this.paginator) {
         this.paginator.length = data.total || this.dataSource.data.length;
         this.dataSource.paginator = this.paginator;
       }
     });
+  }
+
+  processingCount = 0;
+  inTransitCount = 0;
+  deliveredCount = 0;
+  totalProcessed = 0;
+
+  loadSummaryCards() {
+    // Processing: trips in LOADING
+    this._dashboard.getTripsCount('LOADING').subscribe((n) => (this.processingCount = n));
+    // In Transit: trips IN_TRANSIT
+    this._dashboard.getTripsCount('IN_TRANSIT').subscribe((n) => (this.inTransitCount = n));
+    // Delivered: trips COMPLETED (proxy for delivered)
+    this._dashboard.getTripsCount('COMPLETED').subscribe((n) => (this.deliveredCount = n));
+    // Total Processed: total parcels
+    this._dashboard.getParcelsTotal().subscribe((n) => (this.totalProcessed = n));
   }
 
   ngOnDestroy(): void {

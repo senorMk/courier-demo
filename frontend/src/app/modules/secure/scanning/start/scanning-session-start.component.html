@@ -1,28 +1,124 @@
-<div class="flex flex-col gap-4" style="width: 100%; padding: 20px;">
-  <div class="flex justify-end">
-    <button mat-flat-button color="primary" class="custom-primary-btn" (click)="startNewSession()">
-      <mat-icon style="color: #fff;">add</mat-icon>
-      Start Scanning
-    </button>
+<div class="flex flex-col gap-6" style="width: 100%; padding: 20px;">
+  <style>
+    /* Compact table styling for scanning sessions list */
+    .compact-table .mat-mdc-header-row,
+    .compact-table .mat-mdc-row {
+      height: 36px; /* tighter row height */
+    }
+    .compact-table .mat-mdc-header-cell,
+    .compact-table .mat-mdc-cell {
+      padding: 2px 8px; /* tighter padding */
+      font-size: 11px;  /* smaller text */
+      line-height: 1.2;
+      white-space: nowrap; /* avoid multi-line overflow */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .compact-table .mat-mdc-header-cell {
+      font-weight: 600;
+    }
+
+    /* Fixed layout to enable ellipsis reliably */
+    .fixed-table { table-layout: fixed; width: 100%; }
+
+    /* Column width constraints */
+    .col-route { width: 140px !important; }
+    .col-mode { width: 80px !important; }
+    .col-staff { width: 120px !important; }
+    .col-time { width: 110px !important; text-align: right !important; }
+    .col-status { width: 90px !important; text-align: center !important; }
+    .col-actions { width: 56px !important; text-align: right !important; }
+
+    /* Ensure text alignment applies inside MDC cell wrappers */
+    .compact-table .mat-mdc-cell.col-time .mdc-data-table__cell,
+    .compact-table .mat-mdc-header-cell.col-time .mdc-data-table__header-cell {
+      text-align: right !important;
+    }
+    .compact-table .mat-mdc-cell.col-status .mdc-data-table__cell,
+    .compact-table .mat-mdc-header-cell.col-status .mdc-data-table__header-cell {
+      text-align: center !important;
+    }
+  </style>
+  <div class="bg-white rounded-lg shadow p-4 grid gap-4 md:grid-cols-3 items-end">
+    <mat-form-field appearance="fill">
+      <mat-label>Search Route</mat-label>
+      <input matInput [formControl]="form.controls['routeSearch']" placeholder="Type route name/code" />
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Selected Route</mat-label>
+      <input matInput [formControl]="form.controls['routeId']" readonly />
+    </mat-form-field>
+    <div class="md:col-span-3">
+      <div class="text-xs text-gray-500">Results</div>
+      <mat-radio-group [formControl]="form.controls['routeId']" class="mt-2 flex flex-col gap-1">
+        <mat-radio-button *ngFor="let r of filteredRoutes()" [value]="r.id" class="py-1">
+          <span class="text-sm font-medium">{{ r.name }}</span>
+          <span class="text-sm text-gray-500 ml-2">{{ r.code }}</span>
+        </mat-radio-button>
+      </mat-radio-group>
+    </div>
+    <div class="md:col-span-3">
+      <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Do you want to create a Mail Bag?</div>
+      <mat-radio-group [formControl]="form.controls['mode']" class="flex flex-col gap-3 items-start">
+        <mat-radio-button value="bag">
+          Yes — group all scanned parcels under one Mail Bag barcode
+        </mat-radio-button>
+        <mat-radio-button value="individual">
+          No — handle each parcel as an individual item
+        </mat-radio-button>
+      </mat-radio-group>
+    </div>
+    <div class="md:col-span-3 flex justify-end">
+      <button mat-flat-button color="primary" class="custom-primary-btn" (click)="startNewSession()" [disabled]="form.invalid">
+        <mat-icon style="color: #fff;">add</mat-icon>
+        Start Scanning
+      </button>
+    </div>
   </div>
   <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
-    <table mat-table [dataSource]="recentSessions" style="width: 100%">
+    <table mat-table [dataSource]="recentSessions" class="compact-table fixed-table">
+      <colgroup>
+        <col class="col-route" />
+        <col class="col-mode" />
+        <col class="col-staff" />
+        <col class="col-time" />
+        <col class="col-status" />
+        <col class="col-actions" />
+      </colgroup>
       <ng-container matColumnDef="route">
-        <th mat-header-cell *matHeaderCellDef>Route</th>
-        <td mat-cell *matCellDef="let session">{{ session.routeName }}</td>
+        <th mat-header-cell *matHeaderCellDef class="col-route">Route</th>
+        <td mat-cell *matCellDef="let session" class="col-route" [attr.title]="session.routeName">{{ session.routeName }}</td>
       </ng-container>
       <ng-container matColumnDef="mode">
-        <th mat-header-cell *matHeaderCellDef>Mode</th>
-        <td mat-cell *matCellDef="let session">{{ session.mode | titlecase }}</td>
+        <th mat-header-cell *matHeaderCellDef class="col-mode">Mode</th>
+        <td mat-cell *matCellDef="let session" class="col-mode">{{ session.mode | titlecase }}</td>
+      </ng-container>
+      <ng-container matColumnDef="staff">
+        <th mat-header-cell *matHeaderCellDef class="col-staff">Staff</th>
+        <td mat-cell *matCellDef="let session" class="col-staff" [attr.title]="session.staff">{{ session.staff || '—' }}</td>
       </ng-container>
       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef>Started At</th>
-        <td mat-cell *matCellDef="let session">{{ session.createdAt | date: 'short' }}</td>
+        <th mat-header-cell *matHeaderCellDef class="col-time">Time</th>
+        <td mat-cell *matCellDef="let session" class="col-time" [attr.title]="(session.createdAt | date: 'medium')">
+          {{ session.createdAt | date: 'dd/MM HH:mm' }}
+        </td>
       </ng-container>
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let session">
+        <th mat-header-cell *matHeaderCellDef class="col-status">Status</th>
+        <td mat-cell *matCellDef="let session" class="col-status">
           <span class="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[10px] font-medium uppercase">{{ session.status }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+        <td mat-cell *matCellDef="let session" class="col-actions">
+          <button mat-icon-button
+                  (click)="download(session.id)"
+                  [disabled]="session.status !== 'Completed'"
+                  aria-label="Download delivery note"
+                  [title]="session.status === 'Completed' ? 'Download delivery note' : 'Available after session is closed'">
+            <mat-icon>file_download</mat-icon>
+          </button>
         </td>
       </ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

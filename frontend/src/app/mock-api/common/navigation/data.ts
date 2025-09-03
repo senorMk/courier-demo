@@ -44,6 +44,20 @@ export const defaultNavigation: FuseNavigationItem[] = [
     icon: "heroicons_outline:map-pin",
     link: "/secure/destinations",
   },
+  {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trips",
+  },
+  {
+    id: "complaints",
+    title: "Complaints",
+    type: "basic",
+    icon: "heroicons_outline:exclamation-triangle",
+    link: "/secure/complaints",
+  },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
   {
@@ -88,6 +102,20 @@ export const compactNavigation: FuseNavigationItem[] = [
     icon: "custom:destinations",
     link: "/secure/destinations",
   },
+  {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trips",
+  },
+  {
+    id: "complaints",
+    title: "Complaints",
+    type: "basic",
+    icon: "heroicons_outline:exclamation-triangle",
+    link: "/secure/complaints",
+  },
 ];
 export const futuristicNavigation: FuseNavigationItem[] = [
   {
@@ -131,6 +159,20 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:destinations",
     link: "/secure/destinations",
+  },
+  {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trips",
+  },
+  {
+    id: "complaints",
+    title: "Complaints",
+    type: "basic",
+    icon: "heroicons_outline:exclamation-triangle",
+    link: "/secure/complaints",
   },
 ];
 export const horizontalNavigation: FuseNavigationItem[] = [

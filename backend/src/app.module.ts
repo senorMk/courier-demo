@@ -2,6 +2,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigFactory } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
+import { TripsModule } from './trips/trips.module';
+import { DriversModule } from './drivers/drivers.module';
+import { TrucksModule } from './trucks/trucks.module';
+import { ComplaintsModule } from './complaints/complaints.module';
 import { UsersModule } from './users/users.module';
 import { LogsModule } from './logs/logs.module';
 import { AppController } from './app.controller';
@@ -26,6 +30,10 @@ import { ScanningModule } from './scanning/scanning.module';
     }),
     PrismaModule,
     AuthModule,
+    TripsModule,
+    DriversModule,
+    TrucksModule,
+    ComplaintsModule,
     UsersModule,
     LogsModule,
     CustomerModule,
