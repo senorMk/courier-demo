@@ -179,4 +179,11 @@ export class ParcelController {
     res.setHeader("Expires", "0");
     fs.createReadStream(filePath).pipe(res);
   }
+
+  @Post(":parcelId/collect")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"]) 
+  async markCollected(@Param("parcelId") parcelId: string) {
+    return this.parcelService.markCollected(parcelId);
+  }
 }

@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { Office, Parcel, ParcelItem } from "@prisma/client";
+import { Office, Parcel, ParcelItem, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
 
 @Injectable()
@@ -264,5 +264,29 @@ export class ParcelService {
     return this.prisma.parcelItem.findMany({
       where: { parcelId },
     });
+  }
+
+  async markCollected(parcelId: string): Promise<Parcel> {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      include: { TrackingCode: true, customer: true, office: true },
+    });
+    if (!parcel) throw new NotFoundException('Parcel not found');
+    if (parcel.status !== (ParcelStatus as any).READY_FOR_COLLECTION) {
+      throw new BadRequestException('Parcel is not ready for collection');
+    }
+    const updated = await this.prisma.parcel.update({
+      where: { id: parcelId },
+      data: { status: (ParcelStatus as any).COLLECTED },
+    });
+    try {
+      const { sendSms } = require('../utils/sms-sender');
+      const code = parcel.TrackingCode?.plainTextCode || parcel.id;
+      const dest = parcel.office ? `${parcel.office.name} (${parcel.office.branchCode})` : 'the office';
+      if ((parcel as any).customer?.phoneNumber) {
+        await sendSms(`260${(parcel as any).customer.phoneNumber}`, `PCS: Parcel ${code} has been collected at ${dest}. Thank you.`);
+      }
+    } catch {}
+    return updated;
   }
 }
