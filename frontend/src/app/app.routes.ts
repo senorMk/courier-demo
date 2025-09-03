@@ -175,6 +175,10 @@ export const appRoutes: Route[] = [
         path: 'trips',
         loadComponent: () => import('app/modules/secure/trips/trips.component').then(m => m.TripsComponent)
       },
+      {
+        path: 'complaints',
+        loadComponent: () => import('app/modules/secure/complaints/complaints.component').then(m => m.ComplaintsComponent)
+      },
     ],
   },
 ];

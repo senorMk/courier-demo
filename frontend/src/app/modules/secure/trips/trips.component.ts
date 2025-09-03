@@ -24,10 +24,16 @@ import { TripsApiService } from './trips-api.service';
     MatRadioModule,
   ],
   template: `
-    <div class="p-6 space-y-6">
-      <h1 class="text-lg font-semibold">Trips</h1>
+    <div class="flex flex-col gap-4" style="width: 100%; padding: 20px;">
+      <div class="flex items-center justify-between">
+        <h1 class="text-lg font-semibold">Trips</h1>
+        <div class="space-x-2">
+          <button mat-stroked-button (click)="refresh()">Refresh</button>
+          <button mat-raised-button color="primary" (click)="createTrip()" [disabled]="form.invalid" class="custom-primary-btn">Create Trip</button>
+        </div>
+      </div>
 
-      <div class="bg-white rounded shadow p-4 grid gap-4 md:grid-cols-3">
+      <div class="bg-white rounded-lg shadow-md p-4 grid gap-4 md:grid-cols-3">
         <mat-form-field appearance="fill">
           <mat-label>Search Route</mat-label>
           <input matInput [formControl]="form.controls['routeSearch']" placeholder="Type route name/code" />
@@ -67,19 +73,10 @@ import { TripsApiService } from './trips-api.service';
           </div>
         </div>
 
-        <div class="md:col-span-3 flex justify-end">
-          <button mat-flat-button color="primary" (click)="createTrip()" [disabled]="form.invalid">Create Trip</button>
-        </div>
       </div>
 
-      <div class="bg-white rounded shadow p-4">
-        <div class="flex items-center justify-between mb-3">
-          <div class="text-sm text-gray-500">Recent Trips</div>
-          <div class="space-x-2">
-            <button mat-stroked-button (click)="refresh()">Refresh</button>
-          </div>
-        </div>
-        <table mat-table [dataSource]="trips" class="w-full">
+      <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+        <table mat-table [dataSource]="trips" style="width: 100%">
           <ng-container matColumnDef="route">
             <th mat-header-cell *matHeaderCellDef>Route</th>
             <td mat-cell *matCellDef="let t">{{ t.route?.name || t.routeId }}</td>
