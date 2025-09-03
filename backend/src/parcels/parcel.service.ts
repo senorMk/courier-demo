@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Office, Parcel, ParcelItem, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
+import { generateReceiptsForParcel } from "../utils/receipt-generator";
+import { sendSms } from "../utils/sms-sender";
 
 @Injectable()
 export class ParcelService {
@@ -154,9 +160,6 @@ export class ParcelService {
 
     // Generate triplicate receipts (sender, sticker, accounts)
     try {
-      const {
-        generateReceiptsForParcel,
-      } = require("../utils/receipt-generator");
       await generateReceiptsForParcel(parcel.id);
     } catch (e) {
       // Non-blocking: log but do not fail parcel creation
@@ -175,7 +178,6 @@ export class ParcelService {
       const receiver = await this.prisma.customer.findUnique({
         where: { id: receiverId },
       });
-      const { sendSms } = require("../utils/sms-sender");
       if (sender?.phoneNumber && code) {
         await sendSms(
           sender.phoneNumber,
@@ -271,20 +273,24 @@ export class ParcelService {
       where: { id: parcelId },
       include: { TrackingCode: true, customer: true, office: true },
     });
-    if (!parcel) throw new NotFoundException('Parcel not found');
+    if (!parcel) throw new NotFoundException("Parcel not found");
     if (parcel.status !== (ParcelStatus as any).READY_FOR_COLLECTION) {
-      throw new BadRequestException('Parcel is not ready for collection');
+      throw new BadRequestException("Parcel is not ready for collection");
     }
     const updated = await this.prisma.parcel.update({
       where: { id: parcelId },
       data: { status: (ParcelStatus as any).COLLECTED },
     });
     try {
-      const { sendSms } = require('../utils/sms-sender');
       const code = parcel.TrackingCode?.plainTextCode || parcel.id;
-      const dest = parcel.office ? `${parcel.office.name} (${parcel.office.branchCode})` : 'the office';
+      const dest = parcel.office
+        ? `${parcel.office.name} (${parcel.office.branchCode})`
+        : "the office";
       if ((parcel as any).customer?.phoneNumber) {
-        await sendSms(`260${(parcel as any).customer.phoneNumber}`, `PCS: Parcel ${code} has been collected at ${dest}. Thank you.`);
+        await sendSms(
+          `260${(parcel as any).customer.phoneNumber}`,
+          `PCS: Parcel ${code} has been collected at ${dest}. Thank you.`
+        );
       }
     } catch {}
     return updated;
@@ -304,7 +310,8 @@ export class ParcelService {
         },
       },
     });
-    if (!tracking || !tracking.parcel) throw new NotFoundException('Parcel not found');
+    if (!tracking || !tracking.parcel)
+      throw new NotFoundException("Parcel not found");
     return tracking.parcel;
   }
 
