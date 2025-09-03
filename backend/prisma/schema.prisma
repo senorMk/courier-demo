@@ -82,6 +82,7 @@ model Parcel {
   customerId   String
   receiverId   String
   officeId     String
+  status       ParcelStatus    @default(PENDING)
   size         ParcelSize      @default(MEDIUM)
   items        ParcelItem[]
   customer     Customer        @relation("Sender", fields: [customerId], references: [id])
@@ -111,6 +112,12 @@ enum ParcelSize {
   SMALL
   MEDIUM
   LARGE
+}
+
+enum ParcelStatus {
+  PENDING
+  READY_FOR_COLLECTION
+  COLLECTED
 }
 
 enum PaymentMethod {
