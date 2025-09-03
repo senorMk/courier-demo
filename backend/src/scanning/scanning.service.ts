@@ -26,6 +26,21 @@ export class ScanningService {
     if (office.routeId !== routeId)
       throw new BadRequestException("Office not on selected route");
 
+    // Dispatch scanner: require a trip and ensure it is loadable
+    if (office.officeType === 'DISPATCH') {
+      if (!tripId) {
+        throw new BadRequestException('Dispatch scanning requires an active trip');
+      }
+      const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+      if (!trip) throw new BadRequestException('Trip not found');
+      if (trip.routeId !== routeId || trip.officeId !== officeId) {
+        throw new BadRequestException('Trip does not match route/office');
+      }
+      if (trip.status === 'IN_TRANSIT' || trip.status === 'COMPLETED') {
+        throw new BadRequestException('Trip already departed or completed');
+      }
+    }
+
     // Validate trip linkage if provided
     if (tripId) {
       const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
@@ -55,6 +70,14 @@ export class ScanningService {
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
+
+    // Dispatch scanner: must be tied to a loadable trip
+    if (session.office?.officeType === 'DISPATCH') {
+      if (!session.trip) throw new BadRequestException('Dispatch session must be linked to a trip');
+      if (session.trip.status === 'IN_TRANSIT' || session.trip.status === 'COMPLETED') {
+        throw new BadRequestException('Cannot scan after trip departure');
+      }
+    }
 
     // Look up parcel via plain text tracking code
     const tracking = await this.prisma.trackingCode.findUnique({
@@ -149,6 +172,13 @@ export class ScanningService {
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
+
+    if (session.office?.officeType === 'DISPATCH') {
+      if (!session.trip) throw new BadRequestException('Dispatch session must be linked to a trip');
+      if (session.trip.status === 'IN_TRANSIT' || session.trip.status === 'COMPLETED') {
+        throw new BadRequestException('Cannot scan after trip departure');
+      }
+    }
 
     const parcel = await this.prisma.parcel.findUnique({
       where: { id: parcelId },
