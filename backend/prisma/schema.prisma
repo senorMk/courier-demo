@@ -130,11 +130,23 @@ model Complaint {
   status    ComplaintStatus @default(OPEN)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  events    ComplaintEvent[]
 }
 
 enum ComplaintStatus {
   OPEN
   CLOSED
+}
+
+model ComplaintEvent {
+  id           String           @id @default(uuid())
+  complaintId  String
+  complaint    Complaint        @relation(fields: [complaintId], references: [id])
+  action       String
+  fromStatus   ComplaintStatus?
+  toStatus     ComplaintStatus?
+  note         String?
+  createdAt    DateTime         @default(now())
 }
 
 enum PaymentMethod {

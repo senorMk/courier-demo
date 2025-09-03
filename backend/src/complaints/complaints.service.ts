@@ -6,6 +6,18 @@ import { ComplaintStatus, ParcelStatus } from '@prisma/client';
 export class ComplaintsService {
   constructor(private prisma: PrismaService) {}
 
+  private async logEvent(complaintId: string, action: string, from?: ComplaintStatus | null, to?: ComplaintStatus | null, note?: string | null) {
+    await this.prisma.complaintEvent.create({
+      data: {
+        complaintId,
+        action,
+        fromStatus: from ?? null,
+        toStatus: to ?? null,
+        note: note ?? null,
+      },
+    });
+  }
+
   async fileDamagedByCode(code: string, reason?: string) {
     const tracking = await this.prisma.trackingCode.findUnique({
       where: { plainTextCode: code },
@@ -19,6 +31,24 @@ export class ComplaintsService {
     const complaint = await this.prisma.complaint.create({
       data: { parcelId: parcel.id, reason: reason || null, status: ComplaintStatus.OPEN },
     });
+    await this.logEvent(complaint.id, 'OPENED_DAMAGED', null, ComplaintStatus.OPEN, reason || null);
+    return complaint;
+  }
+
+  async fileFromCollectedByCode(code: string, reason?: string) {
+    const tracking = await this.prisma.trackingCode.findUnique({
+      where: { plainTextCode: code },
+      include: { parcel: true },
+    });
+    if (!tracking || !tracking.parcel) throw new NotFoundException('Parcel not found');
+    const parcel = tracking.parcel;
+    if (parcel.status !== 'COLLECTED') {
+      throw new BadRequestException('Only collected parcels can be moved to Complaint Box');
+    }
+    const complaint = await this.prisma.complaint.create({
+      data: { parcelId: parcel.id, reason: reason || null, status: ComplaintStatus.OPEN },
+    });
+    await this.logEvent(complaint.id, 'OPENED_FROM_COLLECTED', null, ComplaintStatus.OPEN, reason || null);
     return complaint;
   }
 
@@ -49,9 +79,26 @@ export class ComplaintsService {
   }
 
   async close(id: string) {
-    const complaint = await this.prisma.complaint.findUnique({ where: { id } });
+    const complaint = await this.prisma.complaint.findUnique({ where: { id }, include: { parcel: { include: { TrackingCode: true, customer: true, office: true } } } });
     if (!complaint) throw new NotFoundException('Complaint not found');
-    return this.prisma.complaint.update({ where: { id }, data: { status: ComplaintStatus.CLOSED } });
+    const updated = await this.prisma.complaint.update({ where: { id }, data: { status: ComplaintStatus.CLOSED } });
+    await this.logEvent(id, 'CLOSED', ComplaintStatus.OPEN, ComplaintStatus.CLOSED, 'Complaint resolved');
+    // SMS to sender: Complaint Resolved
+    try {
+      const { sendSms } = require('../utils/sms-sender');
+      const code = complaint.parcel?.TrackingCode?.plainTextCode || complaint.parcel?.id;
+      const dest = complaint.parcel?.office ? `${complaint.parcel.office.name} (${complaint.parcel.office.branchCode})` : 'our office';
+      const msisdn = (complaint.parcel as any)?.customer?.phoneNumber;
+      if (msisdn && code) {
+        await sendSms(`260${msisdn}`, `PCS: Complaint for parcel ${code} has been resolved at ${dest}.`);
+      }
+    } catch {}
+    return updated;
+  }
+
+  async getEvents(complaintId: string) {
+    const exists = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
+    if (!exists) throw new NotFoundException('Complaint not found');
+    return this.prisma.complaintEvent.findMany({ where: { complaintId }, orderBy: { createdAt: 'asc' } });
   }
 }
-

@@ -17,6 +17,14 @@ export class ComplaintsController {
     return this.service.fileDamagedByCode(body.code.trim(), body.reason);
   }
 
+  @Post('from-collected')
+  fileFromCollected(@Body() body: { code: string; reason?: string }) {
+    if (!body?.code) {
+      throw new BadRequestException('Tracking code is required');
+    }
+    return this.service.fileFromCollectedByCode(body.code.trim(), body.reason);
+  }
+
   @Get('paginated')
   list(
     @Query('page') page: number = 1,
@@ -30,5 +38,9 @@ export class ComplaintsController {
   close(@Param('id') id: string) {
     return this.service.close(id);
   }
-}
 
+  @Get(':id/events')
+  events(@Param('id') id: string) {
+    return this.service.getEvents(id);
+  }
+}
