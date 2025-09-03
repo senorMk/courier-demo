@@ -93,6 +93,7 @@ model Parcel {
   TrackingCode TrackingCode?
   scans        ScannedParcel[] @relation("ParcelScans")
   payment      Payment?
+  complaints   Complaint[]
 }
 
 model ParcelItem {
@@ -118,6 +119,22 @@ enum ParcelStatus {
   PENDING
   READY_FOR_COLLECTION
   COLLECTED
+  DAMAGED
+}
+
+model Complaint {
+  id        String   @id @default(uuid())
+  parcelId  String
+  parcel    Parcel   @relation(fields: [parcelId], references: [id])
+  reason    String?
+  status    ComplaintStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ComplaintStatus {
+  OPEN
+  CLOSED
 }
 
 enum PaymentMethod {

@@ -186,4 +186,22 @@ export class ParcelController {
   async markCollected(@Param("parcelId") parcelId: string) {
     return this.parcelService.markCollected(parcelId);
   }
+
+  @Get('search')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @SetMetadata('roles', ['managing-director'])
+  async searchByCode(@Query('code') code: string) {
+    if (!code || !code.trim()) {
+      throw new BadRequestException('Tracking code is required');
+    }
+    return this.parcelService.findByTrackingCode(code.trim());
+  }
+
+  @Post('collect-by-code')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @SetMetadata('roles', ['managing-director'])
+  async collectByCode(@Body() body: { code: string }) {
+    if (!body?.code) throw new BadRequestException('Tracking code is required');
+    return this.parcelService.collectByCode(body.code.trim());
+  }
 }

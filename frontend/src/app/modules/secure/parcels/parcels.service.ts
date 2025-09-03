@@ -91,4 +91,8 @@ export class ParcelsService {
       data
     );
   }
+
+  markCollected(parcelId: string) {
+    return this._httpClient.post(`${this.baseUrl}/v1/parcels/${parcelId}/collect`, {});
+  }
 }

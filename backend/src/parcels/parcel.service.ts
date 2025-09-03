@@ -289,4 +289,27 @@ export class ParcelService {
     } catch {}
     return updated;
   }
+
+  async findByTrackingCode(code: string) {
+    const tracking = await this.prisma.trackingCode.findUnique({
+      where: { plainTextCode: code },
+      include: {
+        parcel: {
+          include: {
+            customer: true,
+            receiver: true,
+            office: true,
+            TrackingCode: true,
+          },
+        },
+      },
+    });
+    if (!tracking || !tracking.parcel) throw new NotFoundException('Parcel not found');
+    return tracking.parcel;
+  }
+
+  async collectByCode(code: string) {
+    const p = await this.findByTrackingCode(code);
+    return this.markCollected(p.id);
+  }
 }
