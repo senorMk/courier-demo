@@ -54,7 +54,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   form = this.fb.group({
     routeId: ["", Validators.required],
     routeSearch: [""],
-    mode: ["individual", Validators.required],
+    mode: ["bag", Validators.required],
   });
 
   @ViewChild(MatPaginator) paginator: MatPaginator;

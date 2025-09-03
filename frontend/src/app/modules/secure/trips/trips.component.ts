@@ -1,0 +1,184 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTableModule } from '@angular/material/table';
+import { MatRadioModule } from '@angular/material/radio';
+import { debounceTime, of, startWith, switchMap } from 'rxjs';
+import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
+import { OfficesSearchService, OfficeItem } from './offices-search.service';
+import { TripsApiService } from './trips-api.service';
+
+@Component({
+  selector: 'app-trips',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatTableModule,
+    MatRadioModule,
+  ],
+  template: `
+    <div class="p-6 space-y-6">
+      <h1 class="text-lg font-semibold">Trips</h1>
+
+      <div class="bg-white rounded shadow p-4 grid gap-4 md:grid-cols-3">
+        <mat-form-field appearance="fill">
+          <mat-label>Search Route</mat-label>
+          <input matInput [formControl]="form.controls['routeSearch']" placeholder="Type route name/code" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Search Office</mat-label>
+          <input matInput [formControl]="form.controls['officeSearch']" placeholder="Type office name/branch code" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label>Driver Name</mat-label>
+          <input matInput [formControl]="form.controls['driverName']" placeholder="e.g. John Banda" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Truck Registration</mat-label>
+          <input matInput [formControl]="form.controls['truckReg']" placeholder="e.g. ABC 1234" />
+        </mat-form-field>
+
+        <div class="md:col-span-3 grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-xs text-gray-500">Route Results</div>
+            <mat-radio-group [formControl]="form.controls['routeId']" class="mt-2 flex flex-col gap-1">
+              <mat-radio-button *ngFor="let r of routeResults()" [value]="r.id" class="py-1">
+                <span class="text-sm font-medium">{{ r.name }}</span>
+                <span class="text-[11px] text-gray-500 ml-2">{{ r.code }}</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">Office Results</div>
+            <mat-radio-group [formControl]="form.controls['officeId']" class="mt-2 flex flex-col gap-1">
+              <mat-radio-button *ngFor="let o of officeResults()" [value]="o.id" class="py-1">
+                <span class="text-sm font-medium">{{ o.name }}</span>
+                <span class="text-[11px] text-gray-500 ml-2">{{ o.branchCode }}</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+
+        <div class="md:col-span-3 flex justify-end">
+          <button mat-flat-button color="primary" (click)="createTrip()" [disabled]="form.invalid">Create Trip</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded shadow p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm text-gray-500">Recent Trips</div>
+          <div class="space-x-2">
+            <button mat-stroked-button (click)="refresh()">Refresh</button>
+          </div>
+        </div>
+        <table mat-table [dataSource]="trips" class="w-full">
+          <ng-container matColumnDef="route">
+            <th mat-header-cell *matHeaderCellDef>Route</th>
+            <td mat-cell *matCellDef="let t">{{ t.route?.name || t.routeId }}</td>
+          </ng-container>
+          <ng-container matColumnDef="office">
+            <th mat-header-cell *matHeaderCellDef>Office</th>
+            <td mat-cell *matCellDef="let t">{{ t.office?.name }} ({{ t.office?.branchCode }})</td>
+          </ng-container>
+          <ng-container matColumnDef="driver">
+            <th mat-header-cell *matHeaderCellDef>Driver</th>
+            <td mat-cell *matCellDef="let t">{{ t.driverName }}</td>
+          </ng-container>
+          <ng-container matColumnDef="truck">
+            <th mat-header-cell *matHeaderCellDef>Truck</th>
+            <td mat-cell *matCellDef="let t">{{ t.truckReg }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let t">{{ t.status }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+            <td mat-cell *matCellDef="let t" class="text-right space-x-1">
+              <button mat-stroked-button color="primary" (click)="promptAssign(t)" [disabled]="t.status==='IN_TRANSIT'||t.status==='COMPLETED'">Assign</button>
+              <button mat-stroked-button color="accent" (click)="start(t)" [disabled]="t.status!=='PLANNED' && t.status!=='LOADING'">Start</button>
+              <button mat-stroked-button color="warn" (click)="complete(t)" [disabled]="t.status!=='IN_TRANSIT'">Complete</button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+    </div>
+  `,
+})
+export class TripsComponent {
+  private fb = inject(FormBuilder);
+  private routesSearch = inject(RoutesSearchService);
+  private officesSearch = inject(OfficesSearchService);
+  private tripsApi = inject(TripsApiService);
+
+  form = this.fb.group({
+    routeSearch: [''],
+    officeSearch: [''],
+    routeId: ['', Validators.required],
+    officeId: ['', Validators.required],
+    driverName: ['', Validators.required],
+    truckReg: ['', Validators.required],
+  });
+
+  displayedColumns = ['route', 'office', 'driver', 'truck', 'status', 'actions'];
+  trips: any[] = [];
+  routeResults = signal<RouteItem[]>([]);
+  officeResults = signal<OfficeItem[]>([]);
+
+  constructor() {
+    this.form.controls.routeSearch.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      switchMap((q: any) => q ? this.routesSearch.searchRoutes(q) : of([])),
+    ).subscribe((rows: any) => this.routeResults.set(rows || []));
+
+    this.form.controls.officeSearch.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      switchMap((q: any) => q ? this.officesSearch.search(q) : of([])),
+    ).subscribe((rows: any) => this.officeResults.set(rows || []));
+
+    this.refresh();
+  }
+
+  refresh() {
+    this.tripsApi.list(1, 10).subscribe({ next: (res: any) => this.trips = res.data || [], error: () => this.trips = [] });
+  }
+
+  createTrip() {
+    if (this.form.invalid) return;
+    const { routeId, officeId, driverName, truckReg } = this.form.value as any;
+    this.tripsApi.create({ routeId, officeId, driverName, truckReg }).subscribe({
+      next: () => { this.refresh(); },
+      error: (err) => alert(err?.error?.message || 'Failed to create trip'),
+    });
+  }
+
+  promptAssign(t: any) {
+    const driverName = prompt('Driver name', t.driverName || '');
+    if (driverName === null) return;
+    const truckReg = prompt('Truck registration', t.truckReg || '');
+    if (truckReg === null) return;
+    this.tripsApi.assign(t.id, { driverName, truckReg }).subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to assign') });
+  }
+
+  start(t: any) {
+    if (!confirm('Mark trip In Transit and send SMS?')) return;
+    this.tripsApi.start(t.id).subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to start trip') });
+  }
+
+  complete(t: any) {
+    if (!confirm('Complete trip and send arrival SMS?')) return;
+    this.tripsApi.complete(t.id).subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to complete trip') });
+  }
+}
