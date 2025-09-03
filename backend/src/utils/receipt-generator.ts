@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -200,4 +200,3 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
 }
 
 export default { generateReceiptsForParcel };
-
