@@ -50,7 +50,7 @@
     </mat-form-field>
     <div class="md:col-span-3">
       <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Do you want to create a Mail Bag?</div>
-      <mat-radio-group [formControl]="form.controls['mode']" class="flex flex-col sm:flex-row gap-3">
+      <mat-radio-group [formControl]="form.controls['mode']" class="flex flex-col gap-3 items-start">
         <mat-radio-button value="bag">
           Yes — group all scanned parcels under one Mail Bag barcode
         </mat-radio-button>
@@ -67,12 +67,12 @@
     </div>
     <div class="md:col-span-3">
       <div class="text-xs text-gray-500">Results</div>
-      <div class="grid gap-2 mt-2 md:grid-cols-3">
-        <button type="button" *ngFor="let r of filteredRoutes()" (click)="selectRoute(r)" class="text-left border rounded p-2 hover:bg-blue-50">
-          <div class="text-sm font-medium">{{ r.name }}</div>
-          <div class="text-[11px] text-gray-500">{{ r.code }}</div>
-        </button>
-      </div>
+      <mat-radio-group [formControl]="form.controls['routeId']" class="mt-2 flex flex-col gap-1">
+        <mat-radio-button *ngFor="let r of filteredRoutes()" [value]="r.id" class="py-1">
+          <span class="text-sm font-medium">{{ r.name }}</span>
+          <span class="text-[11px] text-gray-500 ml-2">{{ r.code }}</span>
+        </mat-radio-button>
+      </mat-radio-group>
     </div>
   </div>
   <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">

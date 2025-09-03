@@ -66,8 +66,8 @@ export class DeliveryNoteComponent {
   }
 
   finish() {
-    // Placeholder for finalize logic / print
-    this.router.navigate(['/secure']);
+    // Navigate back to scanning sessions list
+    this.router.navigate(['/secure/scanning']);
   }
 
   downloadPdf() {

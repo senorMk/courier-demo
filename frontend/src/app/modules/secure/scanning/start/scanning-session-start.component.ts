@@ -76,6 +76,14 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       this.routes.set(routes || []);
       this.filteredRoutes.set(routes || []);
     });
+    // When a route is selected via radio button, reflect the name into routeSearch
+    this.form.controls.routeId?.valueChanges?.subscribe((id) => {
+      const all = [...(this.routes() || []), ...(this.filteredRoutes() || [])];
+      const picked = all.find(r => r.id === id);
+      if (picked) {
+        this.form.patchValue({ routeSearch: picked.name }, { emitEvent: false });
+      }
+    });
     if (this.paginator) {
       this.paginator.page.subscribe(() => {
         this.pageIndex = this.paginator.pageIndex;
