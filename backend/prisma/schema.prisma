@@ -137,6 +137,7 @@ model Route {
   name             String            @unique
   offices          Office[]
   scanningSessions ScanningSession[]
+  trips            Trip[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
@@ -150,6 +151,7 @@ model Office {
   parcels          Parcel[]
   users            User[]
   scanningSessions ScanningSession[]
+  trips            Trip[]
   routeId          String
   route            Route             @relation(fields: [routeId], references: [id])
   createdAt        DateTime          @default(now())
@@ -175,12 +177,38 @@ model ScanningSession {
   mailBagCode String?         @unique
   startedAt   DateTime        @default(now())
   closedAt    DateTime?
+  tripId      String?
+  trip        Trip?           @relation(fields: [tripId], references: [id])
   scans       ScannedParcel[]
   user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
   office      Office          @relation(fields: [officeId], references: [id])
   route       Route           @relation(fields: [routeId], references: [id])
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+enum TripStatus {
+  PLANNED
+  LOADING
+  IN_TRANSIT
+  COMPLETED
+}
+
+model Trip {
+  id          String           @id @default(uuid())
+  routeId     String
+  officeId    String
+  driverName  String
+  truckReg    String
+  status      TripStatus       @default(PLANNED)
+  plannedAt   DateTime         @default(now())
+  departedAt  DateTime?
+  completedAt DateTime?
+  route       Route            @relation(fields: [routeId], references: [id])
+  office      Office           @relation(fields: [officeId], references: [id])
+  sessions    ScanningSession[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model ScannedParcel {
