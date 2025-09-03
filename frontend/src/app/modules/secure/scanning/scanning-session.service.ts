@@ -75,7 +75,7 @@ export class ScanningSessionService {
     if (!s) return { success: false, message: 'Session not found' };
     if (s.closedAt) return { success: false, message: 'Already closed' };
 
-    if (s.mode === 'bag' && s.parcels.length < 10) {
+    if (s.mode === 'bag' && s.parcels.length < 1) {
       return { success: false, message: 'Mail bag requires at least 10 parcels' };
     }
 
