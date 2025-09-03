@@ -40,7 +40,15 @@ export async function generateBarcodeForId(
       (err: any, png: Buffer) => {
         if (err) return reject(err);
         if (outputPath) {
-          fs.writeFileSync(outputPath, png);
+          try {
+            const dir = require('path').dirname(outputPath);
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(outputPath, png);
+          } catch (e) {
+            return reject(e);
+          }
           resolve();
         } else {
           resolve(png);
@@ -51,4 +59,3 @@ export async function generateBarcodeForId(
 }
 
 export default { generateBarcodeForId };
-

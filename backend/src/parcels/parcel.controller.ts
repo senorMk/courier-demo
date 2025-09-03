@@ -132,6 +132,9 @@ export class ParcelController {
   ) {
     try {
       const receiptsDir = path.resolve(process.cwd(), "receipts");
+      if (!fs.existsSync(receiptsDir)) {
+        fs.mkdirSync(receiptsDir, { recursive: true });
+      }
       const files = [
         path.join(receiptsDir, `parcel-${parcelId}-sender.pdf`),
         path.join(receiptsDir, `parcel-${parcelId}-sticker.pdf`),
@@ -180,6 +183,9 @@ export class ParcelController {
         throw new BadRequestException("Invalid receipt type");
       }
       const receiptsDir = path.resolve(process.cwd(), "receipts");
+      if (!fs.existsSync(receiptsDir)) {
+        fs.mkdirSync(receiptsDir, { recursive: true });
+      }
       const filePath = path.join(receiptsDir, `parcel-${parcelId}-${type}.pdf`);
       try {
         await generateReceiptsForParcel(parcelId);
