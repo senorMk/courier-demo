@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 
 function ensureDir(dir: string) {
@@ -158,4 +158,3 @@ export async function generateDeliveryNote(
 }
 
 export default { generateDeliveryNote, getDeliveryNotePath };
-

@@ -6,6 +6,8 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Prisma, ParcelStatus } from "@prisma/client";
+import { sendSms } from "../utils/sms-sender";
+import { generateDeliveryNote } from "../utils/delivery-note-generator";
 
 @Injectable()
 export class ScanningService {
@@ -27,26 +29,28 @@ export class ScanningService {
       throw new BadRequestException("Office not on selected route");
 
     // Dispatch scanner: require a trip and ensure it is loadable
-    if (office.officeType === 'DISPATCH') {
+    if (office.officeType === "DISPATCH") {
       if (!tripId) {
-        throw new BadRequestException('Dispatch scanning requires an active trip');
+        throw new BadRequestException(
+          "Dispatch scanning requires an active trip"
+        );
       }
       const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-      if (!trip) throw new BadRequestException('Trip not found');
+      if (!trip) throw new BadRequestException("Trip not found");
       if (trip.routeId !== routeId || trip.officeId !== officeId) {
-        throw new BadRequestException('Trip does not match route/office');
+        throw new BadRequestException("Trip does not match route/office");
       }
-      if (trip.status === 'IN_TRANSIT' || trip.status === 'COMPLETED') {
-        throw new BadRequestException('Trip already departed or completed');
+      if (trip.status === "IN_TRANSIT" || trip.status === "COMPLETED") {
+        throw new BadRequestException("Trip already departed or completed");
       }
     }
 
     // Validate trip linkage if provided
     if (tripId) {
       const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-      if (!trip) throw new BadRequestException('Trip not found');
+      if (!trip) throw new BadRequestException("Trip not found");
       if (trip.routeId !== routeId || trip.officeId !== officeId) {
-        throw new BadRequestException('Trip does not match route/office');
+        throw new BadRequestException("Trip does not match route/office");
       }
     }
 
@@ -72,10 +76,16 @@ export class ScanningService {
     if (session.closedAt) throw new BadRequestException("Session closed");
 
     // Dispatch scanner: must be tied to a loadable trip
-    if (session.office?.officeType === 'DISPATCH') {
-      if (!session.trip) throw new BadRequestException('Dispatch session must be linked to a trip');
-      if (session.trip.status === 'IN_TRANSIT' || session.trip.status === 'COMPLETED') {
-        throw new BadRequestException('Cannot scan after trip departure');
+    if (session.office?.officeType === "DISPATCH") {
+      if (!session.trip)
+        throw new BadRequestException(
+          "Dispatch session must be linked to a trip"
+        );
+      if (
+        session.trip.status === "IN_TRANSIT" ||
+        session.trip.status === "COMPLETED"
+      ) {
+        throw new BadRequestException("Cannot scan after trip departure");
       }
     }
 
@@ -84,7 +94,12 @@ export class ScanningService {
       where: { plainTextCode: code },
       include: {
         parcel: {
-          include: { office: true, TrackingCode: true, customer: true, receiver: true },
+          include: {
+            office: true,
+            TrackingCode: true,
+            customer: true,
+            receiver: true,
+          },
         },
       },
     });
@@ -121,8 +136,11 @@ export class ScanningService {
         },
       });
       // If linked to a trip and trip is PLANNED, flip to LOADING
-      if (session.trip && session.trip.status === 'PLANNED') {
-        await this.prisma.trip.update({ where: { id: session.trip.id }, data: { status: 'LOADING' as any } });
+      if (session.trip && session.trip.status === "PLANNED") {
+        await this.prisma.trip.update({
+          where: { id: session.trip.id },
+          data: { status: "LOADING" as any },
+        });
       }
       // Receiving offload: mark ready for collection and send SMS
       if (
@@ -135,7 +153,6 @@ export class ScanningService {
           data: { status: ParcelStatus.READY_FOR_COLLECTION },
         });
         try {
-          const { sendSms } = require("../utils/sms-sender");
           const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
@@ -173,16 +190,27 @@ export class ScanningService {
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
 
-    if (session.office?.officeType === 'DISPATCH') {
-      if (!session.trip) throw new BadRequestException('Dispatch session must be linked to a trip');
-      if (session.trip.status === 'IN_TRANSIT' || session.trip.status === 'COMPLETED') {
-        throw new BadRequestException('Cannot scan after trip departure');
+    if (session.office?.officeType === "DISPATCH") {
+      if (!session.trip)
+        throw new BadRequestException(
+          "Dispatch session must be linked to a trip"
+        );
+      if (
+        session.trip.status === "IN_TRANSIT" ||
+        session.trip.status === "COMPLETED"
+      ) {
+        throw new BadRequestException("Cannot scan after trip departure");
       }
     }
 
     const parcel = await this.prisma.parcel.findUnique({
       where: { id: parcelId },
-      include: { office: true, TrackingCode: true, customer: true, receiver: true },
+      include: {
+        office: true,
+        TrackingCode: true,
+        customer: true,
+        receiver: true,
+      },
     });
     if (!parcel) throw new BadRequestException("Parcel not found");
     const correctDest2 = `${parcel.office.name} (${parcel.office.branchCode})`;
@@ -206,8 +234,11 @@ export class ScanningService {
       const created = await this.prisma.scannedParcel.create({
         data: { scanningSessionId: sessionId, parcelId, scannedById: userId },
       });
-      if (session.trip && session.trip.status === 'PLANNED') {
-        await this.prisma.trip.update({ where: { id: session.trip.id }, data: { status: 'LOADING' as any } });
+      if (session.trip && session.trip.status === "PLANNED") {
+        await this.prisma.trip.update({
+          where: { id: session.trip.id },
+          data: { status: "LOADING" as any },
+        });
       }
       if (
         session.office &&
@@ -219,7 +250,6 @@ export class ScanningService {
           data: { status: ParcelStatus.READY_FOR_COLLECTION },
         });
         try {
-          const { sendSms } = require("../utils/sms-sender");
           const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
@@ -261,11 +291,13 @@ export class ScanningService {
 
     // Generate delivery note PDF once on close (no-op if already exists)
     try {
-      const { generateDeliveryNote } = require("../utils/delivery-note-generator");
       await generateDeliveryNote(sessionId, { force: false });
     } catch (e) {
       // Log and continue; closing should not fail due to PDF issues
-      console.error("Failed to generate delivery note on close:", e?.message || e);
+      console.error(
+        "Failed to generate delivery note on close:",
+        e?.message || e
+      );
     }
 
     return closed;

@@ -17,6 +17,10 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { SetMetadata } from "@nestjs/common";
 import { Req } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import {
+  generateDeliveryNote,
+  getDeliveryNotePath,
+} from "../utils/delivery-note-generator";
 
 interface JwtUser {
   sub?: string;
@@ -101,7 +105,6 @@ export class ScanningController {
 
   @Get(":id/delivery-note")
   async deliveryNote(@Param("id") id: string, @Res() res: Response) {
-    const { generateDeliveryNote, getDeliveryNotePath } = require("../utils/delivery-note-generator");
     const fs = require("fs");
 
     const outPath = getDeliveryNotePath(id);
@@ -109,7 +112,10 @@ export class ScanningController {
       const filename = `delivery-note-session-${id}.pdf`;
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=\"${filename}\"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=\"${filename}\"`
+      );
       return fs.createReadStream(outPath).pipe(res);
     }
 
@@ -130,7 +136,10 @@ export class ScanningController {
     const filename = `delivery-note-session-${id}.pdf`;
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=\"${filename}\"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=\"${filename}\"`
+    );
     const stream = fs.createReadStream(path);
     stream.on("error", () => res.sendStatus(404));
     stream.pipe(res);
