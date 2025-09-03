@@ -16,6 +16,7 @@ import { Res } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
 import * as archiver from "archiver";
+import { generateReceiptsForParcel } from "../utils/receipt-generator";
 
 @Controller("api/v1/parcels")
 export class ParcelController {
@@ -117,9 +118,6 @@ export class ParcelController {
     ];
 
     try {
-      const {
-        generateReceiptsForParcel,
-      } = require("../utils/receipt-generator");
       await generateReceiptsForParcel(parcelId);
     } catch (e) {}
 
@@ -156,9 +154,6 @@ export class ParcelController {
     const receiptsDir = path.resolve(process.cwd(), "receipts");
     const filePath = path.join(receiptsDir, `parcel-${parcelId}-${type}.pdf`);
     try {
-      const {
-        generateReceiptsForParcel,
-      } = require("../utils/receipt-generator");
       await generateReceiptsForParcel(parcelId);
     } catch (e) {}
 
@@ -182,26 +177,26 @@ export class ParcelController {
 
   @Post(":parcelId/collect")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"]) 
+  @SetMetadata("roles", ["managing-director"])
   async markCollected(@Param("parcelId") parcelId: string) {
     return this.parcelService.markCollected(parcelId);
   }
 
-  @Get('search')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @SetMetadata('roles', ['managing-director'])
-  async searchByCode(@Query('code') code: string) {
+  @Get("search")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async searchByCode(@Query("code") code: string) {
     if (!code || !code.trim()) {
-      throw new BadRequestException('Tracking code is required');
+      throw new BadRequestException("Tracking code is required");
     }
     return this.parcelService.findByTrackingCode(code.trim());
   }
 
-  @Post('collect-by-code')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @SetMetadata('roles', ['managing-director'])
+  @Post("collect-by-code")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
   async collectByCode(@Body() body: { code: string }) {
-    if (!body?.code) throw new BadRequestException('Tracking code is required');
+    if (!body?.code) throw new BadRequestException("Tracking code is required");
     return this.parcelService.collectByCode(body.code.trim());
   }
 }

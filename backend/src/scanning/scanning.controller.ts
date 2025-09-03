@@ -21,6 +21,7 @@ import {
   generateDeliveryNote,
   getDeliveryNotePath,
 } from "../utils/delivery-note-generator";
+const fs = require("fs");
 
 interface JwtUser {
   sub?: string;
@@ -105,8 +106,6 @@ export class ScanningController {
 
   @Get(":id/delivery-note")
   async deliveryNote(@Param("id") id: string, @Res() res: Response) {
-    const fs = require("fs");
-
     const outPath = getDeliveryNotePath(id);
     if (fs.existsSync(outPath)) {
       const filename = `delivery-note-session-${id}.pdf`;
