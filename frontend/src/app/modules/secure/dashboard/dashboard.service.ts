@@ -29,4 +29,18 @@ export class DashboardService {
     };
     return httpOptions;
   }
+
+  getTripsCount(status: 'PLANNED'|'LOADING'|'IN_TRANSIT'|'COMPLETED'): Observable<number> {
+    const url = `${environment.serverURL}/v1/trips?status=${status}&page=1&pageSize=1`;
+    return this._httpClient.get<any>(url, this.getHeader()).pipe(
+      switchMap((res) => of(Number(res?.total || 0)))
+    );
+  }
+
+  getParcelsTotal(): Observable<number> {
+    const url = `${environment.serverURL}/v1/parcels/paginated?page=1&pageSize=1`;
+    return this._httpClient.get<any>(url, this.getHeader()).pipe(
+      switchMap((res) => of(Number(res?.total || 0)))
+    );
+  }
 }

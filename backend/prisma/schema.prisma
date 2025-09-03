@@ -247,6 +247,28 @@ model Trip {
   updatedAt   DateTime         @updatedAt
 }
 
+model Driver {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  phoneNumber   String?  @unique
+  licenseNumber String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Truck {
+  id        String   @id @default(uuid())
+  registration String @unique
+  make      String?
+  model     String?
+  capacity  Float?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model ScannedParcel {
   id                String          @id @default(uuid())
   scanningSessionId String

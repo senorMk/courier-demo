@@ -10,6 +10,8 @@ import { debounceTime, of, startWith, switchMap } from 'rxjs';
 import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
 import { OfficesSearchService, OfficeItem } from './offices-search.service';
 import { TripsApiService } from './trips-api.service';
+import { DriversApiService } from './drivers-api.service';
+import { TrucksApiService } from './trucks-api.service';
 
 @Component({
   selector: 'app-trips',
@@ -44,13 +46,27 @@ import { TripsApiService } from './trips-api.service';
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-          <mat-label>Driver Name</mat-label>
-          <input matInput [formControl]="form.controls['driverName']" placeholder="e.g. John Banda" />
+          <mat-label>Search Driver</mat-label>
+          <input matInput [formControl]="form.controls['driverSearch']" placeholder="Type driver name/phone/license" />
         </mat-form-field>
+        <div class="flex items-end gap-2">
+          <mat-form-field appearance="fill" class="flex-1">
+            <mat-label>Driver Name</mat-label>
+            <input matInput [formControl]="form.controls['driverName']" placeholder="e.g. John Banda" />
+          </mat-form-field>
+          <button mat-stroked-button (click)="addDriver()">Add Driver</button>
+        </div>
         <mat-form-field appearance="fill">
-          <mat-label>Truck Registration</mat-label>
-          <input matInput [formControl]="form.controls['truckReg']" placeholder="e.g. ABC 1234" />
+          <mat-label>Search Truck</mat-label>
+          <input matInput [formControl]="form.controls['truckSearch']" placeholder="Type registration/make/model" />
         </mat-form-field>
+        <div class="flex items-end gap-2">
+          <mat-form-field appearance="fill" class="flex-1">
+            <mat-label>Truck Registration</mat-label>
+            <input matInput [formControl]="form.controls['truckReg']" placeholder="e.g. ABC 1234" />
+          </mat-form-field>
+          <button mat-stroked-button (click)="addTruck()">Add Truck</button>
+        </div>
 
         <div class="md:col-span-3 grid grid-cols-2 gap-4">
           <div>
@@ -68,6 +84,27 @@ import { TripsApiService } from './trips-api.service';
               <mat-radio-button *ngFor="let o of officeResults()" [value]="o.id" class="py-1">
                 <span class="text-sm font-medium">{{ o.name }}</span>
                 <span class="text-[11px] text-gray-500 ml-2">{{ o.branchCode }}</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+
+        <div class="md:col-span-3 grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-xs text-gray-500">Driver Results</div>
+            <mat-radio-group (change)="onPickDriver($event)" class="mt-2 flex flex-col gap-1">
+              <mat-radio-button *ngFor="let d of driverResults" [value]="d" class="py-1">
+                <span class="text-sm font-medium">{{ d.firstName }} {{ d.lastName }}</span>
+                <span class="text-[11px] text-gray-500 ml-2">{{ d.phoneNumber || d.licenseNumber }}</span>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">Truck Results</div>
+            <mat-radio-group (change)="onPickTruck($event)" class="mt-2 flex flex-col gap-1">
+              <mat-radio-button *ngFor="let t of truckResults" [value]="t" class="py-1">
+                <span class="text-sm font-medium">{{ t.registration }}</span>
+                <span class="text-[11px] text-gray-500 ml-2">{{ t.make }} {{ t.model }}</span>
               </mat-radio-button>
             </mat-radio-group>
           </div>
@@ -117,13 +154,17 @@ export class TripsComponent {
   private routesSearch = inject(RoutesSearchService);
   private officesSearch = inject(OfficesSearchService);
   private tripsApi = inject(TripsApiService);
+  private driversApi = inject(DriversApiService);
+  private trucksApi = inject(TrucksApiService);
 
   form = this.fb.group({
     routeSearch: [''],
     officeSearch: [''],
     routeId: ['', Validators.required],
     officeId: ['', Validators.required],
+    driverSearch: [''],
     driverName: ['', Validators.required],
+    truckSearch: [''],
     truckReg: ['', Validators.required],
   });
 
@@ -131,6 +172,8 @@ export class TripsComponent {
   trips: any[] = [];
   routeResults = signal<RouteItem[]>([]);
   officeResults = signal<OfficeItem[]>([]);
+  driverResults: any[] = [];
+  truckResults: any[] = [];
 
   constructor() {
     this.form.controls.routeSearch.valueChanges.pipe(
@@ -143,9 +186,38 @@ export class TripsComponent {
       startWith(''),
       debounceTime(250),
       switchMap((q: any) => q ? this.officesSearch.search(q) : of([])),
-    ).subscribe((rows: any) => this.officeResults.set(rows || []));
+    ).subscribe((rows: any) => {
+      const routeId = this.form.controls.routeId.value as string;
+      const filtered = Array.isArray(rows) && routeId
+        ? rows.filter((o: any) => o?.routeId === routeId)
+        : (rows || []);
+      this.officeResults.set(filtered);
+    });
+
+    // When route changes, clear selected office and refilter current office results
+    this.form.controls.routeId.valueChanges.subscribe((rid: string) => {
+      this.form.patchValue({ officeId: '' }, { emitEvent: false });
+      const currentOffices = this.officeResults();
+      if (Array.isArray(currentOffices) && rid) {
+        this.officeResults.set(currentOffices.filter((o: any) => o?.routeId === rid));
+      }
+    });
 
     this.refresh();
+
+    // Search drivers
+    this.form.controls.driverSearch.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      switchMap((q: any) => q ? this.driversApi.search(q) : of([])),
+    ).subscribe((rows: any) => this.driverResults = rows || []);
+
+    // Search trucks
+    this.form.controls.truckSearch.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      switchMap((q: any) => q ? this.trucksApi.search(q) : of([])),
+    ).subscribe((rows: any) => this.truckResults = rows || []);
   }
 
   refresh() {
@@ -177,5 +249,53 @@ export class TripsComponent {
   complete(t: any) {
     if (!confirm('Complete trip and send arrival SMS?')) return;
     this.tripsApi.complete(t.id).subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to complete trip') });
+  }
+
+  onPickDriver(e: any) {
+    const d = e?.value;
+    if (d) {
+      const name = `${d.firstName} ${d.lastName}`.trim();
+      this.form.patchValue({ driverName: name });
+    }
+  }
+
+  onPickTruck(e: any) {
+    const t = e?.value;
+    if (t?.registration) {
+      this.form.patchValue({ truckReg: t.registration });
+    }
+  }
+
+  addDriver() {
+    const firstName = prompt('Driver first name');
+    if (!firstName) return;
+    const lastName = prompt('Driver last name');
+    if (!lastName) return;
+    const phoneNumber = prompt('Phone (optional, digits only)') || undefined;
+    const licenseNumber = prompt('License (optional)') || undefined;
+    this.driversApi.create({ firstName, lastName, phoneNumber, licenseNumber }).subscribe({
+      next: (d: any) => {
+        const name = `${d.firstName} ${d.lastName}`.trim();
+        this.form.patchValue({ driverName: name });
+        this.driverResults = [d, ...this.driverResults];
+      },
+      error: (e) => alert(e?.error?.message || 'Failed to create driver')
+    });
+  }
+
+  addTruck() {
+    const registration = prompt('Truck registration');
+    if (!registration) return;
+    const make = prompt('Make (optional)') || undefined;
+    const model = prompt('Model (optional)') || undefined;
+    const capStr = prompt('Capacity (optional, number)') || undefined;
+    const capacity = capStr ? Number(capStr) : undefined;
+    this.trucksApi.create({ registration, make, model, capacity }).subscribe({
+      next: (t: any) => {
+        this.form.patchValue({ truckReg: t.registration });
+        this.truckResults = [t, ...this.truckResults];
+      },
+      error: (e) => alert(e?.error?.message || 'Failed to create truck')
+    });
   }
 }
