@@ -15,7 +15,8 @@ export class ScanningService {
     userId: string,
     officeId: string,
     routeId: string,
-    mode: "bag" | "individual"
+    mode: "bag" | "individual",
+    tripId?: string
   ) {
     // Basic validation: ensure office belongs to route
     const office = await this.prisma.office.findUnique({
@@ -25,12 +26,22 @@ export class ScanningService {
     if (office.routeId !== routeId)
       throw new BadRequestException("Office not on selected route");
 
+    // Validate trip linkage if provided
+    if (tripId) {
+      const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+      if (!trip) throw new BadRequestException('Trip not found');
+      if (trip.routeId !== routeId || trip.officeId !== officeId) {
+        throw new BadRequestException('Trip does not match route/office');
+      }
+    }
+
     const session = await this.prisma.scanningSession.create({
       data: {
         staffId: userId,
         officeId,
         routeId,
         mode,
+        tripId: tripId || null,
         mailBagCode: mode === "bag" ? `MB-${Date.now()}` : null,
       },
     });
@@ -40,7 +51,7 @@ export class ScanningService {
   async scanParcel(sessionId: string, code: string, userId: string) {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
-      include: { office: true },
+      include: { office: true, trip: true },
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -79,6 +90,10 @@ export class ScanningService {
           scannedById: userId,
         },
       });
+      // If linked to a trip and trip is PLANNED, flip to LOADING
+      if (session.trip && session.trip.status === 'PLANNED') {
+        await this.prisma.trip.update({ where: { id: session.trip.id }, data: { status: 'LOADING' as any } });
+      }
       return scan;
     } catch (e) {
       if (
@@ -99,7 +114,7 @@ export class ScanningService {
   ) {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
-      include: { office: true },
+      include: { office: true, trip: true },
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -125,9 +140,13 @@ export class ScanningService {
     // }
 
     try {
-      return await this.prisma.scannedParcel.create({
+      const created = await this.prisma.scannedParcel.create({
         data: { scanningSessionId: sessionId, parcelId, scannedById: userId },
       });
+      if (session.trip && session.trip.status === 'PLANNED') {
+        await this.prisma.trip.update({ where: { id: session.trip.id }, data: { status: 'LOADING' as any } });
+      }
+      return created;
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
