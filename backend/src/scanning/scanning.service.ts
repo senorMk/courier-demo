@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class ScanningService {
@@ -35,9 +37,69 @@ export class ScanningService {
     return session;
   }
 
-  async scanParcel(sessionId: string, parcelId: string, userId: string) {
+  async scanParcel(sessionId: string, code: string, userId: string) {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
+      include: { office: true },
+    });
+    if (!session) throw new NotFoundException("Session not found");
+    if (session.closedAt) throw new BadRequestException("Session closed");
+
+    // Look up parcel via plain text tracking code
+    const tracking = await this.prisma.trackingCode.findUnique({
+      where: { plainTextCode: code },
+      include: { parcel: { include: { office: true } } },
+    });
+    if (!tracking || !tracking.parcel) {
+      throw new BadRequestException("Invalid tracking code");
+    }
+    const parcel = tracking.parcel;
+    // Validate route & office alignment
+    const correctDest = `${parcel.office.name} (${parcel.office.branchCode})`;
+    const currentOffice = session.office
+      ? `${session.office.name} (${session.office.branchCode})`
+      : "current office";
+    if (parcel.office.routeId !== session.routeId) {
+      throw new BadRequestException(
+        `Parcel meant for ${correctDest}, not ${currentOffice}.`
+      );
+    }
+    // if (parcel.officeId !== session.officeId) {
+    //   throw new BadRequestException(
+    //     `Parcel meant for ${correctDest}, not ${currentOffice}.`
+    //   );
+    // }
+
+    // Record scan (unique constraint prevents duplicates)
+    try {
+      const scan = await this.prisma.scannedParcel.create({
+        data: {
+          scanningSessionId: sessionId,
+          parcelId: parcel.id,
+          scannedById: userId,
+        },
+      });
+      return scan;
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002"
+      ) {
+        throw new BadRequestException("Parcel already scanned");
+      }
+      throw e;
+    }
+  }
+
+  // Legacy: scan by parcelId (kept for backward compatibility)
+  async scanParcelByParcelId(
+    sessionId: string,
+    parcelId: string,
+    userId: string
+  ) {
+    const session = await this.prisma.scanningSession.findUnique({
+      where: { id: sessionId },
+      include: { office: true },
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -47,23 +109,34 @@ export class ScanningService {
       include: { office: true },
     });
     if (!parcel) throw new BadRequestException("Parcel not found");
-    // Validate route & office alignment
+    const correctDest2 = `${parcel.office.name} (${parcel.office.branchCode})`;
+    const currentOffice2 = session.office
+      ? `${session.office.name} (${session.office.branchCode})`
+      : "current office";
     if (parcel.office.routeId !== session.routeId) {
-      throw new BadRequestException(`Parcel meant for a different route`);
+      throw new BadRequestException(
+        `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
+      );
     }
-    if (parcel.officeId !== session.officeId) {
-      throw new BadRequestException(`Parcel meant for another office`);
-    }
+    // if (parcel.officeId !== session.officeId) {
+    //   throw new BadRequestException(
+    //     `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
+    //   );
+    // }
 
-    // Record scan (unique constraint prevents duplicates)
-    const scan = await this.prisma.scannedParcel.create({
-      data: {
-        scanningSessionId: sessionId,
-        parcelId,
-        scannedById: userId,
-      },
-    });
-    return scan;
+    try {
+      return await this.prisma.scannedParcel.create({
+        data: { scanningSessionId: sessionId, parcelId, scannedById: userId },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002"
+      ) {
+        throw new BadRequestException("Parcel already scanned");
+      }
+      throw e;
+    }
   }
 
   async closeSession(sessionId: string) {
@@ -74,20 +147,52 @@ export class ScanningService {
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) return session;
 
-    if (session.mode === "bag" && session.scans.length < 10) {
+    if (session.mode === "bag" && session.scans.length < 1) {
       throw new BadRequestException("Mail bag requires at least 10 parcels");
     }
 
-    return this.prisma.scanningSession.update({
+    const closed = await this.prisma.scanningSession.update({
       where: { id: sessionId },
       data: { closedAt: new Date() },
     });
+
+    // Generate delivery note PDF once on close (no-op if already exists)
+    try {
+      const { generateDeliveryNote } = require("../utils/delivery-note-generator");
+      await generateDeliveryNote(sessionId, { force: false });
+    } catch (e) {
+      // Log and continue; closing should not fail due to PDF issues
+      console.error("Failed to generate delivery note on close:", e?.message || e);
+    }
+
+    return closed;
   }
 
   async getSession(sessionId: string) {
     return this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
-      include: { scans: true },
+      include: {
+        office: { select: { id: true, name: true, branchCode: true } },
+        scans: {
+          include: {
+            scannedBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            parcel: {
+              include: {
+                TrackingCode: true,
+                office: { select: { name: true, branchCode: true } },
+              },
+            },
+          },
+          orderBy: { scannedAt: "desc" },
+        },
+      },
     });
   }
 
@@ -96,23 +201,87 @@ export class ScanningService {
     pageSize: number = 10,
     officeId?: string
   ) {
+    try {
+      const skip = (page - 1) * pageSize;
+      const where: any = {};
+      if (officeId) where.officeId = officeId;
+
+      const [sessions, total] = await this.prisma.$transaction([
+        this.prisma.scanningSession.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            office: { select: { id: true, name: true, branchCode: true } },
+            route: { select: { id: true, name: true, code: true } },
+            _count: { select: { scans: true } },
+          },
+        }),
+        this.prisma.scanningSession.count({ where }),
+      ]);
+      return {
+        data: sessions,
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    } catch (exception) {
+      console.error("Failed to fetch paginated sessions", exception);
+      throw new InternalServerErrorException(
+        "Failed to fetch paginated sessions"
+      );
+    }
+  }
+
+  async getPaginatedScans(
+    page: number = 1,
+    pageSize: number = 10,
+    officeId?: string
+  ) {
     const skip = (page - 1) * pageSize;
     const where: any = {};
-    if (officeId) where.officeId = officeId;
-    const [sessions, total] = await this.prisma.$transaction([
-      this.prisma.scanningSession.findMany({
+    if (officeId) {
+      // Filter by session office
+      where.scanningSession = { officeId };
+    }
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.scannedParcel.findMany({
         where,
         skip,
         take: pageSize,
-        orderBy: { createdAt: "desc" },
+        orderBy: { scannedAt: "desc" },
+        include: {
+          scanningSession: {
+            select: { id: true, officeId: true, routeId: true, mode: true },
+          },
+          scannedBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          parcel: {
+            include: {
+              TrackingCode: true,
+              office: { select: { id: true, name: true, branchCode: true } },
+            },
+          },
+        },
       }),
-      this.prisma.scanningSession.count({ where }),
+      this.prisma.scannedParcel.count({ where }),
     ]);
     return {
-      data: sessions,
+      data,
+      total,
       page,
       pageSize,
-      total,
       totalPages: Math.ceil(total / pageSize),
     };
   }

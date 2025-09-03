@@ -135,3 +135,6 @@ barcodes/
 
 # PDF receipts
 receipts/
+
+# Delivery Notes
+delivery-notes/

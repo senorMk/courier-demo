@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
+import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
@@ -52,6 +53,9 @@ async function bootstrap() {
     credentials: true,
     maxAge: 86400,
   });
+
+  // Ensure unhandled errors return informative JSON (incl. message for 500s)
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
