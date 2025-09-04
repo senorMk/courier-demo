@@ -4,7 +4,7 @@
 </button>
 
 <mat-menu [xPosition]="'before'" #userActions="matMenu">
-    <button mat-menu-item>
+    <button mat-menu-item (click)="signOut()">
         <mat-icon [svgIcon]="'heroicons_outline:logout'"></mat-icon>
         <span>Log out</span>
     </button>
