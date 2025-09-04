@@ -13,6 +13,15 @@ import { sendSms } from "../utils/sms-sender";
 export class ParcelService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizeZMBPhone(msisdn: string): string {
+    if (!msisdn) return msisdn;
+    const digits = String(msisdn).replace(/\D/g, "");
+    if (digits.startsWith("260")) return `+${digits}`;
+    if (digits.startsWith("0")) return `+260${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith("9")) return `+260${digits}`;
+    return `+${digits}`;
+  }
+
   async createParcel(
     data:
       | {
@@ -66,35 +75,39 @@ export class ParcelService {
       receiverId = data.receiverId;
     } else {
       const payload = data as any;
+      const customerPhone = this.normalizeZMBPhone(payload.customer.phoneNumber);
+      const receiverPhone = this.normalizeZMBPhone(payload.receiver.phoneNumber);
       const [customer, receiver] = await Promise.all([
         this.prisma.customer.upsert({
-          where: { phoneNumber: payload.customer.phoneNumber },
+          where: { phoneNumber: customerPhone },
           create: {
             firstName: payload.customer.firstName,
             lastName: payload.customer.lastName,
-            phoneNumber: payload.customer.phoneNumber,
+            phoneNumber: customerPhone,
             emailAddress: payload.customer.emailAddress || null,
             idNumber: payload.customer.idNumber || null,
           },
           update: {
             firstName: payload.customer.firstName,
             lastName: payload.customer.lastName,
+            phoneNumber: customerPhone,
             emailAddress: payload.customer.emailAddress || null,
             idNumber: payload.customer.idNumber || null,
           },
         }),
         this.prisma.customer.upsert({
-          where: { phoneNumber: payload.receiver.phoneNumber },
+          where: { phoneNumber: receiverPhone },
           create: {
             firstName: payload.receiver.firstName,
             lastName: payload.receiver.lastName,
-            phoneNumber: payload.receiver.phoneNumber,
+            phoneNumber: receiverPhone,
             emailAddress: payload.receiver.emailAddress || null,
             idNumber: payload.receiver.idNumber || null,
           },
           update: {
             firstName: payload.receiver.firstName,
             lastName: payload.receiver.lastName,
+            phoneNumber: receiverPhone,
             emailAddress: payload.receiver.emailAddress || null,
             idNumber: payload.receiver.idNumber || null,
           },
@@ -180,13 +193,13 @@ export class ParcelService {
       });
       if (sender?.phoneNumber && code) {
         await sendSms(
-          sender.phoneNumber,
+          this.normalizeZMBPhone(sender.phoneNumber as any),
           `Parcel Created: ${code}. Thank you for using PCS.`
         );
       }
       if (receiver?.phoneNumber && code) {
         await sendSms(
-          receiver.phoneNumber,
+          this.normalizeZMBPhone(receiver.phoneNumber as any),
           `Incoming Parcel: ${code}. You will be notified upon arrival.`
         );
       }

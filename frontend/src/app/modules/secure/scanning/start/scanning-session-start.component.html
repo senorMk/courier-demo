@@ -49,13 +49,16 @@
       <input matInput [formControl]="form.controls['routeId']" readonly />
     </mat-form-field>
     <div class="md:col-span-3">
-      <div class="text-xs text-gray-500">Results</div>
+      <div style="font-size: 14;">Results</div>
       <mat-radio-group [formControl]="form.controls['routeId']" class="mt-2 flex flex-col gap-1">
         <mat-radio-button *ngFor="let r of filteredRoutes()" [value]="r.id" class="py-1">
           <span class="text-sm font-medium">{{ r.name }}</span>
           <span class="text-sm text-gray-500 ml-2">{{ r.code }}</span>
         </mat-radio-button>
       </mat-radio-group>
+      <div *ngIf="filteredRoutes().length === 0">
+        <span class="text-sm text-gray-500">No routes found.</span>
+      </div>
     </div>
     <div class="md:col-span-3">
       <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Do you want to create a Mail Bag?</div>
