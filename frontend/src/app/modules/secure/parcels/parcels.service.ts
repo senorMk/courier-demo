@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { environment } from "../../../../environments/environment";
 
@@ -19,7 +19,7 @@ export interface CustomerPayload {
   idNumber?: string;
 }
 
-export type PaymentMethod = 'CASH' | 'MOBILE_MONEY' | 'CARD';
+export type PaymentMethod = "CASH" | "MOBILE_MONEY" | "CARD";
 
 export interface ParcelItem {
   id?: string;
@@ -35,18 +35,35 @@ export class ParcelsService {
   private baseUrl = environment.serverURL;
   constructor(private _httpClient: HttpClient) {}
 
+  getToken() {
+    return localStorage.getItem("accessToken");
+  }
+
+  getHeader() {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.getToken()}`,
+      }),
+    };
+    return httpOptions;
+  }
+
   getParcels(
     pageIndex = 0,
     pageSize = 10
   ): Observable<{ data: Parcel[]; total: number }> {
     const params = `?page=${pageIndex}&size=${pageSize}`;
     return this._httpClient.get<{ data: Parcel[]; total: number }>(
-      `${this.baseUrl}/v1/parcels/paginated${params}`
+      `${this.baseUrl}/v1/parcels/paginated${params}`,
+      this.getHeader()
     );
   }
 
   getParcelItems(parcelId: string): Observable<ParcelItem[]> {
-    return this._httpClient.get<ParcelItem[]>(`${this.baseUrl}/v1/parcels/${parcelId}/items`);
+    return this._httpClient.get<ParcelItem[]>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/items`,
+      this.getHeader()
+    );
   }
 
   createParcel(
@@ -56,43 +73,63 @@ export class ParcelsService {
           receiverId: string;
           officeId: string;
           size?: string;
-          payment?: { method: PaymentMethod; amount: number; reference?: string };
+          payment?: {
+            method: PaymentMethod;
+            amount: number;
+            reference?: string;
+          };
         }
       | {
           customer: CustomerPayload;
           receiver: CustomerPayload;
           officeId: string;
-          size: 'SMALL' | 'MEDIUM' | 'LARGE';
-          payment: { method: PaymentMethod; amount: number; reference?: string };
+          size: "SMALL" | "MEDIUM" | "LARGE";
+          payment: {
+            method: PaymentMethod;
+            amount: number;
+            reference?: string;
+          };
         }
   ): Observable<Parcel> {
     return this._httpClient.post<Parcel>(
       `${this.baseUrl}/v1/parcels/create`,
-      data
+      data,
+      this.getHeader()
     );
   }
 
   downloadReceiptsZip(parcelId: string): Observable<Blob> {
     const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/download`;
-    return this._httpClient.get(url, { responseType: 'blob' });
+    return this._httpClient.get(url, {
+      responseType: "blob",
+      ...this.getHeader(),
+    });
   }
 
-  downloadReceipt(parcelId: string, type: 'sender' | 'sticker' | 'accounts'): Observable<Blob> {
-    const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/${type}`;
-    return this._httpClient.get(url, { responseType: 'blob' });
-  }
-
-  createParcelItem(
+  downloadReceipt(
     parcelId: string,
-    data: ParcelItem
-  ): Observable<ParcelItem> {
+    type: "sender" | "sticker" | "accounts"
+  ): Observable<Blob> {
+    const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/${type}`;
+    return this._httpClient.get(url, {
+      responseType: "blob",
+      ...this.getHeader(),
+    });
+  }
+
+  createParcelItem(parcelId: string, data: ParcelItem): Observable<ParcelItem> {
     return this._httpClient.post<ParcelItem>(
       `${this.baseUrl}/v1/parcels/${parcelId}/items`,
-      data
+      data,
+      this.getHeader()
     );
   }
 
   markCollected(parcelId: string) {
-    return this._httpClient.post(`${this.baseUrl}/v1/parcels/${parcelId}/collect`, {});
+    return this._httpClient.post(
+      `${this.baseUrl}/v1/parcels/${parcelId}/collect`,
+      {},
+      this.getHeader()
+    );
   }
 }

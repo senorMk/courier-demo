@@ -26,5 +26,36 @@ export class TrucksService {
       take: 20,
     });
   }
-}
 
+  async paginated(page = 1, pageSize = 10) {
+    page = Math.max(1, Number(page) || 1);
+    pageSize = Math.max(1, Math.min(100, Number(pageSize) || 10));
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.truck.findMany({ orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
+      this.prisma.truck.count(),
+    ]);
+    return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  async getById(id: string) {
+    return this.prisma.truck.findUnique({ where: { id } });
+  }
+
+  async update(
+    id: string,
+    body: { registration?: string; make?: string; model?: string; capacity?: number },
+  ) {
+    const data: any = {};
+    if (body.registration !== undefined) data.registration = (body.registration || '').trim();
+    if (body.make !== undefined) data.make = body.make || null;
+    if (body.model !== undefined) data.model = body.model || null;
+    if (body.capacity !== undefined) (data as any).capacity = body.capacity as any;
+    if (!Object.keys(data).length) throw new BadRequestException('No fields to update');
+    return this.prisma.truck.update({ where: { id }, data });
+  }
+
+  async remove(id: string) {
+    return this.prisma.truck.delete({ where: { id } });
+  }
+}

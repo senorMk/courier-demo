@@ -52,6 +52,20 @@ export const defaultNavigation: FuseNavigationItem[] = [
     link: "/secure/trips",
   },
   {
+    id: "drivers",
+    title: "Drivers",
+    type: "basic",
+    icon: "heroicons_outline:identification",
+    link: "/secure/drivers",
+  },
+  {
+    id: "trucks",
+    title: "Trucks",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trucks",
+  },
+  {
     id: "complaints",
     title: "Complaints",
     type: "basic",
@@ -110,6 +124,20 @@ export const compactNavigation: FuseNavigationItem[] = [
     link: "/secure/trips",
   },
   {
+    id: "drivers",
+    title: "Drivers",
+    type: "basic",
+    icon: "heroicons_outline:identification",
+    link: "/secure/drivers",
+  },
+  {
+    id: "trucks",
+    title: "Trucks",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trucks",
+  },
+  {
     id: "complaints",
     title: "Complaints",
     type: "basic",
@@ -166,6 +194,20 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trips",
+  },
+  {
+    id: "drivers",
+    title: "Drivers",
+    type: "basic",
+    icon: "heroicons_outline:identification",
+    link: "/secure/drivers",
+  },
+  {
+    id: "trucks",
+    title: "Trucks",
+    type: "basic",
+    icon: "heroicons_outline:truck",
+    link: "/secure/trucks",
   },
   {
     id: "complaints",
