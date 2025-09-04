@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
-import { MatPaginator } from "@angular/material/paginator";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatDialog } from "@angular/material/dialog";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
@@ -47,11 +47,14 @@ export class ParcelsComponent implements OnInit {
     "customerId",
     "receiverId",
     "destinationId",
+    "createdAt",
     "actions",
   ];
   dataSource = new MatTableDataSource<Parcel>([]);
   selection = new SelectionModel<Parcel>(false, []);
   selectedParcel: Parcel | null = null;
+  total = 0;
+  pageSize = 10;
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
   constructor(
@@ -64,14 +67,16 @@ export class ParcelsComponent implements OnInit {
     this.loadData();
   }
 
-  loadData(pageIndex: number = 0, pageSize: number = 10): void {
+  loadData(pageIndex: number = 0, pageSize: number = this.pageSize): void {
     this._service.getParcels(pageIndex, pageSize).subscribe((data) => {
       this.dataSource.data = data.data || [];
-      if (this.paginator) {
-        this.paginator.length = data.total || this.dataSource.data.length;
-        this.dataSource.paginator = this.paginator;
-      }
+      this.total = Number(data.total || 0);
+      this.pageSize = pageSize;
     });
+  }
+
+  onPage(event: PageEvent): void {
+    this.loadData(event.pageIndex, event.pageSize);
   }
 
   openCreateDialog(): void {
