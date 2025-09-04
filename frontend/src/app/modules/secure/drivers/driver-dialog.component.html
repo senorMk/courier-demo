@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>Create Driver</h2>
+<form [formGroup]="form" class="dialog-form">
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>First Name</mat-label>
+    <input matInput formControlName="firstName" />
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>Last Name</mat-label>
+    <input matInput formControlName="lastName" />
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>Phone Number</mat-label>
+    <input matInput formControlName="phoneNumber" />
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>License Number</mat-label>
+    <input matInput formControlName="licenseNumber" />
+  </mat-form-field>
+  <div class="actions">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="loading">Save</button>
+  </div>
+</form>
+

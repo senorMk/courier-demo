@@ -168,16 +168,37 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'scanning',
-  loadChildren: () => import('app/modules/secure/scanning/scanning.routes')
+        path: "drivers",
+        loadChildren: () =>
+          import("app/modules/secure/drivers/drivers.module").then(
+            (m) => m.DriversModule
+          ),
       },
       {
-        path: 'trips',
-        loadComponent: () => import('app/modules/secure/trips/trips.component').then(m => m.TripsComponent)
+        path: "trucks",
+        loadChildren: () =>
+          import("app/modules/secure/trucks/trucks.module").then(
+            (m) => m.TrucksModule
+          ),
       },
       {
-        path: 'complaints',
-        loadComponent: () => import('app/modules/secure/complaints/complaints.component').then(m => m.ComplaintsComponent)
+        path: "scanning",
+        loadChildren: () =>
+          import("app/modules/secure/scanning/scanning.routes"),
+      },
+      {
+        path: "trips",
+        loadComponent: () =>
+          import("app/modules/secure/trips/trips.component").then(
+            (m) => m.TripsComponent
+          ),
+      },
+      {
+        path: "complaints",
+        loadComponent: () =>
+          import("app/modules/secure/complaints/complaints.component").then(
+            (m) => m.ComplaintsComponent
+          ),
       },
     ],
   },
