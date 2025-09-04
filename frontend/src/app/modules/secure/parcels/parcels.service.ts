@@ -9,6 +9,7 @@ export interface Parcel {
   customerId: string;
   receiverId: string;
   destinationId: string;
+  createdAt?: string;
 }
 
 export interface CustomerPayload {
@@ -52,7 +53,9 @@ export class ParcelsService {
     pageIndex = 0,
     pageSize = 10
   ): Observable<{ data: Parcel[]; total: number }> {
-    const params = `?page=${pageIndex}&size=${pageSize}`;
+    // Convert 0-based UI index to 1-based API page
+    const page = (pageIndex ?? 0) + 1;
+    const params = `?page=${page}&pageSize=${pageSize}`;
     return this._httpClient.get<{ data: Parcel[]; total: number }>(
       `${this.baseUrl}/v1/parcels/paginated${params}`,
       this.getHeader()

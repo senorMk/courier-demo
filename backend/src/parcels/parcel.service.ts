@@ -204,6 +204,7 @@ export class ParcelService {
       this.prisma.parcel.findMany({
         skip,
         take: pageSize,
+        orderBy: { createdAt: 'desc' },
         include: {
           customer: {
             select: {
