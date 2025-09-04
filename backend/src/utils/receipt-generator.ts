@@ -8,6 +8,15 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+function normalizeZMBPhone(msisdn?: string): string {
+  if (!msisdn) return '';
+  const digits = String(msisdn).replace(/\D/g, '');
+  if (digits.startsWith('260')) return `+${digits}`;
+  if (digits.startsWith('0')) return `+260${digits.slice(1)}`;
+  if (digits.length === 9 && digits.startsWith('9')) return `+260${digits}`;
+  return `+${digits}`;
+}
+
 function loadPdfKit(): any | null {
   try {
     // pdfkit has no types by default in this project
@@ -164,14 +173,14 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     doc.text(`Sender Name: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
     doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: +260${parcel.customer.phoneNumber}`);
+    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).customer?.phoneNumber)}`);
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text("Receiver's Details");
     doc.font('Helvetica');
     doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
     doc.text(`Town: ${parcel.office.name}`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: +260${parcel.receiver.phoneNumber}`);
+    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).receiver?.phoneNumber)}`);
 
     await drawItemsTable(doc);
     try {
