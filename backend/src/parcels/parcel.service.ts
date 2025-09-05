@@ -237,7 +237,7 @@ export class ParcelService {
             select: {
               branchCode: true,
               name: true,
-              officeType: true,
+              officeTypes: true,
             },
           },
           TrackingCode: {

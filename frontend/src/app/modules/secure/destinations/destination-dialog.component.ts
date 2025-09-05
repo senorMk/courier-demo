@@ -54,7 +54,7 @@ export class DestinationDialogComponent {
       code: ["", Validators.required],
       name: ["", Validators.required],
       branchCode: ["", Validators.required],
-      officeType: ["", Validators.required],
+      officeTypes: [[], Validators.required],
       routeId: ["", Validators.required],
     });
 

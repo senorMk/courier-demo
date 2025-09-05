@@ -9,6 +9,7 @@ export interface Destination {
   name: string;
   branchCode: string;
   routeId: string;
+  officeTypes?: string[];
 }
 
 @Injectable()

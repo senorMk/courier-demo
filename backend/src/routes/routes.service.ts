@@ -13,14 +13,14 @@ export class RoutesService {
 
   async createOffice(data: {
     branchCode: string;
-    officeType: OfficeType; // use Prisma enum
+    officeTypes: OfficeType[]; // use Prisma enum array
     name: string;
     routeId: string;
   }) {
     return this.prisma.office.create({
       data: {
         branchCode: data.branchCode,
-        officeType: data.officeType, // must be OfficeType.SENDING etc.
+        officeTypes: data.officeTypes, // e.g., [OfficeType.SENDING, OfficeType.DISPATCH]
         name: data.name,
         route: { connect: { id: data.routeId } },
       },

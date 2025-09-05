@@ -53,7 +53,7 @@ export class RoutesController {
     @Body()
     body: {
       branchCode: string;
-      officeType: OfficeType;
+      officeTypes: OfficeType[];
       routeId: string;
       name: string;
     }
