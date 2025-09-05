@@ -181,7 +181,7 @@ model Route {
 model Office {
   id               String            @id @default(uuid())
   branchCode       String            @unique
-  officeType       OfficeType
+  officeTypes      OfficeType[]
   name             String
   branchCodes      BranchCode[]
   parcels          Parcel[]

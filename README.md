@@ -75,3 +75,19 @@ cd ../frontend && npm test
 
 > Frontend tests require a local Chrome installation.
 
+## Schema change: Multi-function offices
+
+Offices now support multiple capabilities using a Postgres enum array.
+
+- Prisma schema change: `Office.officeTypes: OfficeType[]` (replaces `officeType`).
+- After pulling these changes, generate a migration and backfill existing data:
+
+```bash
+cd backend
+npx prisma migrate dev -n office_types_array
+
+# Optional: Backfill existing single values into arrays (manual SQL)
+# UPDATE "Office" SET "officeTypes" = ARRAY["officeType"::"OfficeType"];  -- if upgrading from a DB with the old column
+```
+
+Code changes use inclusion checks, e.g. `office.officeTypes.includes('DISPATCH')`.
