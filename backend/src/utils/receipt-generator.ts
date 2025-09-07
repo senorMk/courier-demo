@@ -45,6 +45,7 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
       customer: true,
       receiver: true,
       office: true,
+      sendingOffice: true,
       TrackingCode: true,
       payment: true,
     },
@@ -171,14 +172,16 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     doc.font('Helvetica-Bold').text('Sender Details');
     doc.font('Helvetica');
     doc.text(`Sender Name: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
-    doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
+    const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
+    const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
+    doc.text(`Office: ${originName} (${originCode})`);
     doc.text(`Date: ${formattedDate}`);
     doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).customer?.phoneNumber)}`);
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text("Receiver's Details");
     doc.font('Helvetica');
     doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
-    doc.text(`Town: ${parcel.office.name}`);
+    doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
     doc.text(`Date: ${formattedDate}`);
     doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).receiver?.phoneNumber)}`);
 
