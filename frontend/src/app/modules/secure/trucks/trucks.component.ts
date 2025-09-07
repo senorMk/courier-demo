@@ -1,26 +1,42 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatDialog } from '@angular/material/dialog';
-import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { Truck, TrucksService } from './trucks.service';
-import { TruckDialogComponent } from './truck-dialog.component';
+import { Component, OnInit, ViewChild } from "@angular/core";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatDialog } from "@angular/material/dialog";
+import { CommonModule } from "@angular/common";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { Truck, TrucksService } from "./trucks.service";
+import { TruckDialogComponent } from "./truck-dialog.component";
 
 @Component({
-  selector: 'app-trucks',
-  templateUrl: './trucks.component.html',
-  styleUrls: ['./trucks.component.scss'],
+  selector: "app-trucks",
+  templateUrl: "./trucks.component.html",
+  styleUrls: ["./trucks.component.scss"],
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatIconModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatIconModule,
+    MatButtonModule,
+  ],
 })
 export class TrucksComponent implements OnInit {
-  displayedColumns = ['registration', 'make', 'model', 'capacity', 'createdAt', 'actions'];
+  displayedColumns = [
+    "registration",
+    "make",
+    "model",
+    "capacity",
+    "createdAt",
+    "actions",
+  ];
   dataSource = new MatTableDataSource<Truck>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
 
-  constructor(private service: TrucksService, private dialog: MatDialog) {}
+  constructor(
+    private service: TrucksService,
+    private dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -37,13 +53,18 @@ export class TrucksComponent implements OnInit {
   }
 
   openCreate() {
-    const ref = this.dialog.open(TruckDialogComponent, { width: '400px' });
+    const ref = this.dialog.open(TruckDialogComponent, { width: "500px" });
     ref.afterClosed().subscribe((ok) => ok && this.load());
+  }
+
+  edit(row: Truck) {
+    const ref = this.dialog.open(TruckDialogComponent, { width: "500px", data: row });
+    ref.afterClosed().subscribe((ok) => ok && this.load(this.paginator?.pageIndex || 0, this.paginator?.pageSize || 10));
   }
 
   delete(row: Truck) {
     if (!row?.id) return;
-    if (!confirm('Delete this truck?')) return;
+    if (!confirm("Delete this truck?")) return;
     this.service.delete(row.id).subscribe(() => this.load());
   }
 }
