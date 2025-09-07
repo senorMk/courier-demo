@@ -28,6 +28,7 @@ export class ParcelService {
           customerId: string;
           receiverId: string;
           officeId: string;
+          sendingOfficeId?: string;
           size?: "SMALL" | "MEDIUM" | "LARGE";
           payment?: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -51,6 +52,7 @@ export class ParcelService {
             idNumber?: string;
           };
           officeId: string;
+          sendingOfficeId?: string;
           size: "SMALL" | "MEDIUM" | "LARGE";
           payment: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -122,6 +124,7 @@ export class ParcelService {
         customerId,
         receiverId,
         officeId: (data as any).officeId,
+        sendingOfficeId: (data as any).sendingOfficeId || (data as any).officeId,
         size: ((data as any).size as any) || "MEDIUM",
       },
     });

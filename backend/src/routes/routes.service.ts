@@ -31,7 +31,12 @@ export class RoutesService {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
-      this.prisma.office.findMany({ skip, take: pageSize }),
+      this.prisma.office.findMany({
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: { route: { select: { id: true, name: true, code: true } } },
+      }),
       this.prisma.office.count(),
     ]);
     return {
@@ -87,5 +92,30 @@ export class RoutesService {
       take: 50,
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  async getOffice(id: string) {
+    return this.prisma.office.findUnique({ where: { id } });
+  }
+
+  async updateOffice(
+    id: string,
+    data: Partial<{
+      branchCode: string;
+      officeTypes: OfficeType[];
+      name: string;
+      routeId: string;
+    }>
+  ) {
+    const updateData: Prisma.OfficeUpdateInput = {};
+    if (typeof data.branchCode !== 'undefined') updateData.branchCode = data.branchCode;
+    if (typeof data.name !== 'undefined') updateData.name = data.name;
+    if (typeof data.officeTypes !== 'undefined') updateData.officeTypes = data.officeTypes as any;
+    if (typeof data.routeId !== 'undefined') updateData.route = { connect: { id: data.routeId } };
+    return this.prisma.office.update({ where: { id }, data: updateData });
+  }
+
+  async deleteOffice(id: string) {
+    return this.prisma.office.delete({ where: { id } });
   }
 }

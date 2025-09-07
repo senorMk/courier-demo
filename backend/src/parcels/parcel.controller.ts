@@ -11,8 +11,8 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { RolesGuard } from "src/common/guards/roles.guard";
 import { ParcelService } from "./parcel.service";
-import { Response } from "express";
-import { Res } from "@nestjs/common";
+import { Response, Request } from "express";
+import { Res, Req } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
 import * as archiver from "archiver";
@@ -62,9 +62,16 @@ export class ParcelController {
             reference?: string;
           };
         }
+    ,
+    @Req() req: Request
   ) {
     try {
-      return await this.parcelService.createParcel(body);
+      const user: any = (req as any)?.user || {};
+      const enriched = { ...(body as any) };
+      if (!enriched.sendingOfficeId && user?.officeId) {
+        enriched.sendingOfficeId = user.officeId;
+      }
+      return await this.parcelService.createParcel(enriched as any);
     } catch (e) {
       console.error('ParcelController.create error:', e);
       throw e;
