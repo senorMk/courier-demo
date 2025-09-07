@@ -38,6 +38,14 @@ export class DriversService {
     return this._http.post<Driver>(`${environment.serverURL}/v1/drivers`, data, this.getHeader());
   }
 
+  get(id: string): Observable<Driver> {
+    return this._http.get<Driver>(`${environment.serverURL}/v1/drivers/${id}`, this.getHeader());
+  }
+
+  update(id: string, data: Partial<Driver>): Observable<Driver> {
+    return this._http.put<Driver>(`${environment.serverURL}/v1/drivers/${id}`, data, this.getHeader());
+  }
+
   delete(id: string): Observable<void> {
     return this._http.delete<void>(`${environment.serverURL}/v1/drivers/${id}`, this.getHeader());
   }

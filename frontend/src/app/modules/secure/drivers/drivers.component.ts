@@ -37,8 +37,13 @@ export class DriversComponent implements OnInit {
   }
 
   openCreate() {
-    const ref = this.dialog.open(DriverDialogComponent, { width: '400px' });
+    const ref = this.dialog.open(DriverDialogComponent, { width: '500px' });
     ref.afterClosed().subscribe((ok) => ok && this.load());
+  }
+
+  edit(row: Driver) {
+    const ref = this.dialog.open(DriverDialogComponent, { width: '500px', data: row });
+    ref.afterClosed().subscribe((ok) => ok && this.load(this.paginator?.pageIndex || 0, this.paginator?.pageSize || 10));
   }
 
   delete(row: Driver) {
