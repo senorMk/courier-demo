@@ -91,3 +91,18 @@ npx prisma migrate dev -n office_types_array
 ```
 
 Code changes use inclusion checks, e.g. `office.officeTypes.includes('DISPATCH')`.
+
+## Schema change: Parcel sending office
+
+Parcels now capture the origin office via `Parcel.sendingOfficeId`.
+
+- Prisma schema: `sendingOfficeId` (nullable) with relation `sendingOffice -> Office`.
+- Backend sets `sendingOfficeId` from the authenticated user's `officeId` when creating parcels; if unavailable, it remains null.
+- Receipts now display the origin office under Sender Details and the destination office under Receiver Details.
+
+After pulling these changes, run a migration and regenerate the Prisma client:
+
+```bash
+cd backend
+npx prisma migrate dev -n add_parcel_sending_office
+```
