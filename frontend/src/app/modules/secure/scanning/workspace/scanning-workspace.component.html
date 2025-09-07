@@ -7,30 +7,39 @@
         Active Scanning
       </h1>
       <div class="mt-1 flex flex-wrap gap-3 text-[11px] text-gray-500">
-        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 font-mono">ID {{ session()?.id }}</span>
-        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 capitalize">{{ session()?.mode }} mode</span>
-        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 text-emerald-700">Route {{ session()?.routeId }}</span>
-        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-violet-50 text-violet-700">Staff {{ session()?.staffId }}</span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 font-mono">ID: {{ session()?.id
+          }}</span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 capitalize">{{
+          session()?.mode }} mode</span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 text-emerald-700">Route: {{
+          session()?.route?.name }}</span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-violet-50 text-violet-700">Staff: {{
+          session()?.user?.firstName }} {{ session()?.user?.lastName }}</span>
       </div>
     </div>
     <div class="flex items-center gap-3">
+      <button mat-stroked-button (click)="cancel()">Cancel</button>
       <button mat-stroked-button color="primary" (click)="closeSession()" class="!px-6">Close & Review</button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+  <div class="grid grid-cols-1 gap-8">
     <!-- Left: Scanning & parcels -->
-    <div class="xl:col-span-3 space-y-8">
+    <div class="space-y-8">
       <!-- Scan input card -->
       <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4 relative overflow-hidden">
-        <div class="absolute inset-0 pointer-events-none [mask-image:radial-gradient(circle_at_30%_20%,black,transparent)] bg-gradient-to-br from-blue-50 via-transparent to-transparent"></div>
+        <div
+          class="absolute inset-0 pointer-events-none [mask-image:radial-gradient(circle_at_30%_20%,black,transparent)] bg-gradient-to-br from-blue-50 via-transparent to-transparent">
+        </div>
         <div class="relative">
           <label class="flex items-center gap-2 text-sm font-medium mb-2">
             <mat-icon fontIcon="barcode_reader" class="text-blue-600"></mat-icon>
             Scan or enter tracking code
           </label>
           <div class="flex gap-3">
-            <input autofocus type="text" [ngModel]="barcodeInput()" (ngModelChange)="barcodeInput.set($event)" (keydown.enter)="scan()" placeholder="e.g. PCZ123456789" class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white/80 backdrop-blur" />
+            <input autofocus type="text" [ngModel]="barcodeInput()" (ngModelChange)="barcodeInput.set($event)"
+              (keydown.enter)="scan()" placeholder="e.g. PCZ123456789"
+              class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white/80 backdrop-blur" />
             <button mat-flat-button color="primary" class="!px-8" (click)="scan()">Add</button>
           </div>
           <div *ngIf="error()" class="text-xs text-red-600 mt-2 flex items-center gap-1">
@@ -43,11 +52,14 @@
       <!-- Parcels list -->
       <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="text-sm font-semibold tracking-wide text-gray-700 uppercase">Parcels ({{ (session()?.scans?.length || session()?.parcels?.length || 0) }})</h2>
-          <div class="text-[11px] text-gray-400">{{ (session()?.scans?.length || session()?.parcels?.length) ? 'Latest first' : 'No parcels yet' }}</div>
+          <h2 class="text-sm font-semibold tracking-wide text-gray-700 uppercase">Parcels ({{ (session()?.scans?.length
+            || session()?.parcels?.length || 0) }})</h2>
+          <div class="text-[11px] text-gray-400">{{ (session()?.scans?.length || session()?.parcels?.length) ? 'Latest
+            first' : 'No parcels yet' }}</div>
         </div>
         <div class="space-y-2">
-          <div *ngFor="let s of (session()?.scans || []).slice()" class="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
+          <div *ngFor="let s of (session()?.scans || []).slice()"
+            class="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
             <div class="flex flex-col text-[11px]">
               <span class="font-mono text-blue-800">{{ s.parcel?.TrackingCode?.plainTextCode || s.parcelId }}</span>
               <span class="text-gray-500">{{ s.scannedAt | date:'short' }}</span>
