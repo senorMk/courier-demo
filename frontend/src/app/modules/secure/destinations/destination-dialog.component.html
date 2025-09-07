@@ -1,7 +1,5 @@
 <h1 mat-dialog-title
-  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create
-  Office
-</h1>
+  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">{{ editingId ? 'Edit Office' : 'Create Office' }}</h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-form-field appearance="fill">
     <mat-label>Code</mat-label>

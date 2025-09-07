@@ -15,13 +15,34 @@
         <th mat-header-cell *matHeaderCellDef>Branch Code</th>
         <td mat-cell *matCellDef="let element">{{ element.branchCode }}</td>
       </ng-container>
+      <ng-container matColumnDef="officeTypes">
+        <th mat-header-cell *matHeaderCellDef>Office Types</th>
+        <td mat-cell *matCellDef="let element">
+          <ng-container *ngIf="element.officeTypes?.length; else none">
+            {{ element.officeTypes.join(', ') }}
+          </ng-container>
+          <ng-template #none>—</ng-template>
+        </td>
+      </ng-container>
       <ng-container matColumnDef="routeName">
         <th mat-header-cell *matHeaderCellDef>Route</th>
-        <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+        <td mat-cell *matCellDef="let element">{{ element.route?.name || '—' }}</td>
       </ng-container>
       <ng-container matColumnDef="createdAt">
         <th mat-header-cell *matHeaderCellDef>Created At</th>
         <td mat-cell *matCellDef="let element">{{ element.createdAt | date: 'short' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef style="width: 120px;">Actions</th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button color="primary" (click)="openEditDialog(element)" title="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="delete(element)" title="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

@@ -19,8 +19,10 @@ export class DestinationsComponent implements OnInit {
   displayedColumns: string[] = [
     "name",
     "branchCode",
+    "officeTypes",
     "routeName",
     "createdAt",
+    "actions",
   ];
   dataSource = new MatTableDataSource<Destination>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -52,6 +54,26 @@ export class DestinationsComponent implements OnInit {
       if (result) {
         this.loadData();
       }
+    });
+  }
+
+  openEditDialog(row: Destination): void {
+    const dialogRef = this._dialog.open(DestinationDialogComponent, {
+      width: "400px",
+      data: { office: row },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.loadData(this.paginator?.pageIndex || 0, this.paginator?.pageSize || 10);
+      }
+    });
+  }
+
+  delete(row: Destination): void {
+    if (!row?.id) return;
+    if (!confirm(`Delete office "${row.name}"? This cannot be undone.`)) return;
+    this._service.deleteDestination(row.id).subscribe(() => {
+      this.loadData(this.paginator?.pageIndex || 0, this.paginator?.pageSize || 10);
     });
   }
 }
