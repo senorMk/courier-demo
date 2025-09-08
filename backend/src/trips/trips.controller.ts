@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, UseGuards, Query, Req } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SetMetadata } from '@nestjs/common';
+import { Request } from 'express';
 
 @Controller('api/v1/trips')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -45,5 +46,15 @@ export class TripsController {
     @Query('pageSize') pageSize: number = 10,
   ) {
     return this.service.listTrips({ status, page: Number(page), pageSize: Number(pageSize) });
+  }
+
+  @Get('open')
+  open(
+    @Req() req: Request,
+    @Query('routeId') routeId: string,
+  ) {
+    const user: any = (req as any).user || {};
+    const officeId = user?.officeId;
+    return this.service.openTrips(routeId, officeId);
   }
 }

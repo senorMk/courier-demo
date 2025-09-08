@@ -118,4 +118,13 @@ export class TripsService {
     ]);
     return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
+
+  async openTrips(routeId: string, officeId: string) {
+    if (!routeId || !officeId) throw new BadRequestException('routeId and officeId are required');
+    return this.prisma.trip.findMany({
+      where: { routeId, officeId, status: { in: ['PLANNED' as any, 'LOADING' as any] } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, driverName: true, truckReg: true, status: true, createdAt: true },
+    });
+  }
 }
