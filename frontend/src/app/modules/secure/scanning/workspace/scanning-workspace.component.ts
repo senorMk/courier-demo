@@ -32,6 +32,8 @@ export class ScanningWorkspaceComponent {
   barcodeInput = signal("");
   error = signal<string | null>(null);
   private submitting = signal<boolean>(false);
+  // Remember last code auto-submitted to avoid repeated retries
+  private _lastAutoScanned: string = "";
 
   constructor() {
     effect(() => {
@@ -49,7 +51,10 @@ export class ScanningWorkspaceComponent {
     effect(() => {
       const code = this.barcodeInput().trim();
       if (!code || this.submitting()) return;
+      // Avoid re-submitting the same code repeatedly when input doesn't change
+      if (code === this._lastAutoScanned) return;
       if (this.looksLikeTrackingCode(code)) {
+        this._lastAutoScanned = code;
         this.scan();
       }
     });
@@ -64,6 +69,7 @@ export class ScanningWorkspaceComponent {
       next: () => {
         this.barcodeInput.set("");
         this.error.set(null);
+        this._lastAutoScanned = "";
         // refresh session
         this.api
           .getSession(this.sessionId())
@@ -76,6 +82,15 @@ export class ScanningWorkspaceComponent {
           duration: 3000,
           verticalPosition: "top",
         });
+        // If it's a duplicate-type error, clear input to prevent continuous retries
+        const msg = (this.error() || "").toLowerCase();
+        if (msg.includes("already scanned") || msg.includes("duplicate")) {
+          this.barcodeInput.set("");
+          this._lastAutoScanned = "";
+        } else {
+          // Keep the last auto-scanned marker so effect doesn't instantly retry
+          // Users can edit the input to retry.
+        }
         this.submitting.set(false);
       },
     });
