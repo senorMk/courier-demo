@@ -31,6 +31,7 @@ export class ScanningWorkspaceComponent {
   session = signal<any | null>(null);
   barcodeInput = signal("");
   error = signal<string | null>(null);
+  private submitting = signal<boolean>(false);
 
   constructor() {
     effect(() => {
@@ -43,11 +44,22 @@ export class ScanningWorkspaceComponent {
         });
       }
     });
+
+    // Auto-scan when a valid tracking code is entered
+    effect(() => {
+      const code = this.barcodeInput().trim();
+      if (!code || this.submitting()) return;
+      if (this.looksLikeTrackingCode(code)) {
+        this.scan();
+      }
+    });
   }
 
   scan() {
     const code = this.barcodeInput().trim();
     if (!code) return;
+    if (this.submitting()) return;
+    this.submitting.set(true);
     this.api.scanParcel(this.sessionId(), code).subscribe({
       next: () => {
         this.barcodeInput.set("");
@@ -56,6 +68,7 @@ export class ScanningWorkspaceComponent {
         this.api
           .getSession(this.sessionId())
           .subscribe((s) => this.session.set(s));
+        this.submitting.set(false);
       },
       error: (err) => {
         this.error.set(err?.error?.message || "Failed to scan");
@@ -63,6 +76,7 @@ export class ScanningWorkspaceComponent {
           duration: 3000,
           verticalPosition: "top",
         });
+        this.submitting.set(false);
       },
     });
   }
@@ -97,5 +111,24 @@ export class ScanningWorkspaceComponent {
 
   cancel() {
     this.router.navigate(["/secure/scanning"]);
+  }
+
+  // Basic heuristic for tracking code validity based on backend format:
+  // `${routeCode}-${destinationCode}-${branchCode}-${parcelNumber}`
+  private looksLikeTrackingCode(code: string): boolean {
+    // Fast checks first
+    if (code.length < 6) return false;
+    const parts = code.split("-");
+    if (parts.length !== 4) return false;
+    const [routeCode, destinationCode, branchCode, parcelNumber] = parts;
+    // Ensure non-empty alphanumeric segments and numeric parcel number
+    const alphaNum = /^[A-Z0-9]+$/i;
+    const digits = /^\d+$/;
+    return (
+      alphaNum.test(routeCode) &&
+      alphaNum.test(destinationCode) &&
+      alphaNum.test(branchCode) &&
+      digits.test(parcelNumber)
+    );
   }
 }
