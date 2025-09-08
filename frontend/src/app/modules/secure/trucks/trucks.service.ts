@@ -38,6 +38,14 @@ export class TrucksService {
     return this._http.post<Truck>(`${environment.serverURL}/v1/trucks`, data, this.getHeader());
   }
 
+  get(id: string): Observable<Truck> {
+    return this._http.get<Truck>(`${environment.serverURL}/v1/trucks/${id}`, this.getHeader());
+  }
+
+  update(id: string, data: Partial<Truck>): Observable<Truck> {
+    return this._http.put<Truck>(`${environment.serverURL}/v1/trucks/${id}`, data, this.getHeader());
+  }
+
   delete(id: string): Observable<void> {
     return this._http.delete<void>(`${environment.serverURL}/v1/trucks/${id}`, this.getHeader());
   }

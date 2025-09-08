@@ -22,6 +22,7 @@ import { MatPaginatorModule, MatPaginator } from "@angular/material/paginator";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
 import { debounceTime, switchMap, of, startWith } from 'rxjs';
+import { TripsApiService } from '../trips-api.service';
 
 @Component({
   selector: "scanning-session-start",
@@ -47,6 +48,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   private router = inject(Router);
   private _routesSearch = inject(RoutesSearchService);
   private _snackBar = inject(MatSnackBar);
+  private _tripsApi = inject(TripsApiService);
 
   routes = signal<RouteItem[]>([]);
   filteredRoutes = signal<RouteItem[]>([]);
@@ -55,6 +57,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     routeId: ["", Validators.required],
     routeSearch: [""],
     mode: ["bag", Validators.required],
+    tripId: [""]
   });
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -82,6 +85,11 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       const picked = all.find(r => r.id === id);
       if (picked) {
         this.form.patchValue({ routeSearch: picked.name }, { emitEvent: false });
+        // Load open trips for this route (current user's office inferred by backend)
+        this._tripsApi.getOpenTrips(picked.id).subscribe({
+          next: (trips) => this.openTrips = trips || [],
+          error: () => this.openTrips = []
+        });
       }
     });
     if (this.paginator) {
@@ -92,6 +100,8 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       });
     }
   }
+
+  openTrips: Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string }> = [];
 
   fetchSessions() {
     this._scanningSessionsService
@@ -127,6 +137,8 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     this._scanningSessionsService.startSession({
       routeId: value.routeId!,
       mode: value.mode as any,
+      // Pass tripId only if selected; backend enforces requirement for DISPATCH offices
+      ...(value.tripId ? { tripId: value.tripId } : {}),
     }).subscribe({
       next: (session: any) => {
         this.router.navigate(["/secure/scanning/session", session.id]);

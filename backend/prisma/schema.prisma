@@ -77,23 +77,25 @@ model TrackingCode {
 }
 
 model Parcel {
-  id           String          @id @default(uuid())
-  parcelNumber Int             @unique @default(autoincrement())
-  customerId   String
-  receiverId   String
-  officeId     String
-  status       ParcelStatus    @default(PENDING)
-  size         ParcelSize      @default(MEDIUM)
-  items        ParcelItem[]
-  customer     Customer        @relation("Sender", fields: [customerId], references: [id])
-  receiver     Customer        @relation("Receiver", fields: [receiverId], references: [id])
-  office       Office          @relation(fields: [officeId], references: [id])
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  TrackingCode TrackingCode?
-  scans        ScannedParcel[] @relation("ParcelScans")
-  payment      Payment?
-  complaints   Complaint[]
+  id              String          @id @default(uuid())
+  parcelNumber    Int             @unique @default(autoincrement())
+  customerId      String
+  receiverId      String
+  officeId        String
+  sendingOfficeId String?
+  status          ParcelStatus    @default(PENDING)
+  size            ParcelSize      @default(MEDIUM)
+  items           ParcelItem[]
+  customer        Customer        @relation("Sender", fields: [customerId], references: [id])
+  receiver        Customer        @relation("Receiver", fields: [receiverId], references: [id])
+  office          Office          @relation(fields: [officeId], references: [id])
+  sendingOffice   Office?         @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  TrackingCode    TrackingCode?
+  scans           ScannedParcel[] @relation("ParcelScans")
+  payment         Payment?
+  complaints      Complaint[]
 }
 
 model ParcelItem {
@@ -181,7 +183,7 @@ model Route {
 model Office {
   id               String            @id @default(uuid())
   branchCode       String            @unique
-  officeType       OfficeType
+  officeTypes      OfficeType[]
   name             String
   branchCodes      BranchCode[]
   parcels          Parcel[]
@@ -190,6 +192,7 @@ model Office {
   trips            Trip[]
   routeId          String
   route            Route             @relation(fields: [routeId], references: [id])
+  sentParcels      Parcel[]          @relation("SendingOffice")
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }

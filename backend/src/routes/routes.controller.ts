@@ -6,6 +6,9 @@ import {
   UseGuards,
   SetMetadata,
   BadRequestException,
+  Param,
+  Put,
+  Delete,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { RoutesService } from "./routes.service";
@@ -53,7 +56,7 @@ export class RoutesController {
     @Body()
     body: {
       branchCode: string;
-      officeType: OfficeType;
+      officeTypes: OfficeType[];
       routeId: string;
       name: string;
     }
@@ -86,5 +89,35 @@ export class RoutesController {
       return [];
     }
     return this.routesService.searchOffices(q);
+  }
+
+  @Get("offices/:id")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getOffice(@Param('id') id: string) {
+    return this.routesService.getOffice(id);
+  }
+
+  @Put("offices/:id")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async updateOffice(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      branchCode?: string;
+      officeTypes?: OfficeType[];
+      routeId?: string;
+      name?: string;
+    }
+  ) {
+    return this.routesService.updateOffice(id, body);
+  }
+
+  @Delete("offices/:id")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async deleteOffice(@Param('id') id: string) {
+    return this.routesService.deleteOffice(id);
   }
 }

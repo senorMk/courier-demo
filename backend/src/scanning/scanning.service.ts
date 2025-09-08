@@ -14,11 +14,11 @@ export class ScanningService {
   constructor(private prisma: PrismaService) {}
 
   private normalizeZMBPhone(msisdn?: string): string {
-    if (!msisdn) return '';
-    const digits = String(msisdn).replace(/\D/g, '');
-    if (digits.startsWith('260')) return `+${digits}`;
-    if (digits.startsWith('0')) return `+260${digits.slice(1)}`;
-    if (digits.length === 9 && digits.startsWith('9')) return `+260${digits}`;
+    if (!msisdn) return "";
+    const digits = String(msisdn).replace(/\D/g, "");
+    if (digits.startsWith("260")) return `+${digits}`;
+    if (digits.startsWith("0")) return `+260${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith("9")) return `+260${digits}`;
     return `+${digits}`;
   }
 
@@ -34,11 +34,16 @@ export class ScanningService {
       where: { id: officeId },
     });
     if (!office) throw new BadRequestException("Office not found");
-    if (office.routeId !== routeId)
+    if (office.routeId !== routeId) {
+      // TODO: Clarify with PM - temporarily disabled to allow cross-route scanning
       throw new BadRequestException("Office not on selected route");
+    }
 
     // Dispatch scanner: require a trip and ensure it is loadable
-    if (office.officeType === "DISPATCH") {
+    if (
+      Array.isArray((office as any).officeTypes) &&
+      (office as any).officeTypes.includes("DISPATCH")
+    ) {
       if (!tripId) {
         throw new BadRequestException(
           "Dispatch scanning requires an active trip"
@@ -85,7 +90,10 @@ export class ScanningService {
     if (session.closedAt) throw new BadRequestException("Session closed");
 
     // Dispatch scanner: must be tied to a loadable trip
-    if (session.office?.officeType === "DISPATCH") {
+    if (
+      Array.isArray((session.office as any)?.officeTypes) &&
+      (session.office as any).officeTypes.includes("DISPATCH")
+    ) {
       if (!session.trip)
         throw new BadRequestException(
           "Dispatch session must be linked to a trip"
@@ -127,7 +135,11 @@ export class ScanningService {
       );
     }
     // Receiving-office offload: enforce correct office
-    if (session.office && session.office.officeType === "RECEIVING") {
+    if (
+      session.office &&
+      Array.isArray((session.office as any).officeTypes) &&
+      (session.office as any).officeTypes.includes("RECEIVING")
+    ) {
       if (parcel.officeId !== session.officeId) {
         throw new BadRequestException(
           `Parcel meant for ${correctDest}, not ${currentOffice}.`
@@ -141,22 +153,42 @@ export class ScanningService {
       // 1) If session is tied to a trip, ensure parcel not already scanned for the same trip
       if (session.tripId) {
         const dupTrip = await this.prisma.scannedParcel.findFirst({
-          where: { parcelId: parcel.id, scanningSession: { tripId: session.tripId } },
+          where: {
+            parcelId: parcel.id,
+            scanningSession: { tripId: session.tripId },
+          },
         });
-        if (dupTrip) throw new BadRequestException('Parcel already scanned for this trip');
+        if (dupTrip)
+          throw new BadRequestException("Parcel already scanned for this trip");
       }
       // 2) If receiving office, ensure not already scanned at this office
-      if (session.office && session.office.officeType === 'RECEIVING') {
+      if (
+        session.office &&
+        Array.isArray((session.office as any).officeTypes) &&
+        (session.office as any).officeTypes.includes("RECEIVING")
+      ) {
         const dupOffice = await this.prisma.scannedParcel.findFirst({
-          where: { parcelId: parcel.id, scanningSession: { officeId: session.officeId } },
+          where: {
+            parcelId: parcel.id,
+            scanningSession: { officeId: session.officeId },
+          },
         });
-        if (dupOffice) throw new BadRequestException('Parcel already scanned at this office');
+        if (dupOffice)
+          throw new BadRequestException(
+            "Parcel already scanned at this office"
+          );
       }
       // 3) Always block duplicate within the same session (defensive in case DB constraint missing)
       const dupSession = await this.prisma.scannedParcel.findUnique({
-        where: { scanningSessionId_parcelId: { scanningSessionId: sessionId, parcelId: parcel.id } },
+        where: {
+          scanningSessionId_parcelId: {
+            scanningSessionId: sessionId,
+            parcelId: parcel.id,
+          },
+        },
       });
-      if (dupSession) throw new BadRequestException('Parcel already scanned in this session');
+      if (dupSession)
+        throw new BadRequestException("Parcel already scanned in this session");
       const scan = await this.prisma.scannedParcel.create({
         data: {
           scanningSessionId: sessionId,
@@ -174,7 +206,8 @@ export class ScanningService {
       // Receiving offload: mark ready for collection and send SMS
       if (
         session.office &&
-        session.office.officeType === "RECEIVING" &&
+        Array.isArray((session.office as any).officeTypes) &&
+        (session.office as any).officeTypes.includes("RECEIVING") &&
         parcel.officeId === session.officeId
       ) {
         await this.prisma.parcel.update({
@@ -187,9 +220,15 @@ export class ScanningService {
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
           const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
           if (parcel.receiver?.phoneNumber)
-            await sendSms(this.normalizeZMBPhone(parcel.receiver.phoneNumber as any), msgReceiver);
+            await sendSms(
+              this.normalizeZMBPhone(parcel.receiver.phoneNumber as any),
+              msgReceiver
+            );
           if (parcel.customer?.phoneNumber)
-            await sendSms(this.normalizeZMBPhone(parcel.customer.phoneNumber as any), msgSender);
+            await sendSms(
+              this.normalizeZMBPhone(parcel.customer.phoneNumber as any),
+              msgSender
+            );
         } catch (e) {
           // Best effort
         }
@@ -219,7 +258,10 @@ export class ScanningService {
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
 
-    if (session.office?.officeType === "DISPATCH") {
+    if (
+      Array.isArray((session.office as any)?.officeTypes) &&
+      (session.office as any).officeTypes.includes("DISPATCH")
+    ) {
       if (!session.trip)
         throw new BadRequestException(
           "Dispatch session must be linked to a trip"
@@ -251,7 +293,11 @@ export class ScanningService {
         `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
       );
     }
-    if (session.office && session.office.officeType === "RECEIVING") {
+    if (
+      session.office &&
+      Array.isArray((session.office as any).officeTypes) &&
+      (session.office as any).officeTypes.includes("RECEIVING")
+    ) {
       if (parcel.officeId !== session.officeId) {
         throw new BadRequestException(
           `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
@@ -265,18 +311,32 @@ export class ScanningService {
         const dupTrip = await this.prisma.scannedParcel.findFirst({
           where: { parcelId, scanningSession: { tripId: session.tripId } },
         });
-        if (dupTrip) throw new BadRequestException('Parcel already scanned for this trip');
+        if (dupTrip)
+          throw new BadRequestException("Parcel already scanned for this trip");
       }
-      if (session.office && session.office.officeType === 'RECEIVING') {
+      if (
+        session.office &&
+        Array.isArray((session.office as any).officeTypes) &&
+        (session.office as any).officeTypes.includes("RECEIVING")
+      ) {
         const dupOffice = await this.prisma.scannedParcel.findFirst({
           where: { parcelId, scanningSession: { officeId: session.officeId } },
         });
-        if (dupOffice) throw new BadRequestException('Parcel already scanned at this office');
+        if (dupOffice)
+          throw new BadRequestException(
+            "Parcel already scanned at this office"
+          );
       }
       const dupSession = await this.prisma.scannedParcel.findUnique({
-        where: { scanningSessionId_parcelId: { scanningSessionId: sessionId, parcelId } },
+        where: {
+          scanningSessionId_parcelId: {
+            scanningSessionId: sessionId,
+            parcelId,
+          },
+        },
       });
-      if (dupSession) throw new BadRequestException('Parcel already scanned in this session');
+      if (dupSession)
+        throw new BadRequestException("Parcel already scanned in this session");
       const created = await this.prisma.scannedParcel.create({
         data: { scanningSessionId: sessionId, parcelId, scannedById: userId },
       });
@@ -288,7 +348,8 @@ export class ScanningService {
       }
       if (
         session.office &&
-        session.office.officeType === "RECEIVING" &&
+        Array.isArray((session.office as any).officeTypes) &&
+        (session.office as any).officeTypes.includes("RECEIVING") &&
         parcel.officeId === session.officeId
       ) {
         await this.prisma.parcel.update({
@@ -301,9 +362,15 @@ export class ScanningService {
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
           const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
           if (parcel.receiver?.phoneNumber)
-            await sendSms(this.normalizeZMBPhone(parcel.receiver.phoneNumber as any), msgReceiver);
+            await sendSms(
+              this.normalizeZMBPhone(parcel.receiver.phoneNumber as any),
+              msgReceiver
+            );
           if (parcel.customer?.phoneNumber)
-            await sendSms(this.normalizeZMBPhone(parcel.customer.phoneNumber as any), msgSender);
+            await sendSms(
+              this.normalizeZMBPhone(parcel.customer.phoneNumber as any),
+              msgSender
+            );
         } catch (e) {}
       }
       return created;
@@ -353,6 +420,15 @@ export class ScanningService {
     return this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
       include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        route: { select: { id: true, name: true, code: true } },
         office: { select: { id: true, name: true, branchCode: true } },
         scans: {
           include: {

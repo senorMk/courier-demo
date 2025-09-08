@@ -1,7 +1,5 @@
 <h1 mat-dialog-title
-  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create
-  Office
-</h1>
+  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">{{ editingId ? 'Edit Office' : 'Create Office' }}</h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-form-field appearance="fill">
     <mat-label>Code</mat-label>
@@ -19,8 +17,8 @@
       style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
   </mat-form-field>
   <mat-form-field appearance="fill">
-    <mat-label>Office Type</mat-label>
-    <mat-select formControlName="officeType"
+    <mat-label>Office Types</mat-label>
+    <mat-select multiple formControlName="officeTypes"
       style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;">
       <mat-option value="SENDING">Sending</mat-option>
       <mat-option value="RECEIVING">Receiving</mat-option>

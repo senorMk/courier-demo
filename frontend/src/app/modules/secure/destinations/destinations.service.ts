@@ -9,6 +9,8 @@ export interface Destination {
   name: string;
   branchCode: string;
   routeId: string;
+  officeTypes?: string[];
+  route?: { id: string; name: string; code: string };
 }
 
 @Injectable()
@@ -43,6 +45,28 @@ export class DestinationsService {
     return this._httpClient.post<Destination>(
       `${environment.serverURL}/v1/routes/office/create`,
       data,
+      this.getHeader()
+    );
+  }
+
+  getDestination(id: string): Observable<Destination> {
+    return this._httpClient.get<Destination>(
+      `${environment.serverURL}/v1/routes/offices/${id}`,
+      this.getHeader()
+    );
+  }
+
+  updateDestination(id: string, data: Partial<Destination>): Observable<Destination> {
+    return this._httpClient.put<Destination>(
+      `${environment.serverURL}/v1/routes/offices/${id}`,
+      data,
+      this.getHeader()
+    );
+  }
+
+  deleteDestination(id: string): Observable<void> {
+    return this._httpClient.delete<void>(
+      `${environment.serverURL}/v1/routes/offices/${id}`,
       this.getHeader()
     );
   }

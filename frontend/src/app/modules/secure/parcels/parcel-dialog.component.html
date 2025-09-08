@@ -96,7 +96,7 @@
             <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
               <span>{{ office.name }}</span>
               <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
-                  *ngIf="office.officeType"> • {{ office.officeType }}</span></span>
+                  *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span></span>
             </mat-option>
           </mat-autocomplete>
           <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
