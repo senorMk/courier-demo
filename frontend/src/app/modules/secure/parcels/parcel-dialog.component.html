@@ -88,17 +88,11 @@
       <div class="flex flex-col gap-4">
         <mat-form-field appearance="fill">
           <mat-label>Destination</mat-label>
-          <input type="text" matInput [formControl]="form.controls['officeId']" [matAutocomplete]="autoOffice"
-            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-            (input)="onOfficeInput($event.target.value)" autocomplete="off" />
-          <mat-autocomplete #autoOffice="matAutocomplete" (optionSelected)="onOfficeSelected($event.option.value)"
-            [displayWith]="officeDisplayFn">
-            <mat-option *ngFor="let office of filteredOffices$ | async" [value]="office">
-              <span>{{ office.name }}</span>
-              <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span
-                  *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span></span>
+          <mat-select [formControl]="form.controls['officeId']">
+            <mat-option *ngFor="let office of offices$ | async" [value]="office.id">
+              {{ office.name }} <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span></span>
             </mat-option>
-          </mat-autocomplete>
+          </mat-select>
           <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
         </mat-form-field>
 

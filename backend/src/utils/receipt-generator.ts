@@ -67,6 +67,31 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
 
   const formatAmt = (n?: number) => (n || 0).toFixed(2);
 
+  // Unit helpers for page sizing
+  const mmToPt = (mm: number) => (mm / 25.4) * 72; // 72 pt = 1 inch
+  const inToPt = (inch: number) => inch * 72;
+
+  type PageOpts = { size: [number, number] | string; margin: number };
+  const getPageOptions = (typeKey: string): PageOpts => {
+    // Defaults (previous behavior)
+    let opts: PageOpts = { size: 'A5', margin: 28 };
+
+    // Requirements:
+    // - Sender copy receipt & Accounts copy receipt: 72mm width (thermal)
+    // - Shipping label (sticker/parcel label): 4" x 6"
+    if (typeKey === 'sender' || typeKey === 'accounts') {
+      const width = mmToPt(72); // ~204 pt
+      const height = inToPt(8.5); // reasonable roll height; add pages if needed
+      opts = { size: [width, height], margin: 10 };
+    } else if (typeKey === 'sticker') {
+      // 4x6 inch label in portrait (4" wide x 6" tall)
+      const width = inToPt(4);
+      const height = inToPt(6);
+      opts = { size: [width, height], margin: 14 };
+    }
+    return opts;
+  };
+
   async function drawCenteredBarcode(doc: any, barcodePath: string, width: number) {
     const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const w = Math.min(width, contentWidth);
@@ -148,7 +173,8 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   }
 
   for (const t of types) {
-    const doc = new PDFDocument({ size: 'A5', margin: 28 });
+    const page = getPageOptions(t.key);
+    const doc = new PDFDocument({ size: page.size as any, margin: page.margin });
     const outPath = path.join(receiptsDir, `parcel-${parcelId}-${t.key}.pdf`);
     const stream = fs.createWriteStream(outPath);
     doc.pipe(stream);
