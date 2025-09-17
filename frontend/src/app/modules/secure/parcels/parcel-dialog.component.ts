@@ -46,10 +46,7 @@ import { CommonModule } from "@angular/common";
 export class ParcelDialogComponent {
   form: FormGroup;
   loading = false;
-  filteredOffices$: Observable<Office[]> = of([]);
-  // Keep office autocomplete only
-  private officeInput$ = new BehaviorSubject<string>("");
-  private officesCache: Record<string, Office> = {};
+  offices$: Observable<Office[]> = of([]);
 
   constructor(
     private _fb: FormBuilder,
@@ -87,39 +84,11 @@ export class ParcelDialogComponent {
         reference: [""],
       }),
     });
-    this.filteredOffices$ = this.officeInput$.pipe(
-      debounceTime(300),
-      switchMap((q) =>
-        q
-          ? this._officesSearch.searchOffices(q).pipe(
-              tap((offices) =>
-                offices.forEach((o) => (this.officesCache[o.id] = o))
-              ),
-              catchError(() => of([]))
-            )
-          : of([])
-      )
-    );
+  // Fetch all offices for dropdown
+  this.offices$ = this._officesSearch.searchOffices("");
   }
 
-  onOfficeInput(value: string) {
-    this.officeInput$.next(value);
-  }
-
-  onOfficeSelected(office: Office) {
-    this.form.controls["officeId"].setValue(office.id);
-    this.officesCache[office.id] = office;
-  }
-
-  officeDisplayFn = (office: Office | string | null): string => {
-    if (!office) return "";
-    if (typeof office === "string") {
-      return this.officesCache[office]?.name
-        ? this.officesCache[office].name
-        : office;
-    }
-    return office.name;
-  };
+  // Autocomplete logic removed for dropdown
 
   save(): void {
     if (this.form.invalid) {
@@ -162,4 +131,6 @@ export class ParcelDialogComponent {
       },
     });
   }
+
+
 }
