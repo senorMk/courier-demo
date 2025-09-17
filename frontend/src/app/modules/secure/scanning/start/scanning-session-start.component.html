@@ -61,6 +61,17 @@
       </div>
     </div>
     <div class="md:col-span-3">
+      <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Select Office</div>
+      <mat-radio-group [formControl]="form.controls['officeId']" class="flex flex-col gap-1">
+        <mat-radio-button *ngFor="let o of offices" [value]="o.id">
+          <span class="text-sm font-medium">{{ o.name }}</span>
+          <span class="text-sm text-gray-500 ml-2">{{ o.branchCode }}</span>
+          <span class="text-[10px] ml-2" *ngIf="o.officeTypes?.length">{{ o.officeTypes.join(',') }}</span>
+        </mat-radio-button>
+      </mat-radio-group>
+      <div *ngIf="!offices.length" class="text-[12px] text-gray-500">No offices loaded. Select a route first or refresh.</div>
+    </div>
+    <div class="md:col-span-3">
       <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Do you want to create a Mail Bag?</div>
       <mat-radio-group [formControl]="form.controls['mode']" class="flex flex-col gap-3 items-start">
         <mat-radio-button value="bag">

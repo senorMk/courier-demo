@@ -35,12 +35,27 @@ export class ComplaintsController {
   }
 
   @Post(':id/close')
-  close(@Param('id') id: string) {
-    return this.service.close(id);
+  close(@Param('id') id: string, @Body() body: { note?: string }) {
+    return this.service.close(id, body?.note);
   }
 
   @Get(':id/events')
   events(@Param('id') id: string) {
     return this.service.getEvents(id);
+  }
+
+  // Generic complaint logging (explicit button on parcel UI)
+  @Post('log')
+  log(@Body() body: { parcelId?: string; code?: string; reason?: string }) {
+    return this.service.logGeneric(body);
+  }
+
+  // Report summary for dashboard (director)
+  @Get('report/summary')
+  report(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.service.report(startDate, endDate);
   }
 }

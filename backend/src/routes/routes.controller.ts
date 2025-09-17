@@ -91,6 +91,13 @@ export class RoutesController {
     return this.routesService.searchOffices(q);
   }
 
+  @Get(":routeId/offices")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async getOfficesByRoute(@Param('routeId') routeId: string) {
+    return this.routesService.officesByRoute(routeId);
+  }
+
   @Get("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", ["managing-director"])

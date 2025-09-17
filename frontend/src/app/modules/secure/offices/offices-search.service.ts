@@ -18,4 +18,9 @@ export class OfficesSearchService {
     const baseUrl = environment.serverURL;
     return this._http.get<Office[]>(`${baseUrl}/v1/routes/offices/search?q=${encodeURIComponent(query)}`);
   }
+
+  officesByRoute(routeId: string): Observable<Office[]> {
+    const baseUrl = environment.serverURL;
+    return this._http.get<Office[]>(`${baseUrl}/v1/routes/${encodeURIComponent(routeId)}/offices`);
+  }
 }

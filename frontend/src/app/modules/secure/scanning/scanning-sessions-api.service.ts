@@ -36,6 +36,7 @@ export class ScanningSessionsService {
     routeId: string;
     mode: "bag" | "individual";
     officeId?: string;
+    tripId?: string; // optional; required by backend for DISPATCH offices
   }): Observable<any> {
     const url = `${this.baseUrl}/v1/scanning/start`;
     return this._http.post(url, payload, this.getHeader());

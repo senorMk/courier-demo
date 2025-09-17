@@ -119,6 +119,7 @@ enum ParcelSize {
 
 enum ParcelStatus {
   PENDING
+  COMPLAINT_BOX
   READY_FOR_COLLECTION
   COLLECTED
   DAMAGED

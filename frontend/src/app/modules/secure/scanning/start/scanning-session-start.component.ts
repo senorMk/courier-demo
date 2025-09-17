@@ -23,6 +23,7 @@ import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
 import { debounceTime, switchMap, of, startWith } from 'rxjs';
 import { TripsApiService } from '../trips-api.service';
+import { OfficesSearchService, Office } from '../../offices/offices-search.service';
 
 @Component({
   selector: "scanning-session-start",
@@ -49,6 +50,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   private _routesSearch = inject(RoutesSearchService);
   private _snackBar = inject(MatSnackBar);
   private _tripsApi = inject(TripsApiService);
+  private _officesSearch = inject(OfficesSearchService);
 
   routes = signal<RouteItem[]>([]);
   filteredRoutes = signal<RouteItem[]>([]);
@@ -57,7 +59,8 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     routeId: ["", Validators.required],
     routeSearch: [""],
     mode: ["bag", Validators.required],
-    tripId: [""]
+  tripId: [""],
+  officeId: ["", Validators.required]
   });
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -90,6 +93,21 @@ export class ScanningSessionStartComponent implements AfterViewInit {
           next: (trips) => this.openTrips = trips || [],
           error: () => this.openTrips = []
         });
+        // Load offices for this route
+        this._officesSearch.officesByRoute(picked.id).subscribe({
+          next: (offices: Office[]) => {
+            this.offices = offices || [];
+            if (this.offices.length === 1) {
+              this.form.patchValue({ officeId: this.offices[0].id });
+            } else {
+              // Clear previous selection if now mismatched
+              if (!this.offices.some(o => o.id === this.form.value.officeId)) {
+                this.form.patchValue({ officeId: '' });
+              }
+            }
+          },
+          error: () => { this.offices = []; }
+        });
       }
     });
     if (this.paginator) {
@@ -102,6 +120,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   }
 
   openTrips: Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string }> = [];
+  offices: Office[] = [];
 
   fetchSessions() {
     this._scanningSessionsService
@@ -137,6 +156,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     this._scanningSessionsService.startSession({
       routeId: value.routeId!,
       mode: value.mode as any,
+  officeId: value.officeId!,
       // Pass tripId only if selected; backend enforces requirement for DISPATCH offices
       ...(value.tripId ? { tripId: value.tripId } : {}),
     }).subscribe({
