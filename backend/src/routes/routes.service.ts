@@ -48,21 +48,6 @@ export class RoutesService {
     };
   }
 
-  async officesByRoute(routeId: string) {
-    if (!routeId) return [];
-    return this.prisma.office.findMany({
-      where: { routeId },
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        branchCode: true,
-        officeTypes: true,
-        routeId: true,
-      },
-    });
-  }
-
   async getRoutesPaginated(page: number = 1, pageSize: number = 10) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
