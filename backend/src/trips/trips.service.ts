@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { sendSms } from '../utils/sms-sender';
+import { normalizeZMBPhone } from '../utils/phone.util';
 
 @Injectable()
 export class TripsService {
@@ -61,10 +62,12 @@ export class TripsService {
       const msgSender = `PCS: Your parcel ${code} has departed and is in transit to ${dest}.`; // 160-char safe
       const msgReceiver = `PCS: Parcel ${code} for you is in transit to ${dest}.`;
       try {
-        if (p.customer?.phoneNumber) await sendSms(`260${p.customer.phoneNumber}`, msgSender);
+        const customerPhone = normalizeZMBPhone(p.customer?.phoneNumber);
+        if (customerPhone) await sendSms(customerPhone, msgSender);
       } catch {}
       try {
-        if (p.receiver?.phoneNumber) await sendSms(`260${p.receiver.phoneNumber}`, msgReceiver);
+        const receiverPhone = normalizeZMBPhone(p.receiver?.phoneNumber);
+        if (receiverPhone) await sendSms(receiverPhone, msgReceiver);
       } catch {}
     }
 
@@ -94,8 +97,14 @@ export class TripsService {
         const dest = p.office?.name ? `${p.office.name} (${p.office.branchCode})` : 'destination office';
         const msgSender = `PCS: Parcel ${code} has arrived at ${dest}.`;
         const msgReceiver = `PCS: Parcel ${code} for you has arrived at ${dest}.`;
-        try { if (p.customer?.phoneNumber) await sendSms(`260${p.customer.phoneNumber}`, msgSender); } catch {}
-        try { if (p.receiver?.phoneNumber) await sendSms(`260${p.receiver.phoneNumber}`, msgReceiver); } catch {}
+        try {
+          const customerPhone = normalizeZMBPhone(p.customer?.phoneNumber);
+          if (customerPhone) await sendSms(customerPhone, msgSender);
+        } catch {}
+        try {
+          const receiverPhone = normalizeZMBPhone(p.receiver?.phoneNumber);
+          if (receiverPhone) await sendSms(receiverPhone, msgReceiver);
+        } catch {}
       }
     }
     return updated;

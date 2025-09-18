@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Observable, map } from "rxjs";
 import { environment } from "../../../../environments/environment";
 
 export interface RouteItem {
@@ -18,5 +18,14 @@ export class RoutesSearchService {
     return this._http.get<RouteItem[]>(
       `${this.baseUrl}/v1/routes/search?q=${encodeURIComponent(query)}`
     );
+  }
+
+  listRoutes(pageSize: number = 100): Observable<RouteItem[]> {
+    const params = new URLSearchParams({ page: "1", pageSize: String(pageSize) });
+    return this._http
+      .get<{ data?: RouteItem[] }>(
+        `${this.baseUrl}/v1/routes/paginated?${params.toString()}`
+      )
+      .pipe(map((res) => res?.data ?? []));
   }
 }

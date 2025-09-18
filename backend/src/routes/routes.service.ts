@@ -95,7 +95,10 @@ export class RoutesService {
   }
 
   async getOffice(id: string) {
-    return this.prisma.office.findUnique({ where: { id } });
+    return this.prisma.office.findUnique({
+      where: { id },
+      include: { route: { select: { id: true, name: true, code: true } } },
+    });
   }
 
   async updateOffice(

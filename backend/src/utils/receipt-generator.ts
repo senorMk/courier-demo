@@ -2,19 +2,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { normalizeZMBPhone } from './phone.util';
 const prisma = new PrismaClient();
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function normalizeZMBPhone(msisdn?: string): string {
-  if (!msisdn) return '';
-  const digits = String(msisdn).replace(/\D/g, '');
-  if (digits.startsWith('260')) return `+${digits}`;
-  if (digits.startsWith('0')) return `+260${digits.slice(1)}`;
-  if (digits.length === 9 && digits.startsWith('9')) return `+260${digits}`;
-  return `+${digits}`;
 }
 
 function loadPdfKit(): any | null {
@@ -66,6 +58,31 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   });
 
   const formatAmt = (n?: number) => (n || 0).toFixed(2);
+
+  // Unit helpers for page sizing
+  const mmToPt = (mm: number) => (mm / 25.4) * 72; // 72 pt = 1 inch
+  const inToPt = (inch: number) => inch * 72;
+
+  type PageOpts = { size: [number, number] | string; margin: number };
+  const getPageOptions = (typeKey: string): PageOpts => {
+    // Defaults (previous behavior)
+    let opts: PageOpts = { size: 'A5', margin: 28 };
+
+    // Requirements:
+    // - Sender copy receipt & Accounts copy receipt: 72mm width (thermal)
+    // - Shipping label (sticker/parcel label): 4" x 6"
+    if (typeKey === 'sender' || typeKey === 'accounts') {
+      const width = mmToPt(72); // ~204 pt
+      const height = inToPt(8.5); // reasonable roll height; add pages if needed
+      opts = { size: [width, height], margin: 10 };
+    } else if (typeKey === 'sticker') {
+      // 4x6 inch label in portrait (4" wide x 6" tall)
+      const width = inToPt(4);
+      const height = inToPt(6);
+      opts = { size: [width, height], margin: 14 };
+    }
+    return opts;
+  };
 
   async function drawCenteredBarcode(doc: any, barcodePath: string, width: number) {
     const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -148,7 +165,8 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   }
 
   for (const t of types) {
-    const doc = new PDFDocument({ size: 'A5', margin: 28 });
+    const page = getPageOptions(t.key);
+    const doc = new PDFDocument({ size: page.size as any, margin: page.margin });
     const outPath = path.join(receiptsDir, `parcel-${parcelId}-${t.key}.pdf`);
     const stream = fs.createWriteStream(outPath);
     doc.pipe(stream);
@@ -176,14 +194,16 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
     doc.text(`Office: ${originName} (${originCode})`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).customer?.phoneNumber)}`);
+    const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
+    doc.text(`Contact No: ${senderContact}`);
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text("Receiver's Details");
     doc.font('Helvetica');
     doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
     doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).receiver?.phoneNumber)}`);
+    const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
+    doc.text(`Contact No: ${receiverContact}`);
 
     await drawItemsTable(doc);
     try {

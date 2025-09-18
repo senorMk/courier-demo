@@ -85,9 +85,9 @@ export class RoutesController {
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", ["managing-director"])
   async searchOffices(@Query("q") q: string) {
-    if (!q || q.trim().length === 0) {
-      return [];
-    }
+    // if (!q || q.trim().length === 0) {
+    //   return [];
+    // }
     return this.routesService.searchOffices(q);
   }
 
