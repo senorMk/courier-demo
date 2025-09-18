@@ -8,6 +8,8 @@ export interface Office {
   branchCode: string;
   officeTypes: string[];
   name: string;
+  routeId?: string;
+  route?: { id: string; name: string; code?: string };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -17,5 +19,10 @@ export class OfficesSearchService {
   searchOffices(query: string): Observable<Office[]> {
     const baseUrl = environment.serverURL;
     return this._http.get<Office[]>(`${baseUrl}/v1/routes/offices/search?q=${encodeURIComponent(query)}`);
+  }
+
+  getOffice(id: string): Observable<Office> {
+    const baseUrl = environment.serverURL;
+    return this._http.get<Office>(`${baseUrl}/v1/routes/offices/${id}`);
   }
 }

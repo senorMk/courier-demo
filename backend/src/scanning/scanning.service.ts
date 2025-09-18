@@ -7,20 +7,12 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { Prisma, ParcelStatus } from "@prisma/client";
 import { sendSms } from "../utils/sms-sender";
+import { normalizeZMBPhone } from "../utils/phone.util";
 import { generateDeliveryNote } from "../utils/delivery-note-generator";
 
 @Injectable()
 export class ScanningService {
   constructor(private prisma: PrismaService) {}
-
-  private normalizeZMBPhone(msisdn?: string): string {
-    if (!msisdn) return "";
-    const digits = String(msisdn).replace(/\D/g, "");
-    if (digits.startsWith("260")) return `+${digits}`;
-    if (digits.startsWith("0")) return `+260${digits.slice(1)}`;
-    if (digits.length === 9 && digits.startsWith("9")) return `+260${digits}`;
-    return `+${digits}`;
-  }
 
   async startSession(
     userId: string,
@@ -219,16 +211,14 @@ export class ScanningService {
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
           const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
-          if (parcel.receiver?.phoneNumber)
-            await sendSms(
-              this.normalizeZMBPhone(parcel.receiver.phoneNumber as any),
-              msgReceiver
-            );
-          if (parcel.customer?.phoneNumber)
-            await sendSms(
-              this.normalizeZMBPhone(parcel.customer.phoneNumber as any),
-              msgSender
-            );
+          if (parcel.receiver?.phoneNumber) {
+            const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber as any);
+            if (msisdn) await sendSms(msisdn, msgReceiver);
+          }
+          if (parcel.customer?.phoneNumber) {
+            const msisdn = normalizeZMBPhone(parcel.customer.phoneNumber as any);
+            if (msisdn) await sendSms(msisdn, msgSender);
+          }
         } catch (e) {
           // Best effort
         }
@@ -361,16 +351,14 @@ export class ScanningService {
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
           const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
           const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
-          if (parcel.receiver?.phoneNumber)
-            await sendSms(
-              this.normalizeZMBPhone(parcel.receiver.phoneNumber as any),
-              msgReceiver
-            );
-          if (parcel.customer?.phoneNumber)
-            await sendSms(
-              this.normalizeZMBPhone(parcel.customer.phoneNumber as any),
-              msgSender
-            );
+          if (parcel.receiver?.phoneNumber) {
+            const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber as any);
+            if (msisdn) await sendSms(msisdn, msgReceiver);
+          }
+          if (parcel.customer?.phoneNumber) {
+            const msisdn = normalizeZMBPhone(parcel.customer.phoneNumber as any);
+            if (msisdn) await sendSms(msisdn, msgSender);
+          }
         } catch (e) {}
       }
       return created;

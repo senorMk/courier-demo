@@ -2,19 +2,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { normalizeZMBPhone } from './phone.util';
 const prisma = new PrismaClient();
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function normalizeZMBPhone(msisdn?: string): string {
-  if (!msisdn) return '';
-  const digits = String(msisdn).replace(/\D/g, '');
-  if (digits.startsWith('260')) return `+${digits}`;
-  if (digits.startsWith('0')) return `+260${digits.slice(1)}`;
-  if (digits.length === 9 && digits.startsWith('9')) return `+260${digits}`;
-  return `+${digits}`;
 }
 
 function loadPdfKit(): any | null {
@@ -202,14 +194,16 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
     doc.text(`Office: ${originName} (${originCode})`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).customer?.phoneNumber)}`);
+    const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
+    doc.text(`Contact No: ${senderContact}`);
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text("Receiver's Details");
     doc.font('Helvetica');
     doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
     doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
     doc.text(`Date: ${formattedDate}`);
-    doc.text(`Contact No: ${normalizeZMBPhone((parcel as any).receiver?.phoneNumber)}`);
+    const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
+    doc.text(`Contact No: ${receiverContact}`);
 
     await drawItemsTable(doc);
     try {
