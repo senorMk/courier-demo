@@ -8,19 +8,11 @@ import { Office, Parcel, ParcelItem, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
 import { sendSms } from "../utils/sms-sender";
+import { normalizeZMBPhone } from "../utils/phone.util";
 
 @Injectable()
 export class ParcelService {
   constructor(private prisma: PrismaService) {}
-
-  private normalizeZMBPhone(msisdn: string): string {
-    if (!msisdn) return msisdn;
-    const digits = String(msisdn).replace(/\D/g, "");
-    if (digits.startsWith("260")) return `+${digits}`;
-    if (digits.startsWith("0")) return `+260${digits.slice(1)}`;
-    if (digits.length === 9 && digits.startsWith("9")) return `+260${digits}`;
-    return `+${digits}`;
-  }
 
   async createParcel(
     data:
@@ -77,8 +69,11 @@ export class ParcelService {
       receiverId = data.receiverId;
     } else {
       const payload = data as any;
-      const customerPhone = this.normalizeZMBPhone(payload.customer.phoneNumber);
-      const receiverPhone = this.normalizeZMBPhone(payload.receiver.phoneNumber);
+      const customerPhone = normalizeZMBPhone(payload.customer.phoneNumber);
+      const receiverPhone = normalizeZMBPhone(payload.receiver.phoneNumber);
+      if (!customerPhone || !receiverPhone) {
+        throw new BadRequestException('Invalid phone number supplied for sender or receiver');
+      }
       const [customer, receiver] = await Promise.all([
         this.prisma.customer.upsert({
           where: { phoneNumber: customerPhone },
@@ -195,16 +190,22 @@ export class ParcelService {
         where: { id: receiverId },
       });
       if (sender?.phoneNumber && code) {
-        await sendSms(
-          this.normalizeZMBPhone(sender.phoneNumber as any),
-          `Parcel Created: ${code}. Thank you for using PCS.`
-        );
+        const senderMsisdn = normalizeZMBPhone(sender.phoneNumber as any);
+        if (senderMsisdn) {
+          await sendSms(
+            senderMsisdn,
+            `Parcel Created: ${code}. Thank you for using PCS.`
+          );
+        }
       }
       if (receiver?.phoneNumber && code) {
-        await sendSms(
-          this.normalizeZMBPhone(receiver.phoneNumber as any),
-          `Incoming Parcel: ${code}. You will be notified upon arrival.`
-        );
+        const receiverMsisdn = normalizeZMBPhone(receiver.phoneNumber as any);
+        if (receiverMsisdn) {
+          await sendSms(
+            receiverMsisdn,
+            `Incoming Parcel: ${code}. You will be notified upon arrival.`
+          );
+        }
       }
     } catch (e) {
       console.error("Failed to send SMS", e);
