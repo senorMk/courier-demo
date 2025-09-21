@@ -21,6 +21,7 @@ import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.compo
 import { ComplaintsApiService } from "../complaints/complaints-api.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
+import { ParcelComplaintDialogComponent } from "./parcel-complaint-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -48,6 +49,7 @@ export class ParcelsComponent implements OnInit {
     "customerId",
     "receiverId",
     "destinationId",
+    "status",
     "createdAt",
     "actions",
   ];
@@ -172,15 +174,25 @@ export class ParcelsComponent implements OnInit {
       this._snackBar.open('Tracking code missing for parcel', 'Close', { duration: 3000, verticalPosition: 'top' });
       return;
     }
-    const reason = prompt('Enter complaint reason (optional):') || undefined;
-    this._complaints.logGeneric({ code, reason }).subscribe({
-      next: () => {
-        this._snackBar.open('Complaint logged', 'Close', { duration: 2500, verticalPosition: 'top' });
-      },
-      error: (err) => {
-        const msg = err?.error?.message || 'Failed to log complaint';
-        this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+    const dialogRef = this._dialog.open(ParcelComplaintDialogComponent, {
+      width: '420px',
+      data: { code, sender: (row as any)?.customer, receiver: (row as any)?.receiver },
+    });
+
+    dialogRef.afterClosed().subscribe((reason?: string) => {
+      if (!reason) {
+        return;
       }
+
+      this._complaints.logGeneric({ code, reason }).subscribe({
+        next: () => {
+          this._snackBar.open('Complaint logged', 'Close', { duration: 2500, verticalPosition: 'top' });
+        },
+        error: (err) => {
+          const msg = err?.error?.message || 'Failed to log complaint';
+          this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+        }
+      });
     });
   }
 }

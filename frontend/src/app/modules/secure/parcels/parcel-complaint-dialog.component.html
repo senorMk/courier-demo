@@ -1,0 +1,31 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <h1 mat-dialog-title class="text-center font-bold text-xl">Log Complaint</h1>
+  <div mat-dialog-content>
+    <p class="text-sm text-gray-600">Tracking code: {{ data.code }}</p>
+    <div class="grid grid-cols-1 gap-3 mt-3 md:grid-cols-2">
+      <div class="rounded-md border border-gray-200 p-3">
+        <div class="text-xs font-semibold uppercase text-gray-500">Sender</div>
+        <div class="text-sm font-medium">{{ sender.name }}</div>
+        <div class="text-xs text-gray-500" *ngIf="sender.phone">{{ sender.phone }}</div>
+        <div class="text-xs text-gray-500" *ngIf="sender.email">{{ sender.email }}</div>
+      </div>
+      <div class="rounded-md border border-gray-200 p-3">
+        <div class="text-xs font-semibold uppercase text-gray-500">Receiver</div>
+        <div class="text-sm font-medium">{{ receiver.name }}</div>
+        <div class="text-xs text-gray-500" *ngIf="receiver.phone">{{ receiver.phone }}</div>
+        <div class="text-xs text-gray-500" *ngIf="receiver.email">{{ receiver.email }}</div>
+      </div>
+    </div>
+    <mat-form-field appearance="fill" class="w-full mt-4">
+      <mat-label>Complaint</mat-label>
+      <textarea matInput rows="4" placeholder="Describe the complaint" formControlName="complaint"></textarea>
+      <mat-error *ngIf="form.controls.complaint.hasError('required')">
+        Complaint description is required
+      </mat-error>
+    </mat-form-field>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Submit</button>
+  </div>
+</form>

@@ -55,6 +55,10 @@ import { ComplaintsApiService } from './complaints-api.service';
             <th mat-header-cell *matHeaderCellDef>Office</th>
             <td mat-cell *matCellDef="let r">{{ r.parcel?.office?.name }} ({{ r.parcel?.office?.branchCode }})</td>
           </ng-container>
+          <ng-container matColumnDef="reporter">
+            <th mat-header-cell *matHeaderCellDef>Reporter</th>
+            <td mat-cell *matCellDef="let r">{{ formatReporter(r.reporter) }}</td>
+          </ng-container>
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let r">{{ r.status }}</td>
@@ -79,7 +83,7 @@ import { ComplaintsApiService } from './complaints-api.service';
 })
 export class ComplaintsComponent {
   private api = inject(ComplaintsApiService);
-  displayedColumns = ['code','sender','receiver','office','status','createdAt','actions'];
+  displayedColumns = ['code','sender','receiver','office','reporter','status','createdAt','actions'];
   rows: any[] = [];
   summary: any = null;
 
@@ -94,5 +98,11 @@ export class ComplaintsComponent {
     if (!confirm('Mark complaint as resolved?')) return;
     this.api.close(r.id).subscribe({ next: () => this.refresh() });
   }
-}
 
+  formatReporter(user: { firstName?: string; lastName?: string; email?: string } | null | undefined): string {
+    if (!user) return 'Unknown';
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    if (name) return name;
+    return user.email || 'Unknown';
+  }
+}
