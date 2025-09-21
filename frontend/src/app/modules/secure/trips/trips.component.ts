@@ -5,12 +5,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialog } from '@angular/material/dialog';
 import { decodeJwt } from 'app/core/utils/jwt.util';
 import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
 import { OfficesSearchService, OfficeItem } from './offices-search.service';
 import { TripsApiService } from './trips-api.service';
 import { DriversApiService, DriverItem } from './drivers-api.service';
 import { TrucksApiService, TruckItem } from './trucks-api.service';
+import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-trips',
@@ -32,6 +34,7 @@ export class TripsComponent {
   private tripsApi = inject(TripsApiService);
   private driversApi = inject(DriversApiService);
   private trucksApi = inject(TrucksApiService);
+  private dialog = inject(MatDialog);
 
   form = this.fb.group({
     routeId: ['', Validators.required],
@@ -175,9 +178,23 @@ export class TripsComponent {
   }
 
   complete(t: any) {
-    if (!confirm('Complete trip and send arrival SMS?')) return;
-    this.tripsApi
-      .complete(t.id)
-      .subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to complete trip') });
+    const dialogReference = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Complete Trip',
+        message: 'Complete trip and send arrival SMS?',
+        confirmLabel: 'Complete',
+        cancelLabel: 'Cancel',
+      },
+    });
+
+    dialogReference.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.tripsApi
+        .complete(t.id)
+        .subscribe({
+          next: () => this.refresh(),
+          error: (e) => alert(e?.error?.message || 'Failed to complete trip'),
+        });
+    });
   }
 }
