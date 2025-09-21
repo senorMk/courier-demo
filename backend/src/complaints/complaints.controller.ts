@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post, Query, SetMetadata, UseGuards, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, SetMetadata, UseGuards, BadRequestException, Req } from '@nestjs/common';
 import { ComplaintsService } from './complaints.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { Request } from 'express';
 
 @Controller('api/v1/complaints')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -10,19 +11,21 @@ export class ComplaintsController {
   constructor(private service: ComplaintsService) {}
 
   @Post('damaged')
-  fileDamaged(@Body() body: { code: string; reason?: string }) {
+  fileDamaged(@Body() body: { code: string; reason?: string }, @Req() req: Request) {
     if (!body?.code) {
       throw new BadRequestException('Tracking code is required');
     }
-    return this.service.fileDamagedByCode(body.code.trim(), body.reason);
+    const reporterId = this.extractUserId(req);
+    return this.service.fileDamagedByCode(body.code.trim(), reporterId, body.reason);
   }
 
   @Post('from-collected')
-  fileFromCollected(@Body() body: { code: string; reason?: string }) {
+  fileFromCollected(@Body() body: { code: string; reason?: string }, @Req() req: Request) {
     if (!body?.code) {
       throw new BadRequestException('Tracking code is required');
     }
-    return this.service.fileFromCollectedByCode(body.code.trim(), body.reason);
+    const reporterId = this.extractUserId(req);
+    return this.service.fileFromCollectedByCode(body.code.trim(), reporterId, body.reason);
   }
 
   @Get('paginated')
@@ -46,8 +49,9 @@ export class ComplaintsController {
 
   // Generic complaint logging (explicit button on parcel UI)
   @Post('log')
-  log(@Body() body: { parcelId?: string; code?: string; reason?: string }) {
-    return this.service.logGeneric(body);
+  log(@Body() body: { parcelId?: string; code?: string; reason?: string }, @Req() req: Request) {
+    const reporterId = this.extractUserId(req);
+    return this.service.logGeneric({ ...body, reporterId });
   }
 
   // Report summary for dashboard (director)
@@ -57,5 +61,14 @@ export class ComplaintsController {
     @Query('endDate') endDate?: string,
   ) {
     return this.service.report(startDate, endDate);
+  }
+
+  private extractUserId(req: Request): string {
+    const user: any = req?.user || {};
+    const reporterId = user?.sub || user?.id || user?.userId;
+    if (!reporterId) {
+      throw new BadRequestException('User context missing');
+    }
+    return reporterId;
   }
 }

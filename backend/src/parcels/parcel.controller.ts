@@ -83,12 +83,14 @@ export class ParcelController {
   @SetMetadata("roles", ["managing-director"])
   async getPaginated(
     @Query("page") page: number = 1,
-    @Query("pageSize") pageSize: number = 10
+    @Query("pageSize") pageSize: number = 10,
+    @Query("search") search?: string
   ) {
     try {
       return await this.parcelService.getParcelsPaginated(
         Number(page),
-        Number(pageSize)
+        Number(pageSize),
+        search
       );
     } catch (e) {
       console.error('ParcelController.getPaginated error:', e);

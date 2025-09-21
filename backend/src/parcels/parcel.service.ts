@@ -12,46 +12,46 @@ import { normalizeZMBPhone } from "../utils/phone.util";
 
 @Injectable()
 export class ParcelService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createParcel(
     data:
       | {
-          customerId: string;
-          receiverId: string;
-          officeId: string;
-          sendingOfficeId?: string;
-          size?: "SMALL" | "MEDIUM" | "LARGE";
-          payment?: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customerId: string;
+        receiverId: string;
+        officeId: string;
+        sendingOfficeId?: string;
+        size?: "SMALL" | "MEDIUM" | "LARGE";
+        payment?: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
       | {
-          customer: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          receiver: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          officeId: string;
-          sendingOfficeId?: string;
-          size: "SMALL" | "MEDIUM" | "LARGE";
-          payment: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customer: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        receiver: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        officeId: string;
+        sendingOfficeId?: string;
+        size: "SMALL" | "MEDIUM" | "LARGE";
+        payment: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
   ): Promise<Parcel> {
     const office: Office = await this.prisma.office.findUnique({
       where: { id: data.officeId },
@@ -214,13 +214,67 @@ export class ParcelService {
     return parcel;
   }
 
-  async getParcelsPaginated(page: number = 1, pageSize: number = 10) {
+  async getParcelsPaginated(page: number = 1, pageSize: number = 10, search?: string) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
+    const where: any = {};
+    const term = search?.trim();
+
+    if (term) {
+      const or: any[] = [
+        {
+          TrackingCode: {
+            is: {
+              plainTextCode: {
+                contains: term,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        {
+          customer: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+        {
+          receiver: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+
+      const parcelNumberMatch = Number(term);
+      if (!Number.isNaN(parcelNumberMatch)) {
+        or.push({ parcelNumber: parcelNumberMatch });
+      }
+
+      const statusCandidate = term.toUpperCase();
+      const validStatuses = Object.values(ParcelStatus) as string[];
+      if (validStatuses.includes(statusCandidate)) {
+        or.push({ status: statusCandidate as ParcelStatus });
+      }
+
+      where.OR = or;
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.parcel.findMany({
         skip,
         take: pageSize,
+        where,
         orderBy: { createdAt: 'desc' },
         include: {
           customer: {
@@ -228,6 +282,7 @@ export class ParcelService {
               firstName: true,
               lastName: true,
               emailAddress: true,
+              phoneNumber: true,
             },
           },
           receiver: {
@@ -235,6 +290,7 @@ export class ParcelService {
               firstName: true,
               lastName: true,
               emailAddress: true,
+              phoneNumber: true,
             },
           },
           office: {
@@ -251,7 +307,7 @@ export class ParcelService {
           },
         },
       }),
-      this.prisma.parcel.count(),
+      this.prisma.parcel.count({ where }),
     ]);
     return {
       data,
@@ -310,7 +366,7 @@ export class ParcelService {
           `PCS: Parcel ${code} has been collected at ${dest}. Thank you.`
         );
       }
-    } catch {}
+    } catch { }
     return updated;
   }
 

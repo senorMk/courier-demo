@@ -9,7 +9,7 @@ import { sendSms } from "../utils/sms-sender";
 
 @Injectable()
 export class ComplaintsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private normalizeZMBPhone(msisdn?: string): string {
     if (!msisdn) return "";
@@ -38,7 +38,7 @@ export class ComplaintsService {
     });
   }
 
-  async fileDamagedByCode(code: string, reason?: string) {
+  async fileDamagedByCode(code: string, reporterId: string, reason?: string) {
     const tracking = await this.prisma.trackingCode.findUnique({
       where: { plainTextCode: code },
       include: { parcel: true },
@@ -55,6 +55,7 @@ export class ComplaintsService {
     const complaint = await this.prisma.complaint.create({
       data: {
         parcelId: parcel.id,
+        reporterId,
         reason: reason || null,
         status: ComplaintStatus.OPEN,
       },
@@ -82,7 +83,7 @@ export class ComplaintsService {
     return complaint;
   }
 
-  async fileFromCollectedByCode(code: string, reason?: string) {
+  async fileFromCollectedByCode(code: string, reporterId: string, reason?: string) {
     const tracking = await this.prisma.trackingCode.findUnique({
       where: { plainTextCode: code },
       include: { parcel: true },
@@ -98,6 +99,7 @@ export class ComplaintsService {
     const complaint = await this.prisma.complaint.create({
       data: {
         parcelId: parcel.id,
+        reporterId,
         reason: reason || null,
         status: ComplaintStatus.OPEN,
       },
@@ -143,6 +145,7 @@ export class ComplaintsService {
               office: true,
             },
           },
+          reporter: true,
         },
       }),
       this.prisma.complaint.count({ where }),
@@ -160,7 +163,7 @@ export class ComplaintsService {
     const complaint = await this.prisma.complaint.findUnique({
       where: { id },
       include: {
-  parcel: { include: { TrackingCode: true, customer: true, receiver: true, office: true } },
+        parcel: { include: { TrackingCode: true, customer: true, receiver: true, office: true } },
       },
     });
     if (!complaint) throw new NotFoundException("Complaint not found");
@@ -192,7 +195,7 @@ export class ComplaintsService {
   }
 
   /** Generic complaint logging (Complaints Box) */
-  async logGeneric(payload: { parcelId?: string; code?: string; reason?: string }) {
+  async logGeneric(payload: { reporterId: string; parcelId?: string; code?: string; reason?: string }) {
     if (!payload.parcelId && !payload.code) {
       throw new BadRequestException("Provide parcelId or tracking code");
     }
@@ -207,9 +210,10 @@ export class ComplaintsService {
       parcel = tracking?.parcel || null;
     }
     if (!parcel) throw new NotFoundException("Parcel not found");
-  const complaint = await this.prisma.complaint.create({
+    const complaint = await this.prisma.complaint.create({
       data: {
         parcelId: parcel.id,
+        reporterId: payload.reporterId,
         reason: payload.reason || null,
         status: ComplaintStatus.OPEN,
       },
@@ -217,7 +221,7 @@ export class ComplaintsService {
     // Move into complaint box
     await this.prisma.parcel.update({
       where: { id: parcel.id },
-  data: { status: (ParcelStatus as any).COMPLAINT_BOX },
+      data: { status: (ParcelStatus as any).COMPLAINT_BOX },
     });
     await this.logEvent(
       complaint.id,

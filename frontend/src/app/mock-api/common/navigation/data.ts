@@ -18,7 +18,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
   },
   {
     id: "parcels-history",
-    title: "Parcels History",
+    title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
@@ -90,7 +90,7 @@ export const compactNavigation: FuseNavigationItem[] = [
   },
   {
     id: "parcels-history",
-    title: "Parcels History",
+    title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
@@ -162,7 +162,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
   },
   {
     id: "parcels-history",
-    title: "Parcels History",
+    title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
@@ -234,7 +234,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
   },
   {
     id: "parcels-history",
-    title: "Parcels History",
+    title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",

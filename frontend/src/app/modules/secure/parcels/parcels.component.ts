@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from "@angular/core";
+import { Component, DestroyRef, OnInit, ViewChild, inject } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatDialog } from "@angular/material/dialog";
@@ -21,6 +21,11 @@ import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.compo
 import { ComplaintsApiService } from "../complaints/complaints-api.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
+import { ParcelComplaintDialogComponent } from "./parcel-complaint-dialog.component";
+import { FormControl, ReactiveFormsModule } from "@angular/forms";
+import { MatInputModule } from "@angular/material/input";
+import { debounceTime, distinctUntilChanged } from "rxjs/operators";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Component({
   selector: "app-parcels",
@@ -38,6 +43,8 @@ import { MatMenuModule } from "@angular/material/menu";
     MatSnackBarModule,
     MatTooltipModule,
     MatMenuModule,
+    ReactiveFormsModule,
+    MatInputModule,
   ],
 })
 export class ParcelsComponent implements OnInit {
@@ -48,6 +55,7 @@ export class ParcelsComponent implements OnInit {
     "customerId",
     "receiverId",
     "destinationId",
+    "status",
     "createdAt",
     "actions",
   ];
@@ -56,21 +64,35 @@ export class ParcelsComponent implements OnInit {
   selectedParcel: Parcel | null = null;
   total = 0;
   pageSize = 10;
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatPaginator) paginator?: MatPaginator;
+  readonly searchControl = new FormControl('', { nonNullable: true });
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private _service: ParcelsService,
     private _dialog: MatDialog,
     private _snackBar: MatSnackBar,
     private _complaints: ComplaintsApiService
-  ) {}
+  ) {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.paginator?.firstPage();
+        this.loadData(0, this.pageSize);
+      });
+  }
 
   ngOnInit(): void {
     this.loadData();
   }
 
   loadData(pageIndex: number = 0, pageSize: number = this.pageSize): void {
-    this._service.getParcels(pageIndex, pageSize).subscribe((data) => {
+    const search = this.searchControl.value.trim();
+    this._service.getParcels(pageIndex, pageSize, search || undefined).subscribe((data) => {
       this.dataSource.data = data.data || [];
       this.total = Number(data.total || 0);
       this.pageSize = pageSize;
@@ -172,15 +194,31 @@ export class ParcelsComponent implements OnInit {
       this._snackBar.open('Tracking code missing for parcel', 'Close', { duration: 3000, verticalPosition: 'top' });
       return;
     }
-    const reason = prompt('Enter complaint reason (optional):') || undefined;
-    this._complaints.logGeneric({ code, reason }).subscribe({
-      next: () => {
-        this._snackBar.open('Complaint logged', 'Close', { duration: 2500, verticalPosition: 'top' });
-      },
-      error: (err) => {
-        const msg = err?.error?.message || 'Failed to log complaint';
-        this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
-      }
+    const dialogRef = this._dialog.open(ParcelComplaintDialogComponent, {
+      width: '420px',
+      data: { code, sender: (row as any)?.customer, receiver: (row as any)?.receiver },
     });
+
+    dialogRef.afterClosed().subscribe((reason?: string) => {
+      if (!reason) {
+        return;
+      }
+
+      this._complaints.logGeneric({ code, reason }).subscribe({
+        next: () => {
+          this._snackBar.open('Complaint logged', 'Close', { duration: 2500, verticalPosition: 'top' });
+        },
+        error: (err) => {
+          const msg = err?.error?.message || 'Failed to log complaint';
+      this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+        }
+      });
+    });
+  }
+
+  clearSearch(): void {
+    if (this.searchControl.value) {
+      this.searchControl.setValue('');
+    }
   }
 }
