@@ -37,6 +37,7 @@ model User {
   office           Office?           @relation(fields: [officeId], references: [id])
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  reportedComplaints Complaint[]     @relation("ComplaintReporter")
 }
 
 model AccessLog {
@@ -128,7 +129,9 @@ enum ParcelStatus {
 model Complaint {
   id        String           @id @default(uuid())
   parcelId  String
+  reporterId String
   parcel    Parcel           @relation(fields: [parcelId], references: [id])
+  reporter  User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
   reason    String?
   status    ComplaintStatus  @default(OPEN)
   createdAt DateTime         @default(now())
