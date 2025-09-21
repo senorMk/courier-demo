@@ -4,11 +4,14 @@ import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { ComplaintsApiService } from './complaints-api.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
+import { ComplaintDetailsDialogComponent } from './complaint-details-dialog.component';
 
 @Component({
   selector: 'app-complaints',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatButtonModule, MatPaginatorModule],
+  imports: [CommonModule, MatTableModule, MatButtonModule, MatPaginatorModule, MatDialogModule],
   template: `
     <div class="flex flex-col gap-4" style="width: 100%; padding: 20px;">
       <div class="flex items-center justify-between">
@@ -69,7 +72,8 @@ import { ComplaintsApiService } from './complaints-api.service';
           </ng-container>
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
-            <td mat-cell *matCellDef="let r" class="text-right">
+            <td mat-cell *matCellDef="let r" class="text-right space-x-2">
+              <button mat-stroked-button (click)="openDetails(r)">Details</button>
               <button mat-stroked-button color="primary" (click)="close(r)" [disabled]="r.status==='CLOSED'">Resolve</button>
             </td>
           </ng-container>
@@ -83,6 +87,7 @@ import { ComplaintsApiService } from './complaints-api.service';
 })
 export class ComplaintsComponent {
   private api = inject(ComplaintsApiService);
+  private dialog = inject(MatDialog);
   displayedColumns = ['code','sender','receiver','office','reporter','status','createdAt','actions'];
   rows: any[] = [];
   summary: any = null;
@@ -95,8 +100,20 @@ export class ComplaintsComponent {
   }
 
   close(r: any) {
-    if (!confirm('Mark complaint as resolved?')) return;
-    this.api.close(r.id).subscribe({ next: () => this.refresh() });
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '360px',
+      data: {
+        title: 'Resolve Complaint',
+        message: 'Mark this complaint as resolved?',
+        confirmLabel: 'Resolve',
+        cancelLabel: 'Cancel',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.api.close(r.id).subscribe({ next: () => this.refresh() });
+    });
   }
 
   formatReporter(user: { firstName?: string; lastName?: string; email?: string } | null | undefined): string {
@@ -104,5 +121,12 @@ export class ComplaintsComponent {
     const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     if (name) return name;
     return user.email || 'Unknown';
+  }
+
+  openDetails(complaint: any): void {
+    this.dialog.open(ComplaintDetailsDialogComponent, {
+      data: complaint,
+      width: '420px',
+    });
   }
 }
