@@ -32,4 +32,16 @@ export class ComplaintsApiService {
   close(id: string) {
     return this.http.post(`${this.baseUrl}/v1/complaints/${id}/close`, {}, this.getHeader());
   }
+
+  logGeneric(payload: { parcelId?: string; code?: string; reason?: string }) {
+    return this.http.post(`${this.baseUrl}/v1/complaints/log`, payload, this.getHeader());
+  }
+
+  summary(startDate?: string, endDate?: string) {
+    const q = new URLSearchParams();
+    if (startDate) q.set('startDate', startDate);
+    if (endDate) q.set('endDate', endDate);
+    const qs = q.toString();
+    return this.http.get(`${this.baseUrl}/v1/complaints/report/summary${qs ? '?' + qs : ''}`, this.getHeader());
+  }
 }

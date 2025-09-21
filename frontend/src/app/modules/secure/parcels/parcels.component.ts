@@ -18,6 +18,7 @@ import { CommonModule } from "@angular/common";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
 import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.component";
+import { ComplaintsApiService } from "../complaints/complaints-api.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
 
@@ -60,7 +61,8 @@ export class ParcelsComponent implements OnInit {
   constructor(
     private _service: ParcelsService,
     private _dialog: MatDialog,
-    private _snackBar: MatSnackBar
+    private _snackBar: MatSnackBar,
+    private _complaints: ComplaintsApiService
   ) {}
 
   ngOnInit(): void {
@@ -160,6 +162,24 @@ export class ParcelsComponent implements OnInit {
       },
       error: () => {
         this._snackBar.open('Failed to download receipt', 'Close', { duration: 3000, verticalPosition: 'top' });
+      }
+    });
+  }
+
+  logComplaint(row: Parcel): void {
+    const code = (row as any)?.TrackingCode?.plainTextCode;
+    if (!code) {
+      this._snackBar.open('Tracking code missing for parcel', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+    const reason = prompt('Enter complaint reason (optional):') || undefined;
+    this._complaints.logGeneric({ code, reason }).subscribe({
+      next: () => {
+        this._snackBar.open('Complaint logged', 'Close', { duration: 2500, verticalPosition: 'top' });
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to log complaint';
+        this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
       }
     });
   }

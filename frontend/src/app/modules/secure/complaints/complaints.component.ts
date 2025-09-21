@@ -18,6 +18,25 @@ import { ComplaintsApiService } from './complaints-api.service';
         </div>
       </div>
 
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-xs text-gray-500">Open</div>
+          <div class="text-xl font-semibold">{{ summary?.open ?? 0 }}</div>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-xs text-gray-500">Closed</div>
+          <div class="text-xl font-semibold">{{ summary?.closed ?? 0 }}</div>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-xs text-gray-500">Total</div>
+          <div class="text-xl font-semibold">{{ summary?.total ?? 0 }}</div>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+          <div class="text-xs text-gray-500">Avg Resolution (mins)</div>
+          <div class="text-xl font-semibold">{{ summary?.avgResolutionMinutes ?? 0 }}</div>
+        </div>
+      </div>
+
       <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
         <table mat-table [dataSource]="rows" style="width: 100%">
           <ng-container matColumnDef="code">
@@ -62,11 +81,13 @@ export class ComplaintsComponent {
   private api = inject(ComplaintsApiService);
   displayedColumns = ['code','sender','receiver','office','status','createdAt','actions'];
   rows: any[] = [];
+  summary: any = null;
 
   constructor() { this.refresh(); }
 
   refresh() {
     this.api.list(1, 10).subscribe({ next: (res: any) => this.rows = res.data || [], error: () => this.rows = [] });
+    this.api.summary().subscribe({ next: (s: any) => this.summary = s, error: () => this.summary = null });
   }
 
   close(r: any) {

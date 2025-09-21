@@ -11,6 +11,15 @@ import { sendSms } from "../utils/sms-sender";
 export class ComplaintsService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizeZMBPhone(msisdn?: string): string {
+    if (!msisdn) return "";
+    const digits = String(msisdn).replace(/\D/g, "");
+    if (digits.startsWith("260")) return `+${digits}`;
+    if (digits.startsWith("0")) return `+260${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith("9")) return `+260${digits}`;
+    return `+${digits}`;
+  }
+
   private async logEvent(
     complaintId: string,
     action: string,
@@ -57,6 +66,19 @@ export class ComplaintsService {
       ComplaintStatus.OPEN,
       reason || null
     );
+    // Notify sender and receiver that a complaint was filed (damaged)
+    try {
+      const [sender, receiver] = await Promise.all([
+        this.prisma.customer.findUnique({ where: { id: parcel.customerId } }),
+        this.prisma.customer.findUnique({ where: { id: parcel.receiverId } }),
+      ]);
+      const msg = `PCS: Complaint received for parcel ${code} (Damaged). We will investigate and update you.`;
+      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
+      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+    } catch (e) {
+      // Non-blocking
+      console.error("Failed to send complaint filed SMS (damaged)", e);
+    }
     return complaint;
   }
 
@@ -87,6 +109,18 @@ export class ComplaintsService {
       ComplaintStatus.OPEN,
       reason || null
     );
+    // Notify sender and receiver
+    try {
+      const [sender, receiver] = await Promise.all([
+        this.prisma.customer.findUnique({ where: { id: parcel.customerId } }),
+        this.prisma.customer.findUnique({ where: { id: parcel.receiverId } }),
+      ]);
+      const msg = `PCS: Complaint received for parcel ${code}. We will investigate and update you.`;
+      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
+      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+    } catch (e) {
+      console.error("Failed to send complaint filed SMS (from collected)", e);
+    }
     return complaint;
   }
 
@@ -122,16 +156,15 @@ export class ComplaintsService {
     };
   }
 
-  async close(id: string) {
+  async close(id: string, note?: string) {
     const complaint = await this.prisma.complaint.findUnique({
       where: { id },
       include: {
-        parcel: {
-          include: { TrackingCode: true, customer: true, office: true },
-        },
+  parcel: { include: { TrackingCode: true, customer: true, receiver: true, office: true } },
       },
     });
     if (!complaint) throw new NotFoundException("Complaint not found");
+    if (complaint.status === ComplaintStatus.CLOSED) return complaint;
     const updated = await this.prisma.complaint.update({
       where: { id },
       data: { status: ComplaintStatus.CLOSED },
@@ -141,24 +174,97 @@ export class ComplaintsService {
       "CLOSED",
       ComplaintStatus.OPEN,
       ComplaintStatus.CLOSED,
-      "Complaint resolved"
+      note || "Complaint resolved"
     );
-    // SMS to sender: Complaint Resolved
+    // Notify sender and receiver that complaint has been resolved
     try {
-      const code =
-        complaint.parcel?.TrackingCode?.plainTextCode || complaint.parcel?.id;
-      const dest = complaint.parcel?.office
-        ? `${complaint.parcel.office.name} (${complaint.parcel.office.branchCode})`
-        : "our office";
-      const msisdn = (complaint.parcel as any)?.customer?.phoneNumber;
-      if (msisdn && code) {
-        await sendSms(
-          `260${msisdn}`,
-          `PCS: Complaint for parcel ${code} has been resolved at ${dest}.`
-        );
-      }
-    } catch {}
+      const code = complaint.parcel?.TrackingCode?.plainTextCode;
+      const dest = complaint.parcel?.office?.name || "our office";
+      const msg = `PCS: Complaint for parcel ${code} has been resolved at ${dest}.`;
+      const senderMsisdn = complaint.parcel?.customer?.phoneNumber;
+      const receiverMsisdn = complaint.parcel?.receiver?.phoneNumber as any;
+      if (senderMsisdn) await sendSms(this.normalizeZMBPhone(senderMsisdn as any), msg);
+      if (receiverMsisdn) await sendSms(this.normalizeZMBPhone(receiverMsisdn as any), msg);
+    } catch (e) {
+      console.error("Failed to send complaint resolved SMS", e);
+    }
     return updated;
+  }
+
+  /** Generic complaint logging (Complaints Box) */
+  async logGeneric(payload: { parcelId?: string; code?: string; reason?: string }) {
+    if (!payload.parcelId && !payload.code) {
+      throw new BadRequestException("Provide parcelId or tracking code");
+    }
+    let parcel = null;
+    if (payload.parcelId) {
+      parcel = await this.prisma.parcel.findUnique({ where: { id: payload.parcelId } });
+    } else if (payload.code) {
+      const tracking = await this.prisma.trackingCode.findUnique({
+        where: { plainTextCode: payload.code },
+        include: { parcel: true },
+      });
+      parcel = tracking?.parcel || null;
+    }
+    if (!parcel) throw new NotFoundException("Parcel not found");
+  const complaint = await this.prisma.complaint.create({
+      data: {
+        parcelId: parcel.id,
+        reason: payload.reason || null,
+        status: ComplaintStatus.OPEN,
+      },
+    });
+    // Move into complaint box
+    await this.prisma.parcel.update({
+      where: { id: parcel.id },
+  data: { status: (ParcelStatus as any).COMPLAINT_BOX },
+    });
+    await this.logEvent(
+      complaint.id,
+      "OPENED_GENERIC",
+      null,
+      ComplaintStatus.OPEN,
+      payload.reason || null
+    );
+    // Notify sender and receiver that complaint was filed (generic)
+    try {
+      const [sender, receiver, tracking] = await Promise.all([
+        this.prisma.customer.findUnique({ where: { id: parcel.customerId } }),
+        this.prisma.customer.findUnique({ where: { id: parcel.receiverId } }),
+        this.prisma.trackingCode.findUnique({ where: { parcelId: parcel.id } }),
+      ]);
+      const code = payload.code || tracking?.plainTextCode || "";
+      const msg = `PCS: Complaint received for parcel ${code}. We will investigate and update you.`;
+      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
+      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+    } catch (e) {
+      console.error("Failed to send complaint filed SMS (generic)", e);
+    }
+    return complaint;
+  }
+
+  async report(startDate?: string, endDate?: string) {
+    const where: any = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+    const [openCount, closed, all] = await this.prisma.$transaction([
+      this.prisma.complaint.count({ where: { ...where, status: ComplaintStatus.OPEN } }),
+      this.prisma.complaint.findMany({ where: { ...where, status: ComplaintStatus.CLOSED }, select: { createdAt: true, updatedAt: true } }),
+      this.prisma.complaint.count({ where }),
+    ]);
+    const closedCount = closed.length;
+    const avgResolutionMs = closedCount
+      ? closed.reduce((acc, c) => acc + (c.updatedAt.getTime() - c.createdAt.getTime()), 0) / closedCount
+      : 0;
+    return {
+      open: openCount,
+      closed: closedCount,
+      total: all,
+      avgResolutionMinutes: Number((avgResolutionMs / 60000).toFixed(2)),
+    };
   }
 
   async getEvents(complaintId: string) {
