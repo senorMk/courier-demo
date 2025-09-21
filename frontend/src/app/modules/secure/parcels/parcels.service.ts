@@ -51,13 +51,19 @@ export class ParcelsService {
 
   getParcels(
     pageIndex = 0,
-    pageSize = 10
+    pageSize = 10,
+    search?: string
   ): Observable<{ data: Parcel[]; total: number }> {
     // Convert 0-based UI index to 1-based API page
     const page = (pageIndex ?? 0) + 1;
-    const params = `?page=${page}&pageSize=${pageSize}`;
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    if (search && search.trim()) {
+      params.set("search", search.trim());
+    }
     return this._httpClient.get<{ data: Parcel[]; total: number }>(
-      `${this.baseUrl}/v1/parcels/paginated${params}`,
+      `${this.baseUrl}/v1/parcels/paginated?${params.toString()}`,
       this.getHeader()
     );
   }

@@ -199,7 +199,6 @@ export class ComplaintsService {
     if (!payload.parcelId && !payload.code) {
       throw new BadRequestException("Provide parcelId or tracking code");
     }
-    console.log('payload: ', payload);
     let parcel = null;
     if (payload.parcelId) {
       parcel = await this.prisma.parcel.findUnique({ where: { id: payload.parcelId } });
