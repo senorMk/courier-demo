@@ -530,4 +530,33 @@ export class ScanningService {
       totalPages: Math.ceil(total / pageSize),
     };
   }
+
+  async deleteSession(sessionId: string) {
+    // First check if session exists
+    const session = await this.prisma.scanningSession.findUnique({
+      where: { id: sessionId },
+      include: { scans: true },
+    });
+
+    if (!session) {
+      throw new NotFoundException("Scanning session not found");
+    }
+
+    // Only allow deletion of draft sessions (not closed)
+    if (session.closedAt) {
+      throw new BadRequestException("Cannot delete a closed session");
+    }
+
+    // Delete all associated scans first, then the session
+    await this.prisma.$transaction([
+      this.prisma.scannedParcel.deleteMany({
+        where: { scanningSessionId: sessionId },
+      }),
+      this.prisma.scanningSession.delete({
+        where: { id: sessionId },
+      }),
+    ]);
+
+    return { message: "Session deleted successfully" };
+  }
 }

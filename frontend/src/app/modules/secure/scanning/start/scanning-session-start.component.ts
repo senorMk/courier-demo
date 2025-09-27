@@ -156,6 +156,12 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     this.start();
   }
 
+  resumeSession(sessionId: string) {
+    if (!sessionId) return;
+    // Navigate to the scanning workspace for the existing session
+    this.router.navigate(["/secure/scanning/session", sessionId]);
+  }
+
   download(sessionId: string) {
     if (!sessionId) return;
     this._scanningSessionsService

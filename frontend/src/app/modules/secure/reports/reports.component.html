@@ -1,5 +1,6 @@
 <div class="flex flex-col flex-auto w-full">
-  <div class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
+  <div *ngIf="availableReportTypes.length > 0; else noReports"
+    class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
     <!-- Page Header -->
     <div class="flex items-center justify-between w-full">
       <div>
@@ -14,16 +15,13 @@
 
     <!-- Report Type Selection -->
     <div class="flex flex-wrap gap-2">
-      <button mat-flat-button [class.mat-primary]="selectedReportType === 'revenue'"
-        (click)="selectedReportType = 'revenue'">Revenue</button>
-      <button mat-flat-button [class.mat-primary]="selectedReportType === 'parcel'"
-        (click)="selectedReportType = 'parcel'">Parcel Movement</button>
-      <button mat-flat-button [class.mat-primary]="selectedReportType === 'complaint'"
-        (click)="selectedReportType = 'complaint'">Complaints</button>
-      <button mat-flat-button [class.mat-primary]="selectedReportType === 'trip'"
-        (click)="selectedReportType = 'trip'">Driver Trips</button>
-      <button mat-flat-button [class.mat-primary]="selectedReportType === 'zicta'"
-        (click)="selectedReportType = 'zicta'">ZICTA</button>
+      <ng-container *ngFor="let report of reportDefinitions">
+        <button *ngIf="isReportAvailable(report.type)" mat-flat-button
+          [class.mat-primary]="selectedReportType === report.type"
+          (click)="onSelectReport(report.type)">
+          {{ report.label }}
+        </button>
+      </ng-container>
     </div>
 
     <!-- Revenue Report -->
@@ -665,4 +663,22 @@
       </div>
     </div>
   </div>
+  <ng-template #noReports>
+    <div class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
+      <div class="flex items-center justify-between w-full">
+        <div>
+          <div class="text-3xl font-semibold tracking-tight leading-8">
+            Reports
+          </div>
+          <p class="p tracking-tight leading-8">
+            Generate comprehensive reports and analytics for your postal operations.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-1 items-center justify-center text-gray-500">
+        No reports are available for your role.
+      </div>
+    </div>
+  </ng-template>
 </div>

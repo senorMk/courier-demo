@@ -64,6 +64,13 @@ export class ScanningSessionsService {
     );
   }
 
+  deleteSession(sessionId: string): Observable<any> {
+    return this._http.delete(
+      `${this.baseUrl}/v1/scanning/${sessionId}`,
+      this.getHeader()
+    );
+  }
+
   downloadDeliveryNote(sessionId: string) {
     const url = `${this.baseUrl}/v1/scanning/${sessionId}/delivery-note`;
     return this._http.get(url, {

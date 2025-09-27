@@ -20,48 +20,48 @@ import { generateReceiptsForParcel } from "../utils/receipt-generator";
 
 @Controller("api/v1/parcels")
 export class ParcelController {
-  constructor(private readonly parcelService: ParcelService) {}
+  constructor(private readonly parcelService: ParcelService) { }
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ["managing-director", "cashier"])
   async create(
     @Body()
     body:
       | {
-          customerId: string;
-          receiverId: string;
-          officeId: string;
-          size?: "SMALL" | "MEDIUM" | "LARGE";
-          payment?: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customerId: string;
+        receiverId: string;
+        officeId: string;
+        size?: "SMALL" | "MEDIUM" | "LARGE";
+        payment?: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
       | {
-          customer: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          receiver: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          officeId: string;
-          size: "SMALL" | "MEDIUM" | "LARGE";
-          payment: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customer: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        receiver: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        officeId: string;
+        size: "SMALL" | "MEDIUM" | "LARGE";
+        payment: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
     ,
     @Req() req: Request
   ) {
@@ -80,7 +80,7 @@ export class ParcelController {
 
   @Get("paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ["managing-director", "cashier"])
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10,

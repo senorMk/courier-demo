@@ -1,5 +1,13 @@
 /* eslint-disable */
 import { FuseNavigationItem } from "@fuse/components/navigation";
+import {
+  getRolesWithFeature,
+  NAV_ITEM_FEATURE,
+} from "app/core/auth/role-permissions";
+
+const metaFor = (id: keyof typeof NAV_ITEM_FEATURE) => ({
+  allowedRoles: getRolesWithFeature(NAV_ITEM_FEATURE[id]),
+});
 
 export const defaultNavigation: FuseNavigationItem[] = [
   {
@@ -8,6 +16,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+    meta: metaFor("dashboard"),
   },
   {
     id: "reports",
@@ -15,6 +24,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:chart-bar",
     link: "/secure/reports",
+    meta: metaFor("reports"),
   },
   {
   id: "scan",
@@ -22,6 +32,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
   type: "basic",
   icon: "heroicons_outline:qr-code",
   link: "/secure/scanning",
+  meta: metaFor("scan"),
   },
   {
     id: "parcels-history",
@@ -29,6 +40,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
+    meta: metaFor("parcels-history"),
   },
   {
     id: "customers",
@@ -36,6 +48,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:users",
     link: "/secure/customers",
+    meta: metaFor("customers"),
   },
   {
     id: "routes",
@@ -43,6 +56,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:map",
     link: "/secure/routes",
+    meta: metaFor("routes"),
   },
   {
     id: "destinations",
@@ -50,6 +64,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:map-pin",
     link: "/secure/destinations",
+    meta: metaFor("destinations"),
   },
   {
     id: "trips",
@@ -57,6 +72,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trips",
+    meta: metaFor("trips"),
   },
   {
     id: "drivers",
@@ -64,6 +80,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:identification",
     link: "/secure/drivers",
+    meta: metaFor("drivers"),
   },
   {
     id: "trucks",
@@ -71,6 +88,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trucks",
+    meta: metaFor("trucks"),
   },
   {
     id: "complaints",
@@ -78,6 +96,7 @@ export const defaultNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:exclamation-triangle",
     link: "/secure/complaints",
+    meta: metaFor("complaints"),
   },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
@@ -87,6 +106,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+    meta: metaFor("dashboard"),
   },
   {
     id: "reports",
@@ -94,6 +114,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:chart-bar",
     link: "/secure/reports",
+    meta: metaFor("reports"),
   },
   {
   id: "scan",
@@ -101,6 +122,7 @@ export const compactNavigation: FuseNavigationItem[] = [
   type: "basic",
   icon: "heroicons_outline:qr-code",
   link: "/secure/scanning",
+  meta: metaFor("scan"),
   },
   {
     id: "parcels-history",
@@ -108,6 +130,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
+    meta: metaFor("parcels-history"),
   },
   {
     id: "customers",
@@ -115,6 +138,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:customers",
     link: "/secure/customers",
+    meta: metaFor("customers"),
   },
   {
     id: "routes",
@@ -122,6 +146,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:routes",
     link: "/secure/routes",
+    meta: metaFor("routes"),
   },
   {
     id: "destinations",
@@ -129,6 +154,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:destinations",
     link: "/secure/destinations",
+    meta: metaFor("destinations"),
   },
   {
     id: "trips",
@@ -136,6 +162,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trips",
+    meta: metaFor("trips"),
   },
   {
     id: "drivers",
@@ -143,6 +170,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:identification",
     link: "/secure/drivers",
+    meta: metaFor("drivers"),
   },
   {
     id: "trucks",
@@ -150,6 +178,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trucks",
+    meta: metaFor("trucks"),
   },
   {
     id: "complaints",
@@ -157,6 +186,7 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:exclamation-triangle",
     link: "/secure/complaints",
+    meta: metaFor("complaints"),
   },
 ];
 export const futuristicNavigation: FuseNavigationItem[] = [
@@ -166,6 +196,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+    meta: metaFor("dashboard"),
   },
   {
     id: "reports",
@@ -173,6 +204,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:chart-bar",
     link: "/secure/reports",
+    meta: metaFor("reports"),
   },
   {
   id: "scan",
@@ -180,6 +212,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
   type: "basic",
   icon: "heroicons_outline:qr-code",
   link: "/secure/scanning",
+  meta: metaFor("scan"),
   },
   {
     id: "parcels-history",
@@ -187,6 +220,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
+    meta: metaFor("parcels-history"),
   },
   {
     id: "customers",
@@ -194,6 +228,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:customers",
     link: "/secure/customers",
+    meta: metaFor("customers"),
   },
   {
     id: "routes",
@@ -201,6 +236,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:routes",
     link: "/secure/routes",
+    meta: metaFor("routes"),
   },
   {
     id: "destinations",
@@ -208,6 +244,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:destinations",
     link: "/secure/destinations",
+    meta: metaFor("destinations"),
   },
   {
     id: "trips",
@@ -215,6 +252,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trips",
+    meta: metaFor("trips"),
   },
   {
     id: "drivers",
@@ -222,6 +260,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:identification",
     link: "/secure/drivers",
+    meta: metaFor("drivers"),
   },
   {
     id: "trucks",
@@ -229,6 +268,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:truck",
     link: "/secure/trucks",
+    meta: metaFor("trucks"),
   },
   {
     id: "complaints",
@@ -236,6 +276,7 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:exclamation-triangle",
     link: "/secure/complaints",
+    meta: metaFor("complaints"),
   },
 ];
 export const horizontalNavigation: FuseNavigationItem[] = [
@@ -245,6 +286,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+    meta: metaFor("dashboard"),
   },
   {
     id: "reports",
@@ -252,6 +294,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "heroicons_outline:chart-bar",
     link: "/secure/reports",
+    meta: metaFor("reports"),
   },
   {
   id: "scan",
@@ -259,6 +302,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
   type: "basic",
   icon: "heroicons_outline:qr-code",
   link: "/secure/scanning",
+  meta: metaFor("scan"),
   },
   {
     id: "parcels-history",
@@ -266,6 +310,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
+    meta: metaFor("parcels-history"),
   },
   {
     id: "customers",
@@ -273,6 +318,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:customers",
     link: "/secure/customers",
+    meta: metaFor("customers"),
   },
   {
     id: "routes",
@@ -280,6 +326,7 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:routes",
     link: "/secure/routes",
+    meta: metaFor("routes"),
   },
   {
     id: "destinations",
@@ -287,5 +334,6 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:destinations",
     link: "/secure/destinations",
+    meta: metaFor("destinations"),
   },
 ];

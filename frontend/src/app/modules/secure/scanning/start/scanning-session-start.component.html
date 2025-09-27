@@ -1,35 +1,36 @@
-<div class="flex flex-col gap-6" style="width: 100%; padding: 20px;">
+<div class="min-h-screen bg-gray-50">
   <style>
+    /* Force full width container */
+    :host {
+      display: block !important;
+      width: 100% !important;
+      max-width: none !important;
+    }
+
     /* Compact table styling for scanning sessions list */
     .compact-table .mat-mdc-header-row,
     .compact-table .mat-mdc-row {
-      height: 36px; /* tighter row height */
+      height: 36px;
     }
     .compact-table .mat-mdc-header-cell,
     .compact-table .mat-mdc-cell {
-      padding: 2px 8px; /* tighter padding */
-      font-size: 11px;  /* smaller text */
+      padding: 2px 8px;
+      font-size: 11px;
       line-height: 1.2;
-      white-space: nowrap; /* avoid multi-line overflow */
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .compact-table .mat-mdc-header-cell {
       font-weight: 600;
     }
-
-    /* Fixed layout to enable ellipsis reliably */
     .fixed-table { table-layout: fixed; width: 100%; }
-
-    /* Column width constraints */
     .col-route { width: 140px !important; }
     .col-mode { width: 80px !important; }
     .col-staff { width: 120px !important; }
     .col-time { width: 110px !important; text-align: right !important; }
     .col-status { width: 90px !important; text-align: center !important; }
     .col-actions { width: 56px !important; text-align: right !important; }
-
-    /* Ensure text alignment applies inside MDC cell wrappers */
     .compact-table .mat-mdc-cell.col-time .mdc-data-table__cell,
     .compact-table .mat-mdc-header-cell.col-time .mdc-data-table__header-cell {
       text-align: right !important;
@@ -38,107 +39,290 @@
     .compact-table .mat-mdc-header-cell.col-status .mdc-data-table__header-cell {
       text-align: center !important;
     }
+    .scanning-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .step-indicator {
+      transition: all 0.3s ease;
+    }
+    .step-indicator.active {
+      background: #667eea;
+      color: white;
+      transform: scale(1.1);
+    }
+    .step-indicator.completed {
+      background: #10b981;
+      color: white;
+    }
   </style>
-  <div class="bg-white rounded-lg shadow p-4 grid gap-4 md:grid-cols-3 items-end">
-    <mat-form-field appearance="fill">
-      <mat-label>Search Route</mat-label>
-      <input matInput [formControl]="form.controls['routeSearch']" placeholder="Type route name/code" />
-    </mat-form-field>
-    <mat-form-field appearance="fill">
-      <mat-label>Selected Route</mat-label>
-      <input matInput [formControl]="form.controls['routeId']" readonly />
-    </mat-form-field>
-    <div class="md:col-span-3">
-      <div style="font-size: 14;">Results</div>
-      <mat-radio-group [formControl]="form.controls['routeId']" class="mt-2 flex flex-col gap-1">
-        <mat-radio-button *ngFor="let r of filteredRoutes()" [value]="r.id" class="py-1">
-          <span class="text-sm font-medium">{{ r.name }}</span>
-          <span class="text-sm text-gray-500 ml-2">{{ r.code }}</span>
-        </mat-radio-button>
-      </mat-radio-group>
-      <div *ngIf="filteredRoutes().length === 0">
-        <span class="text-sm text-gray-500">No routes found.</span>
+
+  <!-- Header -->
+  <div class="mb-8 px-4 py-6">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Scanning Station</h1>
+      <p class="text-gray-600">Start a new scanning session or continue with existing sessions</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="px-4">
+    <!-- Setup Form - Full width -->
+    <div class="mb-8">
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="scanning-card p-6 text-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2 bg-white/20 rounded-lg">
+              <mat-icon class="text-white">qr_code_scanner</mat-icon>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold">Setup Scanning Session</h2>
+              <p class="text-white/80 text-sm">Configure your scanning parameters</p>
+            </div>
+          </div>
+
+          <!-- Progress Steps -->
+          <div class="flex items-center gap-2 mt-6">
+            <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
+                 [class.active]="form.get('routeId')?.value">1</div>
+            <div class="h-0.5 bg-white/30 flex-1"></div>
+            <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
+                 [class.active]="form.get('mode')?.value">2</div>
+            <div class="h-0.5 bg-white/30 flex-1"></div>
+            <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
+                 [class.completed]="form.valid">3</div>
+          </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="p-8 space-y-10">
+          <!-- Step 1: Route Selection -->
+          <div class="space-y-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">1</div>
+              <h3 class="text-2xl font-semibold text-gray-900">Select Route</h3>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Search Route</mat-label>
+                <input matInput [formControl]="form.controls['routeSearch']"
+                       placeholder="Type route name or code..." />
+                <mat-icon matSuffix>search</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Selected Route</mat-label>
+                <input matInput [formControl]="form.controls['routeId']" readonly />
+                <mat-icon matSuffix [class.text-green-500]="form.get('routeId')?.value">
+                  {{ form.get('routeId')?.value ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div *ngIf="form.get('routeSearch')?.value && filteredRoutes().length > 0"
+                 class="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">
+              <div class="text-sm font-medium text-gray-700 mb-3">Available Routes</div>
+              <mat-radio-group [formControl]="form.controls['routeId']" class="flex flex-col gap-2">
+                <mat-radio-button *ngFor="let r of filteredRoutes()" [value]="r.id"
+                                  class="p-3 rounded-lg hover:bg-white transition-colors">
+                  <div class="flex flex-col">
+                    <span class="font-medium text-gray-900">{{ r.name }}</span>
+                    <span class="text-sm text-gray-500">Code: {{ r.code }}</span>
+                  </div>
+                </mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <div *ngIf="form.get('routeSearch')?.value && filteredRoutes().length === 0"
+                 class="text-center py-8 text-gray-500">
+              <mat-icon class="text-4xl mb-2">search_off</mat-icon>
+              <p>No routes found matching "{{ form.get('routeSearch')?.value }}"</p>
+            </div>
+          </div>
+
+          <!-- Step 2: Scanning Mode -->
+          <div class="space-y-6" [class.opacity-50]="!form.get('routeId')?.value">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">2</div>
+              <h3 class="text-2xl font-semibold text-gray-900">Scanning Mode</h3>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-4 mb-4">
+              <div class="flex items-start gap-2">
+                <mat-icon class="text-blue-600 mt-0.5">info</mat-icon>
+                <div class="text-sm text-blue-800">
+                  <strong>Mail Bag Mode:</strong> Groups all parcels under one barcode for easier handling<br>
+                  <strong>Individual Mode:</strong> Each parcel is tracked separately
+                </div>
+              </div>
+            </div>
+
+            <mat-radio-group [formControl]="form.controls['mode']" class="grid gap-6 lg:grid-cols-2">
+              <mat-radio-button value="bag" class="flex items-start gap-4 p-6 rounded-xl border-2 hover:bg-gray-50 transition-colors w-full">
+                <div class="flex-1">
+                  <div class="text-xl font-semibold text-gray-900 mb-2">Mail Bag Mode</div>
+                  <div class="text-gray-600 mb-3">Group parcels under one Mail Bag barcode</div>
+                  <div class="flex items-center gap-2 text-green-600">
+                    <mat-icon class="text-lg">check</mat-icon>
+                    <span class="font-medium">Recommended for bulk shipments</span>
+                  </div>
+                </div>
+              </mat-radio-button>
+
+              <mat-radio-button value="individual" class="flex items-start gap-4 p-6 rounded-xl border-2 hover:bg-gray-50 transition-colors w-full">
+                <div class="flex-1">
+                  <div class="text-xl font-semibold text-gray-900 mb-2">Individual Mode</div>
+                  <div class="text-gray-600 mb-3">Handle each parcel as a separate item</div>
+                  <div class="flex items-center gap-2 text-blue-600">
+                    <mat-icon class="text-lg">track_changes</mat-icon>
+                    <span class="font-medium">Better for detailed tracking</span>
+                  </div>
+                </div>
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+
+          <!-- Step 3: Trip Assignment (Optional) -->
+          <div class="space-y-6" [class.opacity-50]="!form.get('mode')?.value">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">3</div>
+              <h3 class="text-2xl font-semibold text-gray-900">Trip Assignment</h3>
+              <span class="text-sm bg-gray-200 text-gray-600 px-3 py-1 rounded-full">Optional</span>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+              <div class="flex items-start gap-2">
+                <mat-icon class="text-yellow-600 mt-0.5">warning</mat-icon>
+                <div class="text-sm text-yellow-800">
+                  <strong>Note:</strong> Trip assignment is required when dispatching from a DISPATCH office.
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="openTrips?.length > 0" class="space-y-4">
+              <mat-radio-group [formControl]="form.controls['tripId']" class="space-y-4">
+                <mat-radio-button *ngFor="let t of openTrips" [value]="t.id"
+                                  class="w-full p-6 rounded-xl border-2 hover:bg-gray-50 hover:border-blue-300 transition-all">
+                  <div class="flex justify-between items-center w-full ml-2">
+                    <div class="flex flex-col space-y-1">
+                      <span class="font-semibold text-gray-900 text-lg">{{ t.driverName || 'No driver assigned' }}</span>
+                      <span class="text-gray-600">Truck: {{ t.truckReg || 'No truck assigned' }}</span>
+                    </div>
+                    <span class="px-3 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      {{ t.status }}
+                    </span>
+                  </div>
+                </mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <div *ngIf="!openTrips?.length" class="text-center py-6 text-gray-500">
+              <mat-icon class="text-4xl mb-2">no_accounts</mat-icon>
+              <p class="text-sm">No open trips available for this route at your office</p>
+            </div>
+          </div>
+
+          <!-- Start Button -->
+          <div class="pt-8 border-t">
+            <div class="max-w-md mx-auto">
+              <button mat-flat-button color="primary"
+                      class="w-full h-14 text-xl font-bold"
+                      (click)="startNewSession()"
+                      [disabled]="form.invalid">
+                <mat-icon class="mr-3 text-2xl">play_arrow</mat-icon>
+                Start Scanning Session
+              </button>
+
+              <div *ngIf="form.invalid" class="mt-4 text-center text-gray-500">
+                <mat-icon class="text-lg mr-2">info</mat-icon>
+                Please complete the required fields above to continue
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="md:col-span-3">
-      <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Do you want to create a Mail Bag?</div>
-      <mat-radio-group [formControl]="form.controls['mode']" class="flex flex-col gap-3 items-start">
-        <mat-radio-button value="bag">
-          Yes — group all scanned parcels under one Mail Bag barcode
-        </mat-radio-button>
-        <mat-radio-button value="individual">
-          No — handle each parcel as an individual item
-        </mat-radio-button>
-      </mat-radio-group>
-    </div>
-    <div class="md:col-span-3">
-      <div class="text-sm font-medium mb-2" style="font-family: 'Inter', sans-serif;">Link to Trip (optional)</div>
-      <div class="text-[12px] text-gray-500 mb-2">Required when dispatching from a DISPATCH office. Pick an open trip for this route and your office.</div>
-      <mat-radio-group [formControl]="form.controls['tripId']" class="flex flex-col gap-1">
-        <mat-radio-button *ngFor="let t of openTrips" [value]="t.id">
-          <span class="text-sm font-medium">Driver: {{ t.driverName || '—' }}</span>
-          <span class="text-sm text-gray-500 ml-2">Truck: {{ t.truckReg || '—' }}</span>
-          <span class="text-[11px] ml-2 px-1 py-0.5 rounded bg-blue-50 text-blue-600">{{ t.status }}</span>
-        </mat-radio-button>
-      </mat-radio-group>
-      <div *ngIf="!openTrips?.length" class="text-[12px] text-gray-500">No open trips for this route at your office.</div>
-    </div>
-    <div class="md:col-span-3 flex justify-end">
-      <button mat-flat-button color="primary" class="custom-primary-btn" (click)="startNewSession()" [disabled]="form.invalid">
-        <mat-icon style="color: #fff;">add</mat-icon>
-        Start Scanning
-      </button>
+
+    <!-- Recent Sessions Section -->
+    <div>
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="p-6 border-b bg-gray-50">
+          <div class="flex items-center gap-2 mb-2">
+            <mat-icon class="text-gray-600">history</mat-icon>
+            <h3 class="font-semibold text-gray-900">Recent Sessions</h3>
+          </div>
+          <p class="text-sm text-gray-600">Your latest scanning activities</p>
+        </div>
+
+        <div class="flex-1 overflow-hidden">
+          <div *ngIf="recentSessions.length === 0" class="text-center py-12">
+            <mat-icon class="text-6xl text-gray-300 mb-4">inbox</mat-icon>
+            <p class="text-gray-500">No recent sessions</p>
+            <p class="text-sm text-gray-400">Your scanning history will appear here</p>
+          </div>
+
+          <div *ngIf="recentSessions.length > 0" class="p-4 space-y-3 max-h-96 overflow-y-auto">
+            <div *ngFor="let session of recentSessions"
+                 class="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div class="flex justify-between items-start mb-2">
+                <div class="font-medium text-sm text-gray-900 truncate">
+                  {{ session.routeName }}
+                </div>
+                <span class="px-2 py-1 rounded-full text-xs font-medium"
+                      [class.bg-green-100]="session.status === 'Completed'"
+                      [class.text-green-800]="session.status === 'Completed'"
+                      [class.bg-blue-100]="session.status === 'Draft'"
+                      [class.text-blue-800]="session.status === 'Draft'">
+                  {{ session.status }}
+                </span>
+              </div>
+
+              <div class="text-xs text-gray-500 space-y-1">
+                <div class="flex justify-between">
+                  <span>Mode:</span>
+                  <span class="capitalize">{{ session.mode }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Staff:</span>
+                  <span>{{ session.staff || '—' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Time:</span>
+                  <span>{{ session.createdAt | date: 'dd/MM HH:mm' }}</span>
+                </div>
+              </div>
+
+              <div class="mt-4 flex justify-between items-center">
+                <!-- Resume button for draft sessions -->
+                <div *ngIf="session.status === 'Draft'">
+                  <button mat-flat-button color="primary"
+                          (click)="resumeSession(session.id)"
+                          class="!h-8 !text-sm !px-4">
+                    <mat-icon class="!text-base mr-1">play_arrow</mat-icon>
+                    Resume
+                  </button>
+                </div>
+
+                <!-- Download button for completed sessions -->
+                <div class="ml-auto">
+                  <button mat-icon-button
+                          (click)="download(session.id)"
+                          [disabled]="session.status !== 'Completed'"
+                          [title]="session.status === 'Completed' ? 'Download delivery note' : 'Available after session is closed'"
+                          class="!w-8 !h-8">
+                    <mat-icon class="!text-lg">file_download</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="totalSessions > pageSize" class="border-t p-4">
+            <mat-paginator [pageSize]="pageSize" [length]="totalSessions" class="!p-0"></mat-paginator>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
-    <table mat-table [dataSource]="recentSessions" class="compact-table fixed-table">
-      <colgroup>
-        <col class="col-route" />
-        <col class="col-mode" />
-        <col class="col-staff" />
-        <col class="col-time" />
-        <col class="col-status" />
-        <col class="col-actions" />
-      </colgroup>
-      <ng-container matColumnDef="route">
-        <th mat-header-cell *matHeaderCellDef class="col-route">Route</th>
-        <td mat-cell *matCellDef="let session" class="col-route" [attr.title]="session.routeName">{{ session.routeName }}</td>
-      </ng-container>
-      <ng-container matColumnDef="mode">
-        <th mat-header-cell *matHeaderCellDef class="col-mode">Mode</th>
-        <td mat-cell *matCellDef="let session" class="col-mode">{{ session.mode | titlecase }}</td>
-      </ng-container>
-      <ng-container matColumnDef="staff">
-        <th mat-header-cell *matHeaderCellDef class="col-staff">Staff</th>
-        <td mat-cell *matCellDef="let session" class="col-staff" [attr.title]="session.staff">{{ session.staff || '—' }}</td>
-      </ng-container>
-      <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef class="col-time">Time</th>
-        <td mat-cell *matCellDef="let session" class="col-time" [attr.title]="(session.createdAt | date: 'medium')">
-          {{ session.createdAt | date: 'dd/MM HH:mm' }}
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef class="col-status">Status</th>
-        <td mat-cell *matCellDef="let session" class="col-status">
-          <span class="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[10px] font-medium uppercase">{{ session.status }}</span>
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
-        <td mat-cell *matCellDef="let session" class="col-actions">
-          <button mat-icon-button
-                  (click)="download(session.id)"
-                  [disabled]="session.status !== 'Completed'"
-                  aria-label="Download delivery note"
-                  [title]="session.status === 'Completed' ? 'Download delivery note' : 'Available after session is closed'">
-            <mat-icon>file_download</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-  </div>
-  <mat-paginator [pageSize]="10"></mat-paginator>
 </div>
