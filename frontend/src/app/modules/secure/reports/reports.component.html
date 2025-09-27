@@ -1,0 +1,640 @@
+<div class="flex flex-col flex-auto w-full">
+  <div class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between w-full">
+      <div>
+        <div class="text-3xl font-semibold tracking-tight leading-8">
+          Reports
+        </div>
+        <p class="p tracking-tight leading-8">
+          Generate comprehensive reports and analytics for your postal operations.
+        </p>
+      </div>
+    </div>
+
+    <!-- Report Type Selection -->
+    <div class="flex flex-wrap gap-2">
+      <button mat-flat-button [class.mat-primary]="selectedReportType === 'revenue'" (click)="selectedReportType = 'revenue'">Revenue</button>
+      <button mat-flat-button [class.mat-primary]="selectedReportType === 'parcel'" (click)="selectedReportType = 'parcel'">Parcel Movement</button>
+      <button mat-flat-button [class.mat-primary]="selectedReportType === 'complaint'" (click)="selectedReportType = 'complaint'">Complaints</button>
+      <button mat-flat-button [class.mat-primary]="selectedReportType === 'trip'" (click)="selectedReportType = 'trip'">Driver Trips</button>
+      <button mat-flat-button [class.mat-primary]="selectedReportType === 'zicta'" (click)="selectedReportType = 'zicta'">ZICTA</button>
+    </div>
+
+    <!-- Revenue Report -->
+    <div *ngIf="selectedReportType === 'revenue'" class="flex flex-col flex-1 gap-6">
+      <div class="flex flex-col flex-1 p-5 rounded-2xl bg-white shadow-md">
+        <form class="flex flex-wrap gap-4 items-end mb-6" [formGroup]="revenueForm" (ngSubmit)="loadRevenue()">
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>Start date</mat-label>
+            <input matInput [matDatepicker]="revStart" formControlName="start" />
+            <mat-datepicker-toggle matIconSuffix [for]="revStart"></mat-datepicker-toggle>
+            <mat-datepicker #revStart></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>End date</mat-label>
+            <input matInput [matDatepicker]="revEnd" formControlName="end" />
+            <mat-datepicker-toggle matIconSuffix [for]="revEnd"></mat-datepicker-toggle>
+            <mat-datepicker #revEnd></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-40">
+            <mat-label>Granularity</mat-label>
+            <mat-select formControlName="granularity">
+              <mat-option value="daily">Daily</mat-option>
+              <mat-option value="monthly">Monthly</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" type="submit">Apply</button>
+          <button mat-button type="button" (click)="resetRevenue()">Reset</button>
+        </form>
+
+        <div class="flex justify-center py-8" *ngIf="loadingRevenue">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        </div>
+
+        <ng-container *ngIf="!loadingRevenue">
+          <ng-container *ngIf="revenueReport as report; else revenueEmpty">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-green-200 bg-green-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-green-600 uppercase">Total Revenue</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-green-200 bg-white text-green-500">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:currency-dollar"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-green-700">{{ report.totalAmount | number: '1.2-2' }} ZMW</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-blue-200 bg-blue-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-blue-600 uppercase">Payments</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-blue-200 bg-white text-blue-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:credit-card"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-blue-700">{{ report.totalPayments }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-amber-200 bg-amber-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-amber-600 uppercase">From</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-amber-200 bg-white text-amber-500">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-lg font-bold tracking-tight text-amber-700">{{ formatDate(report.startDate) }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-purple-200 bg-purple-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-purple-600 uppercase">To</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-purple-200 bg-white text-purple-500">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-lg font-bold tracking-tight text-purple-700">{{ formatDate(report.endDate) }}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+              <table mat-table [dataSource]="report.data" style="width: 100%">
+                <ng-container matColumnDef="period">
+                  <th mat-header-cell *matHeaderCellDef>Period</th>
+                  <td mat-cell *matCellDef="let row">{{ row.period }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef>Amount (ZMW)</th>
+                  <td mat-cell *matCellDef="let row">{{ row.amount | number: '1.2-2' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="payments">
+                  <th mat-header-cell *matHeaderCellDef>Payments</th>
+                  <td mat-cell *matCellDef="let row">{{ row.payments }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="revenueColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: revenueColumns"></tr>
+              </table>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-4">Generated {{ formatDate(report.generatedAt) }}</div>
+          </ng-container>
+        </ng-container>
+
+        <ng-template #revenueEmpty>
+          <div class="text-center py-8 text-gray-500">No revenue data for the selected filters.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Parcel Movement Report -->
+    <div *ngIf="selectedReportType === 'parcel'" class="flex flex-col flex-1 gap-6">
+      <div class="flex flex-col flex-1 p-5 rounded-2xl bg-white shadow-md">
+        <form class="flex flex-wrap gap-4 items-end mb-6" [formGroup]="parcelForm" (ngSubmit)="loadParcel()">
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>Start date</mat-label>
+            <input matInput [matDatepicker]="parcelStart" formControlName="start" />
+            <mat-datepicker-toggle matIconSuffix [for]="parcelStart"></mat-datepicker-toggle>
+            <mat-datepicker #parcelStart></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>End date</mat-label>
+            <input matInput [matDatepicker]="parcelEnd" formControlName="end" />
+            <mat-datepicker-toggle matIconSuffix [for]="parcelEnd"></mat-datepicker-toggle>
+            <mat-datepicker #parcelEnd></mat-datepicker>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" type="submit">Apply</button>
+          <button mat-button type="button" (click)="resetParcel()">Reset</button>
+        </form>
+
+        <div class="flex justify-center py-8" *ngIf="loadingParcel">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        </div>
+
+        <ng-container *ngIf="!loadingParcel">
+          <ng-container *ngIf="parcelReport as report; else parcelEmpty">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-gray-200 bg-gray-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Total Parcels</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:cube"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-gray-800">{{ report.totalParcels }}</div>
+              </div>
+              <div *ngFor="let status of report.statusBreakdown; let i = index"
+                   [ngClass]="{
+                     'border-amber-200 bg-amber-50': i === 0,
+                     'border-blue-200 bg-blue-50': i === 1,
+                     'border-green-200 bg-green-50': i === 2,
+                     'border-purple-200 bg-purple-50': i === 3,
+                     'border-red-200 bg-red-50': i >= 4
+                   }"
+                   class="flex flex-col flex-auto p-5 rounded-2xl border">
+                <div class="flex items-start justify-between w-full">
+                  <div [ngClass]="{
+                         'text-amber-600': i === 0,
+                         'text-blue-600': i === 1,
+                         'text-green-600': i === 2,
+                         'text-purple-600': i === 3,
+                         'text-red-600': i >= 4
+                       }"
+                       class="text-[11px] font-semibold tracking-wide uppercase">{{ status.status }}</div>
+                  <div [ngClass]="{
+                         'border-amber-200 bg-white text-amber-500': i === 0,
+                         'border-blue-200 bg-white text-blue-600': i === 1,
+                         'border-green-200 bg-white text-green-600': i === 2,
+                         'border-purple-200 bg-white text-purple-500': i === 3,
+                         'border-red-200 bg-white text-red-600': i >= 4
+                       }"
+                       class="flex items-center justify-center h-9 w-9 rounded-full border">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:cube"></mat-icon>
+                  </div>
+                </div>
+                <div [ngClass]="{
+                       'text-amber-700': i === 0,
+                       'text-blue-700': i === 1,
+                       'text-green-700': i === 2,
+                       'text-purple-700': i === 3,
+                       'text-red-700': i >= 4
+                     }"
+                     class="mt-3 text-2xl font-bold tracking-tight">{{ status.count }}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+              <table mat-table [dataSource]="report.daily" style="width: 100%">
+                <ng-container matColumnDef="date">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let row">{{ row.date }}</td>
+                </ng-container>
+                <ng-container matColumnDef="total">
+                  <th mat-header-cell *matHeaderCellDef>Total</th>
+                  <td mat-cell *matCellDef="let row">{{ row.total }}</td>
+                </ng-container>
+                <ng-container matColumnDef="pending">
+                  <th mat-header-cell *matHeaderCellDef>Pending</th>
+                  <td mat-cell *matCellDef="let row">{{ row.pending }}</td>
+                </ng-container>
+                <ng-container matColumnDef="readyForCollection">
+                  <th mat-header-cell *matHeaderCellDef>Ready</th>
+                  <td mat-cell *matCellDef="let row">{{ row.readyForCollection }}</td>
+                </ng-container>
+                <ng-container matColumnDef="collected">
+                  <th mat-header-cell *matHeaderCellDef>Collected</th>
+                  <td mat-cell *matCellDef="let row">{{ row.collected }}</td>
+                </ng-container>
+                <ng-container matColumnDef="complaintBox">
+                  <th mat-header-cell *matHeaderCellDef>Complaint</th>
+                  <td mat-cell *matCellDef="let row">{{ row.complaintBox }}</td>
+                </ng-container>
+                <ng-container matColumnDef="damaged">
+                  <th mat-header-cell *matHeaderCellDef>Damaged</th>
+                  <td mat-cell *matCellDef="let row">{{ row.damaged }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="parcelColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: parcelColumns"></tr>
+              </table>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-4">Generated {{ formatDate(report.generatedAt) }}</div>
+          </ng-container>
+        </ng-container>
+
+        <ng-template #parcelEmpty>
+          <div class="text-center py-8 text-gray-500">No parcel data for the selected filters.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Complaints Report -->
+    <div *ngIf="selectedReportType === 'complaint'" class="flex flex-col flex-1 gap-6">
+      <div class="flex flex-col flex-1 p-5 rounded-2xl bg-white shadow-md">
+        <form class="flex flex-wrap gap-4 items-end mb-6" [formGroup]="complaintForm" (ngSubmit)="loadComplaints()">
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>Start date</mat-label>
+            <input matInput [matDatepicker]="complaintStart" formControlName="start" />
+            <mat-datepicker-toggle matIconSuffix [for]="complaintStart"></mat-datepicker-toggle>
+            <mat-datepicker #complaintStart></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>End date</mat-label>
+            <input matInput [matDatepicker]="complaintEnd" formControlName="end" />
+            <mat-datepicker-toggle matIconSuffix [for]="complaintEnd"></mat-datepicker-toggle>
+            <mat-datepicker #complaintEnd></mat-datepicker>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" type="submit">Apply</button>
+          <button mat-button type="button" (click)="resetComplaints()">Reset</button>
+        </form>
+
+        <div class="flex justify-center py-8" *ngIf="loadingComplaint">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        </div>
+
+        <ng-container *ngIf="!loadingComplaint">
+          <ng-container *ngIf="complaintReport as report; else complaintsEmpty">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-red-200 bg-red-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-red-600 uppercase">Open</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-red-200 bg-white text-red-500">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:exclamation-triangle"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-red-700">{{ report.totals.open }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-green-200 bg-green-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-green-600 uppercase">Closed</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-green-200 bg-white text-green-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:check-circle"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-green-700">{{ report.totals.closed }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-gray-200 bg-gray-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Total</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:chat-bubble-left-right"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-gray-800">{{ report.totals.total }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-blue-200 bg-blue-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-blue-600 uppercase">Avg Resolution (mins)</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-blue-200 bg-white text-blue-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:clock"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-blue-700">{{ report.totals.avgResolutionMinutes }}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+              <table mat-table [dataSource]="report.daily" style="width: 100%">
+                <ng-container matColumnDef="date">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let row">{{ row.date }}</td>
+                </ng-container>
+                <ng-container matColumnDef="logged">
+                  <th mat-header-cell *matHeaderCellDef>Logged</th>
+                  <td mat-cell *matCellDef="let row">{{ row.logged }}</td>
+                </ng-container>
+                <ng-container matColumnDef="closed">
+                  <th mat-header-cell *matHeaderCellDef>Closed</th>
+                  <td mat-cell *matCellDef="let row">{{ row.closed }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="complaintColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: complaintColumns"></tr>
+              </table>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-4">Generated {{ formatDate(report.generatedAt) }}</div>
+          </ng-container>
+        </ng-container>
+
+        <ng-template #complaintsEmpty>
+          <div class="text-center py-8 text-gray-500">No complaint data for the selected filters.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Driver Trips Report -->
+    <div *ngIf="selectedReportType === 'trip'" class="flex flex-col flex-1 gap-6">
+      <div class="flex flex-col flex-1 p-5 rounded-2xl bg-white shadow-md">
+        <form class="flex flex-wrap gap-4 items-end mb-6" [formGroup]="tripForm" (ngSubmit)="loadTrips()">
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>Start date</mat-label>
+            <input matInput [matDatepicker]="tripStart" formControlName="start" />
+            <mat-datepicker-toggle matIconSuffix [for]="tripStart"></mat-datepicker-toggle>
+            <mat-datepicker #tripStart></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>End date</mat-label>
+            <input matInput [matDatepicker]="tripEnd" formControlName="end" />
+            <mat-datepicker-toggle matIconSuffix [for]="tripEnd"></mat-datepicker-toggle>
+            <mat-datepicker #tripEnd></mat-datepicker>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" type="submit">Apply</button>
+          <button mat-button type="button" (click)="resetTrips()">Reset</button>
+        </form>
+
+        <div class="flex justify-center py-8" *ngIf="loadingTrips">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        </div>
+
+        <ng-container *ngIf="!loadingTrips">
+          <ng-container *ngIf="tripReport as report; else tripsEmpty">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-gray-200 bg-gray-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Total Trips</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:truck"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-gray-800">{{ report.totalTrips }}</div>
+              </div>
+              <div *ngFor="let status of report.statusBreakdown; let i = index"
+                   [ngClass]="{
+                     'border-blue-200 bg-blue-50': i === 0,
+                     'border-amber-200 bg-amber-50': i === 1,
+                     'border-purple-200 bg-purple-50': i === 2,
+                     'border-green-200 bg-green-50': i === 3,
+                     'border-red-200 bg-red-50': i >= 4
+                   }"
+                   class="flex flex-col flex-auto p-5 rounded-2xl border">
+                <div class="flex items-start justify-between w-full">
+                  <div [ngClass]="{
+                         'text-blue-600': i === 0,
+                         'text-amber-600': i === 1,
+                         'text-purple-600': i === 2,
+                         'text-green-600': i === 3,
+                         'text-red-600': i >= 4
+                       }"
+                       class="text-[11px] font-semibold tracking-wide uppercase">{{ status.status }}</div>
+                  <div [ngClass]="{
+                         'border-blue-200 bg-white text-blue-600': i === 0,
+                         'border-amber-200 bg-white text-amber-500': i === 1,
+                         'border-purple-200 bg-white text-purple-500': i === 2,
+                         'border-green-200 bg-white text-green-600': i === 3,
+                         'border-red-200 bg-white text-red-600': i >= 4
+                       }"
+                       class="flex items-center justify-center h-9 w-9 rounded-full border">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:truck"></mat-icon>
+                  </div>
+                </div>
+                <div [ngClass]="{
+                       'text-blue-700': i === 0,
+                       'text-amber-700': i === 1,
+                       'text-purple-700': i === 2,
+                       'text-green-700': i === 3,
+                       'text-red-700': i >= 4
+                     }"
+                     class="mt-3 text-2xl font-bold tracking-tight">{{ status.count }}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+              <table mat-table [dataSource]="report.drivers" style="width: 100%">
+                <ng-container matColumnDef="driverName">
+                  <th mat-header-cell *matHeaderCellDef>Driver</th>
+                  <td mat-cell *matCellDef="let row">{{ row.driverName }}</td>
+                </ng-container>
+                <ng-container matColumnDef="totalTrips">
+                  <th mat-header-cell *matHeaderCellDef>Total Trips</th>
+                  <td mat-cell *matCellDef="let row">{{ row.totalTrips }}</td>
+                </ng-container>
+                <ng-container matColumnDef="planned">
+                  <th mat-header-cell *matHeaderCellDef>Planned</th>
+                  <td mat-cell *matCellDef="let row">{{ row.statusCounts?.PLANNED || 0 }}</td>
+                </ng-container>
+                <ng-container matColumnDef="loading">
+                  <th mat-header-cell *matHeaderCellDef>Loading</th>
+                  <td mat-cell *matCellDef="let row">{{ row.statusCounts?.LOADING || 0 }}</td>
+                </ng-container>
+                <ng-container matColumnDef="inTransit">
+                  <th mat-header-cell *matHeaderCellDef>In Transit</th>
+                  <td mat-cell *matCellDef="let row">{{ row.statusCounts?.IN_TRANSIT || 0 }}</td>
+                </ng-container>
+                <ng-container matColumnDef="completed">
+                  <th mat-header-cell *matHeaderCellDef>Completed</th>
+                  <td mat-cell *matCellDef="let row">{{ row.statusCounts?.COMPLETED || 0 }}</td>
+                </ng-container>
+                <ng-container matColumnDef="averageDuration">
+                  <th mat-header-cell *matHeaderCellDef>Avg Duration (mins)</th>
+                  <td mat-cell *matCellDef="let row">{{ row.averageDurationMinutes ?? '—' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="trucks">
+                  <th mat-header-cell *matHeaderCellDef>Trucks</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span [matTooltip]="row.truckRegistrations?.join(', ')" *ngIf="row.truckRegistrations?.length; else noTrucks">
+                      {{ row.truckRegistrations.join(', ') }}
+                    </span>
+                    <ng-template #noTrucks>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="routes">
+                  <th mat-header-cell *matHeaderCellDef>Routes</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span [matTooltip]="row.routes?.join(', ')" *ngIf="row.routes?.length; else noRoutes">
+                      {{ row.routes.join(', ') }}
+                    </span>
+                    <ng-template #noRoutes>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="offices">
+                  <th mat-header-cell *matHeaderCellDef>Offices</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span [matTooltip]="row.offices?.join(', ')" *ngIf="row.offices?.length; else noOffices">
+                      {{ row.offices.join(', ') }}
+                    </span>
+                    <ng-template #noOffices>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="lastTrip">
+                  <th mat-header-cell *matHeaderCellDef>Last Trip</th>
+                  <td mat-cell *matCellDef="let row">{{ formatDate(row.lastTripPlannedAt) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="lastStatus">
+                  <th mat-header-cell *matHeaderCellDef>Last Status</th>
+                  <td mat-cell *matCellDef="let row">{{ row.lastStatus || '—' }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="tripColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: tripColumns"></tr>
+              </table>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-4">Generated {{ formatDate(report.generatedAt) }}</div>
+          </ng-container>
+        </ng-container>
+
+        <ng-template #tripsEmpty>
+          <div class="text-center py-8 text-gray-500">No driver trip data for the selected filters.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- ZICTA Report -->
+    <div *ngIf="selectedReportType === 'zicta'" class="flex flex-col flex-1 gap-6">
+      <div class="flex flex-col flex-1 p-5 rounded-2xl bg-white shadow-md">
+        <form class="flex flex-wrap gap-4 items-end mb-6" [formGroup]="zictaForm" (ngSubmit)="loadZicta()">
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>Start date</mat-label>
+            <input matInput [matDatepicker]="zictaStart" formControlName="start" />
+            <mat-datepicker-toggle matIconSuffix [for]="zictaStart"></mat-datepicker-toggle>
+            <mat-datepicker #zictaStart></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-52">
+            <mat-label>End date</mat-label>
+            <input matInput [matDatepicker]="zictaEnd" formControlName="end" />
+            <mat-datepicker-toggle matIconSuffix [for]="zictaEnd"></mat-datepicker-toggle>
+            <mat-datepicker #zictaEnd></mat-datepicker>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" type="submit">Apply</button>
+          <button mat-button type="button" (click)="resetZicta()">Reset</button>
+        </form>
+
+        <div class="flex justify-center py-8" *ngIf="loadingZicta">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        </div>
+
+        <ng-container *ngIf="!loadingZicta">
+          <ng-container *ngIf="zictaReport as report; else zictaEmpty">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-gray-200 bg-gray-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Parcels</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:cube"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-2xl font-bold tracking-tight text-gray-800">{{ report.total }}</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-blue-200 bg-blue-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-blue-600 uppercase">Declared Value</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-blue-200 bg-white text-blue-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:banknotes"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-xl font-bold tracking-tight text-blue-700">{{ report.totalDeclaredValue | number: '1.2-2' }} ZMW</div>
+              </div>
+              <div class="flex flex-col flex-auto p-5 rounded-2xl border border-green-200 bg-green-50">
+                <div class="flex items-start justify-between w-full">
+                  <div class="text-[11px] font-semibold tracking-wide text-green-600 uppercase">Payments</div>
+                  <div class="flex items-center justify-center h-9 w-9 rounded-full border border-green-200 bg-white text-green-600">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:currency-dollar"></mat-icon>
+                  </div>
+                </div>
+                <div class="mt-3 text-xl font-bold tracking-tight text-green-700">{{ report.totalPaymentAmount | number: '1.2-2' }} ZMW</div>
+              </div>
+            </div>
+
+            <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+              <table mat-table [dataSource]="report.records" style="width: 100%">
+                <ng-container matColumnDef="createdAt">
+                  <th mat-header-cell *matHeaderCellDef>Created</th>
+                  <td mat-cell *matCellDef="let row">{{ formatDate(row.createdAt) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="trackingCode">
+                  <th mat-header-cell *matHeaderCellDef>Tracking Code</th>
+                  <td mat-cell *matCellDef="let row">{{ row.trackingCode || '—' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="parcelNumber">
+                  <th mat-header-cell *matHeaderCellDef>Parcel #</th>
+                  <td mat-cell *matCellDef="let row">{{ row.parcelNumber }}</td>
+                </ng-container>
+                <ng-container matColumnDef="origin">
+                  <th mat-header-cell *matHeaderCellDef>Origin</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span *ngIf="row.originOffice; else noOrigin">
+                      {{ row.originOffice.name }}<span *ngIf="row.originOffice.branchCode"> ({{ row.originOffice.branchCode }})</span>
+                    </span>
+                    <ng-template #noOrigin>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="destination">
+                  <th mat-header-cell *matHeaderCellDef>Destination</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span *ngIf="row.destinationOffice; else noDestination">
+                      {{ row.destinationOffice.name }}<span *ngIf="row.destinationOffice.branchCode"> ({{ row.destinationOffice.branchCode }})</span>
+                    </span>
+                    <ng-template #noDestination>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="sender">
+                  <th mat-header-cell *matHeaderCellDef>Sender</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span *ngIf="row.sender; else noSender">
+                      {{ row.sender.firstName }} {{ row.sender.lastName }}
+                      <span *ngIf="row.sender.phoneNumber">· {{ row.sender.phoneNumber }}</span>
+                    </span>
+                    <ng-template #noSender>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="receiver">
+                  <th mat-header-cell *matHeaderCellDef>Receiver</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span *ngIf="row.receiver; else noReceiver">
+                      {{ row.receiver.firstName }} {{ row.receiver.lastName }}
+                      <span *ngIf="row.receiver.phoneNumber">· {{ row.receiver.phoneNumber }}</span>
+                    </span>
+                    <ng-template #noReceiver>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="payment">
+                  <th mat-header-cell *matHeaderCellDef>Payment</th>
+                  <td mat-cell *matCellDef="let row">
+                    <span *ngIf="row.payment; else noPayment">
+                      {{ row.payment.amount | number: '1.2-2' }} ZMW
+                      <span class="text-xs text-gray-500" *ngIf="row.payment.method"> ({{ row.payment.method }})</span>
+                    </span>
+                    <ng-template #noPayment>—</ng-template>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let row">{{ row.status }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="zictaColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: zictaColumns"></tr>
+              </table>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-4">Generated {{ formatDate(report.generatedAt) }}</div>
+          </ng-container>
+        </ng-container>
+
+        <ng-template #zictaEmpty>
+          <div class="text-center py-8 text-gray-500">No ZICTA report data for the selected filters.</div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

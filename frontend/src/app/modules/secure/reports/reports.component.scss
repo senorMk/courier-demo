@@ -1,0 +1,22 @@
+// Custom button styles for report type selection
+.mat-flat-button.mat-primary {
+  @apply bg-blue-600 text-white;
+}
+
+.mat-flat-button:not(.mat-primary) {
+  @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+}
+
+// Form button alignment - match Material form field height
+form .mat-stroked-button,
+form .mat-button {
+  height: 56px; // Match Material form field height
+  min-height: 56px;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .w-52 {
+    @apply w-full;
+  }
+}
