@@ -18,6 +18,7 @@ import { CustomerModule } from './customers/customer.module';
 import { ParcelModule } from './parcels/parcel.module';
 import { RoutesModule } from './routes/routes.module';
 import { ScanningModule } from './scanning/scanning.module';
+import { ReportsModule } from './reports/reports.module';
 
 
 @Module({
@@ -38,8 +39,9 @@ import { ScanningModule } from './scanning/scanning.module';
     LogsModule,
     CustomerModule,
     ParcelModule,
-  RoutesModule,
-  ScanningModule
+    RoutesModule,
+    ScanningModule,
+    ReportsModule,
   ],
   controllers: [AppController, HealthController],
 })

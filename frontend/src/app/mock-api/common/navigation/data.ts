@@ -10,6 +10,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
     link: "/secure/dashboard",
   },
   {
+    id: "reports",
+    title: "Reports",
+    type: "basic",
+    icon: "heroicons_outline:chart-bar",
+    link: "/secure/reports",
+  },
+  {
   id: "scan",
   title: "Scan",
   type: "basic",
@@ -80,6 +87,13 @@ export const compactNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+  },
+  {
+    id: "reports",
+    title: "Reports",
+    type: "basic",
+    icon: "heroicons_outline:chart-bar",
+    link: "/secure/reports",
   },
   {
   id: "scan",
@@ -154,6 +168,13 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     link: "/secure/dashboard",
   },
   {
+    id: "reports",
+    title: "Reports",
+    type: "basic",
+    icon: "heroicons_outline:chart-bar",
+    link: "/secure/reports",
+  },
+  {
   id: "scan",
   title: "Scan",
   type: "basic",
@@ -224,6 +245,13 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     type: "basic",
     icon: "custom:dashboard",
     link: "/secure/dashboard",
+  },
+  {
+    id: "reports",
+    title: "Reports",
+    type: "basic",
+    icon: "heroicons_outline:chart-bar",
+    link: "/secure/reports",
   },
   {
   id: "scan",

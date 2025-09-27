@@ -133,10 +133,10 @@ export const appRoutes: Route[] = [
           ).then((m) => m.LiveTrackingComponent),
       },
       {
-        path: "revenue",
+        path: "reports",
         loadComponent: () =>
-          import("app/modules/secure/revenue/revenue.component").then(
-            (m) => m.RevenueComponent
+          import("app/modules/secure/reports/reports.component").then(
+            (m) => m.ReportsComponent
           ),
       },
       {
