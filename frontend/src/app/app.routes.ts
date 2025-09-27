@@ -2,6 +2,7 @@ import { Route } from "@angular/router";
 import { initialDataResolver } from "app/app.resolvers";
 import { AuthGuard } from "app/core/auth/guards/auth.guard";
 import { NoAuthGuard } from "app/core/auth/guards/noAuth.guard";
+import { getRolesWithFeature, STAFF_ROLES } from "app/core/auth/role-permissions";
 import { LayoutComponent } from "app/layout/layout.component";
 
 // @formatter:off
@@ -105,7 +106,7 @@ export const appRoutes: Route[] = [
     component: LayoutComponent,
     data: {
       layout: "classic",
-      allowedRoles: ["managing-director"],
+      allowedRoles: STAFF_ROLES,
     },
     resolve: {
       initialData: initialDataResolver,
@@ -113,6 +114,9 @@ export const appRoutes: Route[] = [
     children: [
       {
         path: "dashboard",
+        data: {
+          allowedRoles: getRolesWithFeature("dashboard"),
+        },
         loadChildren: () =>
           import("app/modules/secure/dashboard/dashboard.module").then(
             (m) => m.DashboardModule
@@ -120,6 +124,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "parcels-history",
+        data: {
+          allowedRoles: getRolesWithFeature("parcels-history"),
+        },
         loadComponent: () =>
           import(
             "app/modules/secure/parcels-history/parcels-history.component"
@@ -127,6 +134,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "live-tracking",
+        data: {
+          allowedRoles: getRolesWithFeature("live-tracking"),
+        },
         loadComponent: () =>
           import(
             "app/modules/secure/live-tracking/live-tracking.component"
@@ -134,6 +144,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "reports",
+        data: {
+          allowedRoles: getRolesWithFeature("reports"),
+        },
         loadComponent: () =>
           import("app/modules/secure/reports/reports.component").then(
             (m) => m.ReportsComponent
@@ -141,6 +154,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "customers",
+        data: {
+          allowedRoles: getRolesWithFeature("customers"),
+        },
         loadChildren: () =>
           import("app/modules/secure/customers/customers.module").then(
             (m) => m.CustomersModule
@@ -148,6 +164,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "destinations",
+        data: {
+          allowedRoles: getRolesWithFeature("destinations"),
+        },
         loadChildren: () =>
           import("app/modules/secure/destinations/destinations.module").then(
             (m) => m.DestinationsModule
@@ -155,6 +174,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "parcels",
+        data: {
+          allowedRoles: getRolesWithFeature("parcels"),
+        },
         loadChildren: () =>
           import("app/modules/secure/parcels/parcels.module").then(
             (m) => m.ParcelsModule
@@ -162,6 +184,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "routes",
+        data: {
+          allowedRoles: getRolesWithFeature("routes"),
+        },
         loadChildren: () =>
           import("app/modules/secure/routes/routes.module").then(
             (m) => m.RoutesModule
@@ -169,6 +194,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "drivers",
+        data: {
+          allowedRoles: getRolesWithFeature("drivers"),
+        },
         loadChildren: () =>
           import("app/modules/secure/drivers/drivers.module").then(
             (m) => m.DriversModule
@@ -176,6 +204,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "trucks",
+        data: {
+          allowedRoles: getRolesWithFeature("trucks"),
+        },
         loadChildren: () =>
           import("app/modules/secure/trucks/trucks.module").then(
             (m) => m.TrucksModule
@@ -183,11 +214,17 @@ export const appRoutes: Route[] = [
       },
       {
         path: "scanning",
+        data: {
+          allowedRoles: getRolesWithFeature("scanning"),
+        },
         loadChildren: () =>
           import("app/modules/secure/scanning/scanning.routes"),
       },
       {
         path: "trips",
+        data: {
+          allowedRoles: getRolesWithFeature("trips"),
+        },
         loadComponent: () =>
           import("app/modules/secure/trips/trips.component").then(
             (m) => m.TripsComponent
@@ -195,6 +232,9 @@ export const appRoutes: Route[] = [
       },
       {
         path: "complaints",
+        data: {
+          allowedRoles: getRolesWithFeature("complaints"),
+        },
         loadComponent: () =>
           import("app/modules/secure/complaints/complaints.component").then(
             (m) => m.ComplaintsComponent

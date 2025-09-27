@@ -31,7 +31,7 @@ export class ScanningWorkspaceComponent {
   session = signal<any | null>(null);
   barcodeInput = signal("");
   error = signal<string | null>(null);
-  private submitting = signal<boolean>(false);
+  submitting = signal<boolean>(false);
   // Remember last code auto-submitted to avoid repeated retries
   private _lastAutoScanned: string = "";
 
@@ -124,8 +124,48 @@ export class ScanningWorkspaceComponent {
     });
   }
 
-  cancel() {
+  exitSession() {
+    // Navigate back, leaving the session as draft (can be resumed later)
+    this._snackBar.open("Session saved as draft. You can resume it later.", "Close", {
+      duration: 3000,
+      verticalPosition: "top",
+    });
     this.router.navigate(["/secure/scanning"]);
+  }
+
+  deleteSession() {
+    if (!this.session()) {
+      const msg = "Session not loaded or has expired";
+      this.error.set(msg);
+      this._snackBar.open(msg, "Close", {
+        duration: 3000,
+        verticalPosition: "top",
+      });
+      return;
+    }
+
+    // Confirm deletion
+    const confirmed = confirm("Are you sure you want to delete this scanning session? This action cannot be undone.");
+    if (!confirmed) return;
+
+    // Delete the session
+    this.api.deleteSession(this.sessionId()).subscribe({
+      next: () => {
+        this._snackBar.open("Session deleted successfully", "Close", {
+          duration: 3000,
+          verticalPosition: "top",
+        });
+        this.router.navigate(["/secure/scanning"]);
+      },
+      error: (err) => {
+        const msg = err?.error?.message || "Failed to delete session";
+        this.error.set(msg);
+        this._snackBar.open(msg, "Close", {
+          duration: 4000,
+          verticalPosition: "top",
+        });
+      },
+    });
   }
 
   // Basic heuristic for tracking code validity based on backend format:

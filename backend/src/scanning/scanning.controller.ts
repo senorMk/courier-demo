@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -102,6 +103,11 @@ export class ScanningController {
   @Post(":id/close")
   async close(@Param("id") id: string) {
     return this.service.closeSession(id);
+  }
+
+  @Delete(":id")
+  async delete(@Param("id") id: string) {
+    return this.service.deleteSession(id);
   }
 
   @Get(":id/delivery-note")

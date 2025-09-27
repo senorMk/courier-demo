@@ -41,7 +41,7 @@ export class RoutesController {
 
   @Get("search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ["managing-director", "cashier"])
   async searchRoutes(@Query("q") q: string) {
     if (!q || q.trim().length === 0) {
       return [];
@@ -83,7 +83,7 @@ export class RoutesController {
    */
   @Get("offices/search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ["managing-director", "cashier"])
   async searchOffices(@Query("q") q: string) {
     // if (!q || q.trim().length === 0) {
     //   return [];

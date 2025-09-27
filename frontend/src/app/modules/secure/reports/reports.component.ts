@@ -1,19 +1,21 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RoleService } from 'app/core/auth/role.service';
+import { ReportType } from 'app/core/auth/role-permissions';
 import {
   ComplaintReport,
   DriverTripReport,
@@ -22,6 +24,19 @@ import {
   RevenueReport,
   ZictaReport,
 } from './reports-api.service';
+
+type ReportDefinition = {
+  type: ReportType;
+  label: string;
+};
+
+const REPORT_DEFINITIONS: ReportDefinition[] = [
+  { type: 'revenue', label: 'Revenue' },
+  { type: 'parcel', label: 'Parcel Movement' },
+  { type: 'complaint', label: 'Complaints' },
+  { type: 'trip', label: 'Driver Trips' },
+  { type: 'zicta', label: 'ZICTA' },
+];
 
 @Component({
   selector: 'app-reports',
@@ -65,15 +80,52 @@ export class ReportsComponent implements OnInit {
   loadingTrips = false;
   loadingZicta = false;
 
-  selectedReportType: 'revenue' | 'parcel' | 'complaint' | 'trip' | 'zicta' = 'revenue';
+  selectedReportType: ReportType | null = null;
+  readonly reportDefinitions = REPORT_DEFINITIONS;
+  availableReportTypes: ReportType[] = [];
 
   readonly revenueColumns = ['period', 'amount', 'payments'];
-  readonly parcelColumns = ['date', 'total', 'pending', 'readyForCollection', 'collected', 'complaintBox', 'damaged'];
+  readonly parcelColumns = [
+    'date',
+    'total',
+    'pending',
+    'readyForCollection',
+    'collected',
+    'complaintBox',
+    'damaged',
+  ];
   readonly complaintColumns = ['date', 'logged', 'closed'];
-  readonly tripColumns = ['driverName', 'totalTrips', 'planned', 'loading', 'inTransit', 'completed', 'averageDuration', 'trucks', 'routes', 'offices', 'lastTrip', 'lastStatus'];
-  readonly zictaColumns = ['createdAt', 'trackingCode', 'parcelNumber', 'origin', 'destination', 'sender', 'receiver', 'payment', 'status'];
+  readonly tripColumns = [
+    'driverName',
+    'totalTrips',
+    'planned',
+    'loading',
+    'inTransit',
+    'completed',
+    'averageDuration',
+    'trucks',
+    'routes',
+    'offices',
+    'lastTrip',
+    'lastStatus',
+  ];
+  readonly zictaColumns = [
+    'createdAt',
+    'trackingCode',
+    'parcelNumber',
+    'origin',
+    'destination',
+    'sender',
+    'receiver',
+    'payment',
+    'status',
+  ];
 
-  constructor(private fb: FormBuilder, private api: ReportsApiService) {
+  constructor(
+    private fb: FormBuilder,
+    private api: ReportsApiService,
+    private roleService: RoleService
+  ) {
     this.revenueForm = this.fb.group({
       start: [this.daysAgo(29)],
       end: [new Date()],
@@ -102,10 +154,34 @@ export class ReportsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadRevenue();
+    this.availableReportTypes = this.roleService.getPermittedReports();
+
+    if (this.availableReportTypes.length === 0) {
+      this.selectedReportType = null;
+      return;
+    }
+
+    const initialType = this.availableReportTypes.includes('revenue')
+      ? 'revenue'
+      : this.availableReportTypes[0];
+
+    this.selectedReportType = initialType;
+    this.loadReportFor(initialType);
+  }
+
+  onSelectReport(type: ReportType): void {
+    if (!this.isReportAvailable(type)) {
+      return;
+    }
+
+    this.selectedReportType = type;
   }
 
   loadRevenue(): void {
+    if (!this.isReportAvailable('revenue')) {
+      return;
+    }
+
     this.loadingRevenue = true;
     const { start, end, granularity } = this.revenueForm.value;
     this.api
@@ -127,6 +203,10 @@ export class ReportsComponent implements OnInit {
   }
 
   resetRevenue(): void {
+    if (!this.isReportAvailable('revenue')) {
+      return;
+    }
+
     this.revenueForm.patchValue({
       start: this.daysAgo(29),
       end: new Date(),
@@ -136,6 +216,10 @@ export class ReportsComponent implements OnInit {
   }
 
   loadParcel(): void {
+    if (!this.isReportAvailable('parcel')) {
+      return;
+    }
+
     this.loadingParcel = true;
     const { start, end } = this.parcelForm.value;
     this.api
@@ -156,6 +240,10 @@ export class ReportsComponent implements OnInit {
   }
 
   resetParcel(): void {
+    if (!this.isReportAvailable('parcel')) {
+      return;
+    }
+
     this.parcelForm.patchValue({
       start: this.daysAgo(29),
       end: new Date(),
@@ -164,10 +252,17 @@ export class ReportsComponent implements OnInit {
   }
 
   loadComplaints(): void {
+    if (!this.isReportAvailable('complaint')) {
+      return;
+    }
+
     this.loadingComplaint = true;
     const { start, end } = this.complaintForm.value;
     this.api
-      .getComplaints({ startDate: this.toDateParam(start), endDate: this.toDateParam(end) })
+      .getComplaints({
+        startDate: this.toDateParam(start),
+        endDate: this.toDateParam(end),
+      })
       .subscribe({
         next: (res) => {
           this.complaintReport = res;
@@ -181,6 +276,10 @@ export class ReportsComponent implements OnInit {
   }
 
   resetComplaints(): void {
+    if (!this.isReportAvailable('complaint')) {
+      return;
+    }
+
     this.complaintForm.patchValue({
       start: this.daysAgo(29),
       end: new Date(),
@@ -189,10 +288,17 @@ export class ReportsComponent implements OnInit {
   }
 
   loadTrips(): void {
+    if (!this.isReportAvailable('trip')) {
+      return;
+    }
+
     this.loadingTrips = true;
     const { start, end } = this.tripForm.value;
     this.api
-      .getDriverTrips({ startDate: this.toDateParam(start), endDate: this.toDateParam(end) })
+      .getDriverTrips({
+        startDate: this.toDateParam(start),
+        endDate: this.toDateParam(end),
+      })
       .subscribe({
         next: (res) => {
           this.tripReport = res;
@@ -206,6 +312,10 @@ export class ReportsComponent implements OnInit {
   }
 
   resetTrips(): void {
+    if (!this.isReportAvailable('trip')) {
+      return;
+    }
+
     this.tripForm.patchValue({
       start: this.daysAgo(59),
       end: new Date(),
@@ -214,10 +324,17 @@ export class ReportsComponent implements OnInit {
   }
 
   loadZicta(): void {
+    if (!this.isReportAvailable('zicta')) {
+      return;
+    }
+
     this.loadingZicta = true;
     const { start, end } = this.zictaForm.value;
     this.api
-      .getZicta({ startDate: this.toDateParam(start), endDate: this.toDateParam(end) })
+      .getZicta({
+        startDate: this.toDateParam(start),
+        endDate: this.toDateParam(end),
+      })
       .subscribe({
         next: (res) => {
           this.zictaReport = res;
@@ -231,6 +348,10 @@ export class ReportsComponent implements OnInit {
   }
 
   resetZicta(): void {
+    if (!this.isReportAvailable('zicta')) {
+      return;
+    }
+
     this.zictaForm.patchValue({
       start: this.daysAgo(29),
       end: new Date(),
@@ -239,16 +360,28 @@ export class ReportsComponent implements OnInit {
   }
 
   formatDate(value: string | null | undefined): string {
-    if (!value) return '';
+    if (!value) {
+      return '';
+    }
+
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
     return date.toLocaleString();
   }
 
   private toDateParam(value: Date | null | undefined): string | undefined {
-    if (!value) return undefined;
+    if (!value) {
+      return undefined;
+    }
+
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return undefined;
+    if (Number.isNaN(date.getTime())) {
+      return undefined;
+    }
+
     return date.toISOString().slice(0, 10);
   }
 
@@ -257,5 +390,29 @@ export class ReportsComponent implements OnInit {
     now.setHours(0, 0, 0, 0);
     now.setDate(now.getDate() - offset);
     return now;
+  }
+
+  isReportAvailable(type: ReportType): boolean {
+    return this.availableReportTypes.includes(type);
+  }
+
+  private loadReportFor(type: ReportType): void {
+    switch (type) {
+      case 'revenue':
+        this.loadRevenue();
+        break;
+      case 'parcel':
+        this.loadParcel();
+        break;
+      case 'complaint':
+        this.loadComplaints();
+        break;
+      case 'trip':
+        this.loadTrips();
+        break;
+      case 'zicta':
+        this.loadZicta();
+        break;
+    }
   }
 }
