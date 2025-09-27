@@ -14,6 +14,19 @@ form .mat-button {
   min-height: 56px;
 }
 
+// Reset button outline style
+.reset-button-outline {
+  border: 1px solid #d1d5db !important;
+  box-sizing: border-box !important;
+}
+
+// Form field and button spacing
+form .div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .w-52 {
