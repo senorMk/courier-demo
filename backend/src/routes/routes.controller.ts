@@ -15,20 +15,33 @@ import { RoutesService } from "./routes.service";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { OfficeType } from "@prisma/client";
 
+const ROUTE_ADMIN_ROLES = [
+  "managing-director",
+  "operations-officer",
+] as const;
+
+const ROUTE_READ_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "dispatcher",
+  "supervisor",
+  "cashier",
+] as const;
+
 @Controller("api/v1/routes")
 export class RoutesController {
   constructor(private readonly routesService: RoutesService) {}
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async createRoute(@Body() body: { code: string; name: string }) {
     return this.routesService.createRoute(body);
   }
 
   @Get("paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10
@@ -41,7 +54,7 @@ export class RoutesController {
 
   @Get("search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director", "cashier"])
+  @SetMetadata("roles", ROUTE_READ_ROLES)
   async searchRoutes(@Query("q") q: string) {
     if (!q || q.trim().length === 0) {
       return [];
@@ -51,7 +64,7 @@ export class RoutesController {
 
   @Post("office/create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async createOffice(
     @Body()
     body: {
@@ -66,7 +79,7 @@ export class RoutesController {
 
   @Get("offices/paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async getOfficesPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10
@@ -83,7 +96,7 @@ export class RoutesController {
    */
   @Get("offices/search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director", "cashier"])
+  @SetMetadata("roles", ROUTE_READ_ROLES)
   async searchOffices(@Query("q") q: string) {
     // if (!q || q.trim().length === 0) {
     //   return [];
@@ -93,14 +106,14 @@ export class RoutesController {
 
   @Get("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async getOffice(@Param('id') id: string) {
     return this.routesService.getOffice(id);
   }
 
   @Put("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async updateOffice(
     @Param('id') id: string,
     @Body()
@@ -116,7 +129,7 @@ export class RoutesController {
 
   @Delete("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async deleteOffice(@Param('id') id: string) {
     return this.routesService.deleteOffice(id);
   }

@@ -105,16 +105,12 @@ const ALL_FEATURES: FeatureKey[] = [
 const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
   customer: [],
   // Cashiers can operate in sending or receiving offices; we grant the union of
-  // features they need in either context.
+  // features they need in either context, without exposing reports or dashboards.
   cashier: [
-    "dashboard",
     "parcels",
     "parcels-history",
     "customers",
     "scanning",
-    "reports",
-    "reports.revenue",
-    "reports.parcel",
   ],
   supervisor: [
     "dashboard",
