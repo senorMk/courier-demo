@@ -2,7 +2,6 @@ import {
   Component,
   inject,
   signal,
-  computed,
   ViewChild,
   AfterViewInit,
 } from "@angular/core";
@@ -15,13 +14,11 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatRadioModule } from "@angular/material/radio";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatPaginatorModule, MatPaginator } from "@angular/material/paginator";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
-import { debounceTime, switchMap, of, startWith } from 'rxjs';
 import { TripsApiService } from '../trips-api.service';
 
 @Component({
@@ -34,8 +31,7 @@ import { TripsApiService } from '../trips-api.service';
     MatRadioModule,
     MatIconModule,
     MatFormFieldModule,
-    MatInputModule,
-    MatAutocompleteModule,
+    MatSelectModule,
     MatTableModule,
     MatPaginatorModule,
     MatSnackBarModule,
@@ -51,11 +47,10 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   private _tripsApi = inject(TripsApiService);
 
   routes = signal<RouteItem[]>([]);
-  filteredRoutes = signal<RouteItem[]>([]);
+  routesLoading = signal<boolean>(false);
 
   form = this.fb.group({
     routeId: ["", Validators.required],
-    routeSearch: [""],
     mode: ["bag", Validators.required],
     tripId: [""]
   });
@@ -70,27 +65,16 @@ export class ScanningSessionStartComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.fetchSessions();
-    // Hook up route search
-    this.form.controls.routeSearch?.valueChanges.pipe(
-      startWith(''),
-      debounceTime(250),
-      switchMap((q: string) => q ? this._routesSearch.searchRoutes(q) : of([])),
-    ).subscribe((routes: RouteItem[]) => {
-      this.routes.set(routes || []);
-      this.filteredRoutes.set(routes || []);
-    });
-    // When a route is selected via radio button, reflect the name into routeSearch
+    this.loadRoutes();
     this.form.controls.routeId?.valueChanges?.subscribe((id) => {
-      const all = [...(this.routes() || []), ...(this.filteredRoutes() || [])];
-      const picked = all.find(r => r.id === id);
-      if (picked) {
-        this.form.patchValue({ routeSearch: picked.name }, { emitEvent: false });
-        // Load open trips for this route (current user's office inferred by backend)
-        this._tripsApi.getOpenTrips(picked.id).subscribe({
-          next: (trips) => this.openTrips = trips || [],
-          error: () => this.openTrips = []
-        });
+      if (!id) {
+        this.openTrips = [];
+        return;
       }
+      this._tripsApi.getOpenTrips(id).subscribe({
+        next: (trips) => (this.openTrips = trips || []),
+        error: () => (this.openTrips = []),
+      });
     });
     if (this.paginator) {
       this.paginator.page.subscribe(() => {
@@ -99,6 +83,26 @@ export class ScanningSessionStartComponent implements AfterViewInit {
         this.fetchSessions();
       });
     }
+  }
+
+  private loadRoutes(limit: number = 200): void {
+    this.routesLoading.set(true);
+    this._routesSearch.listRoutes(limit).subscribe({
+      next: (routes) => {
+        this.routes.set(routes || []);
+        if (!this.form.controls.routeId.value && routes?.length) {
+          // If only one route is available, preselect it to streamline setup
+          if (routes.length === 1) {
+            this.form.controls.routeId.setValue(routes[0].id);
+          }
+        }
+      },
+      error: () => {
+        this.routes.set([]);
+        this.routesLoading.set(false);
+      },
+      complete: () => this.routesLoading.set(false),
+    });
   }
 
   openTrips: Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string }> = [];
@@ -125,10 +129,6 @@ export class ScanningSessionStartComponent implements AfterViewInit {
           this.totalSessions = 0;
         },
       });
-  }
-
-  selectRoute(r: any) {
-    this.form.patchValue({ routeId: r.id, routeSearch: r.name });
   }
 
   start() {
