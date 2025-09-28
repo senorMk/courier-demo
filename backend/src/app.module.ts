@@ -1,6 +1,8 @@
 
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigFactory } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
@@ -29,6 +31,10 @@ import { ReportsModule } from './reports/reports.module';
       envFilePath: '.env',
       validationSchema: environmentSchema,
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60 * 1000, // 1 minute
+      limit: 10, // 10 requests per minute per IP
+    }]),
     PrismaModule,
     AuthModule,
     TripsModule,
@@ -44,5 +50,11 @@ import { ReportsModule } from './reports/reports.module';
     ReportsModule,
   ],
   controllers: [AppController, HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

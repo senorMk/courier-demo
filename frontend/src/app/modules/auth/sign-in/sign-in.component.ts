@@ -13,10 +13,15 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatTabsModule } from "@angular/material/tabs";
+import { MatCardModule } from "@angular/material/card";
+import { MatDividerModule } from "@angular/material/divider";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { fuseAnimations } from "@fuse/animations";
 import { FuseAlertComponent, FuseAlertType } from "@fuse/components/alert";
 import { AuthService } from "app/core/auth/auth.service";
+import { ParcelTrackingService, ParcelTrackingInfo } from "../parcel-tracking.service";
+import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "auth-sign-in",
@@ -24,6 +29,7 @@ import { AuthService } from "app/core/auth/auth.service";
   encapsulation: ViewEncapsulation.None,
   animations: fuseAnimations,
   imports: [
+    CommonModule,
     RouterLink,
     FuseAlertComponent,
     FormsModule,
@@ -34,6 +40,9 @@ import { AuthService } from "app/core/auth/auth.service";
     MatIconModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
+    MatTabsModule,
+    MatCardModule,
+    MatDividerModule,
   ],
 })
 export class AuthSignInComponent implements OnInit {
@@ -44,7 +53,17 @@ export class AuthSignInComponent implements OnInit {
     message: "",
   };
   signInForm: UntypedFormGroup;
+  trackingForm: UntypedFormGroup;
   showAlert: boolean = false;
+
+  // Parcel tracking properties
+  trackingAlert: { type: FuseAlertType; message: string } = {
+    type: "success",
+    message: "",
+  };
+  showTrackingAlert: boolean = false;
+  parcelInfo: ParcelTrackingInfo | null = null;
+  isTrackingLoading: boolean = false;
 
   /**
    * Constructor
@@ -53,7 +72,8 @@ export class AuthSignInComponent implements OnInit {
     private _activatedRoute: ActivatedRoute,
     private _authService: AuthService,
     private _formBuilder: UntypedFormBuilder,
-    private _router: Router
+    private _router: Router,
+    private _parcelTrackingService: ParcelTrackingService
   ) {}
 
   // -----------------------------------------------------------------------------------------------------
@@ -64,11 +84,16 @@ export class AuthSignInComponent implements OnInit {
    * On init
    */
   ngOnInit(): void {
-    // Create the form
+    // Create the sign-in form
     this.signInForm = this._formBuilder.group({
       email: ["", [Validators.required, Validators.email]],
       password: ["", Validators.required],
       rememberMe: [""],
+    });
+
+    // Create the tracking form
+    this.trackingForm = this._formBuilder.group({
+      trackingNumber: ["", [Validators.required]],
     });
   }
 
@@ -122,5 +147,74 @@ export class AuthSignInComponent implements OnInit {
         this.showAlert = true;
       }
     );
+  }
+
+  /**
+   * Track parcel
+   */
+  trackParcel(): void {
+    // Return if the form is invalid
+    if (this.trackingForm.invalid) {
+      return;
+    }
+
+    // Set loading state
+    this.isTrackingLoading = true;
+    this.showTrackingAlert = false;
+    this.parcelInfo = null;
+
+    // Track the parcel
+    this._parcelTrackingService
+      .trackParcel(this.trackingForm.get('trackingNumber').value)
+      .subscribe(
+        (response) => {
+          this.isTrackingLoading = false;
+          this.parcelInfo = response;
+        },
+        (error) => {
+          this.isTrackingLoading = false;
+          this.trackingAlert = {
+            type: 'error',
+            message: 'Parcel not found. Please check your tracking number and try again.',
+          };
+          this.showTrackingAlert = true;
+        }
+      );
+  }
+
+  /**
+   * Get status badge class
+   */
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800';
+      case 'IN_TRANSIT':
+        return 'bg-blue-100 text-blue-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  /**
+   * Format status text
+   */
+  formatStatusText(status: string): string {
+    switch (status) {
+      case 'IN_TRANSIT':
+        return 'In Transit';
+      case 'DELIVERED':
+        return 'Delivered';
+      case 'PENDING':
+        return 'Pending';
+      case 'CANCELLED':
+        return 'Cancelled';
+      default:
+        return status;
+    }
   }
 }

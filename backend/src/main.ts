@@ -5,6 +5,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
+import helmet from "helmet";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -32,6 +33,23 @@ async function bootstrap() {
   });
 
   const logger = new Logger();
+
+  // Apply security headers
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
+  }));
 
   const config = new DocumentBuilder()
     .setTitle("Platinum Backend API")
