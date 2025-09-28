@@ -393,4 +393,121 @@ export class ParcelService {
     const p = await this.findByTrackingCode(code);
     return this.markCollected(p.id);
   }
+
+  async getPublicTrackingInfo(code: string) {
+    const tracking = await this.prisma.trackingCode.findUnique({
+      where: { plainTextCode: code },
+      include: {
+        parcel: {
+          include: {
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phoneNumber: true,
+              },
+            },
+            receiver: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phoneNumber: true,
+              },
+            },
+            office: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!tracking || !tracking.parcel) {
+      throw new NotFoundException("Parcel not found");
+    }
+
+    const parcel = tracking.parcel;
+
+    // Create a simplified tracking history based on parcel status
+    const trackingHistory = [];
+
+    if (parcel.createdAt) {
+      trackingHistory.push({
+        status: "PENDING",
+        location: "Sender Office",
+        timestamp: parcel.createdAt.toISOString(),
+        description: "Parcel received at sender office",
+      });
+    }
+
+    if (parcel.status === "COLLECTED") {
+      trackingHistory.push({
+        status: "IN_TRANSIT",
+        location: "In Transit",
+        timestamp: new Date(parcel.createdAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        description: "Parcel in transit to destination",
+      });
+
+      trackingHistory.push({
+        status: "DELIVERED",
+        location: parcel.office.name,
+        timestamp: new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString(),
+        description: "Parcel collected by recipient",
+      });
+    } else if (parcel.status === "READY_FOR_COLLECTION") {
+      trackingHistory.push({
+        status: "IN_TRANSIT",
+        location: "In Transit",
+        timestamp: new Date(parcel.createdAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        description: "Parcel in transit to destination",
+      });
+
+      trackingHistory.push({
+        status: "IN_TRANSIT",
+        location: parcel.office.name,
+        timestamp: new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString(),
+        description: "Parcel ready for collection at destination office",
+      });
+    }
+
+    // Helper function to mask phone numbers
+    const maskPhoneNumber = (phone: string): string => {
+      if (!phone || phone.length < 4) return '***';
+      return phone.substring(0, 4) + '*'.repeat(phone.length - 4);
+    };
+
+    // Helper function to mask names
+    const maskName = (name: string): string => {
+      if (!name || name.length < 2) return '***';
+      return name.charAt(0) + '*'.repeat(name.length - 1);
+    };
+
+    return {
+      id: parcel.id,
+      parcelNumber: tracking.plainTextCode,
+      status: parcel.status === "COLLECTED" ? "DELIVERED" : parcel.status || "PENDING",
+      createdAt: parcel.createdAt.toISOString(),
+      deliveredAt: parcel.status === "COLLECTED" ? new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString() : undefined,
+      sender: {
+        firstName: maskName(parcel.customer.firstName),
+        lastName: maskName(parcel.customer.lastName),
+        phoneNumber: maskPhoneNumber(parcel.customer.phoneNumber),
+      },
+      receiver: {
+        firstName: maskName(parcel.receiver.firstName),
+        lastName: maskName(parcel.receiver.lastName),
+        phoneNumber: maskPhoneNumber(parcel.receiver.phoneNumber),
+      },
+      destination: {
+        name: parcel.office.name,
+      },
+      currentLocation: trackingHistory.length > 0 ? {
+        name: trackingHistory[trackingHistory.length - 1].location,
+        timestamp: trackingHistory[trackingHistory.length - 1].timestamp,
+      } : null,
+      trackingHistory,
+    };
+  }
 }

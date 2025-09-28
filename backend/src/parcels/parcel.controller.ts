@@ -7,7 +7,9 @@ import {
   UseGuards,
   SetMetadata,
   BadRequestException,
+  NotFoundException,
 } from "@nestjs/common";
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from "@nestjs/passport";
 import { RolesGuard } from "src/common/guards/roles.guard";
 import { ParcelService } from "./parcel.service";
@@ -261,6 +263,39 @@ export class ParcelController {
     } catch (e) {
       console.error('ParcelController.collectByCode error:', e);
       throw e;
+    }
+  }
+
+  @Get("track/:trackingCode")
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute for tracking
+  async trackParcel(@Param("trackingCode") trackingCode: string) {
+    try {
+      // Basic validation
+      if (!trackingCode || !trackingCode.trim()) {
+        throw new BadRequestException("Tracking code is required");
+      }
+
+      const cleanCode = trackingCode.trim().toUpperCase();
+
+      // Validate tracking code format (basic pattern check)
+      const trackingCodePattern = /^[A-Z]{2}-\d{3}-\d{3}-\d+$/;
+      if (!trackingCodePattern.test(cleanCode)) {
+        throw new NotFoundException("Invalid tracking code format");
+      }
+
+      return await this.parcelService.getPublicTrackingInfo(cleanCode);
+    } catch (e) {
+      // Don't log sensitive information, just log that an attempt was made
+      console.error('ParcelController.trackParcel attempt:', {
+        codeLength: trackingCode?.length,
+        timestamp: new Date().toISOString()
+      });
+
+      // Always return NotFoundException for security (don't reveal if parcel exists)
+      if (e instanceof BadRequestException) {
+        throw e;
+      }
+      throw new NotFoundException("Parcel not found");
     }
   }
 }

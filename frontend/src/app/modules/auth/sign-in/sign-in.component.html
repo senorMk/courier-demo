@@ -10,7 +10,7 @@
 
             <!-- Title -->
             <div class="mt-8 text-4xl font-extrabold leading-tight tracking-tight">
-                Sign in
+                Welcome
             </div>
             <!-- <div class="mt-0.5 flex items-baseline font-medium">
                 <div>Don't have an account?</div>
@@ -21,70 +21,189 @@
                 </a>
             </div> -->
 
-            <!-- Alert -->
-            @if (showAlert) {
-            <fuse-alert class="mt-8" [appearance]="'outline'" [showIcon]="false" [type]="alert.type"
-                [@shake]="alert.type === 'error'">
-                {{ alert.message }}
-            </fuse-alert>
-            }
-
-            <!-- Sign in form -->
-            <form class="mt-8" [formGroup]="signInForm" #signInNgForm="ngForm">
-                <!-- Email field -->
-                <mat-form-field class="w-full">
-                    <mat-label>Email address</mat-label>
-                    <input id="email" matInput [formControlName]="'email'" />
-                    @if (signInForm.get('email').hasError('required')) {
-                    <mat-error> Email address is required </mat-error>
+            <!-- Tabs -->
+            <mat-tab-group class="mt-8" dynamicHeight>
+                <!-- Staff Sign In Tab -->
+                <mat-tab label="Staff Sign In">
+                    <!-- Alert -->
+                    @if (showAlert) {
+                    <fuse-alert class="mt-6" [appearance]="'outline'" [showIcon]="false" [type]="alert.type"
+                        [@shake]="alert.type === 'error'">
+                        {{ alert.message }}
+                    </fuse-alert>
                     }
-                    @if (signInForm.get('email').hasError('email')) {
-                    <mat-error>
-                        Please enter a valid email address
-                    </mat-error>
-                    }
-                </mat-form-field>
 
-                <!-- Password field -->
-                <mat-form-field class="w-full">
-                    <mat-label>Password</mat-label>
-                    <input id="password" matInput type="password" [formControlName]="'password'" #passwordField />
-                    <button mat-icon-button type="button" (click)="
-                            passwordField.type === 'password'
-                                ? (passwordField.type = 'text')
-                                : (passwordField.type = 'password')
-                        " matSuffix>
-                        @if (passwordField.type === 'password') {
-                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                    <!-- Sign in form -->
+                    <form class="mt-6" [formGroup]="signInForm" #signInNgForm="ngForm">
+                        <!-- Email field -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Email address</mat-label>
+                            <input id="email" matInput [formControlName]="'email'" />
+                            @if (signInForm.get('email').hasError('required')) {
+                            <mat-error> Email address is required </mat-error>
+                            }
+                            @if (signInForm.get('email').hasError('email')) {
+                            <mat-error>
+                                Please enter a valid email address
+                            </mat-error>
+                            }
+                        </mat-form-field>
+
+                        <!-- Password field -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Password</mat-label>
+                            <input id="password" matInput type="password" [formControlName]="'password'" #passwordField />
+                            <button mat-icon-button type="button" (click)="
+                                    passwordField.type === 'password'
+                                        ? (passwordField.type = 'text')
+                                        : (passwordField.type = 'password')
+                                " matSuffix>
+                                @if (passwordField.type === 'password') {
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                                }
+                                @if (passwordField.type === 'text') {
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:eye-slash'"></mat-icon>
+                                }
+                            </button>
+                            <mat-error> Password is required </mat-error>
+                        </mat-form-field>
+
+                        <!-- Actions -->
+                        <div class="mt-1.5 inline-flex w-full items-center justify-between">
+                            <mat-checkbox class="-ml-2" [color]="'primary'" [formControlName]="'rememberMe'">
+                                Remember me
+                            </mat-checkbox>
+                        </div>
+
+                        <!-- Submit button -->
+                        <button class="fuse-mat-button-large mt-6 w-full" mat-flat-button [color]="'primary'"
+                            [disabled]="signInForm.disabled" (click)="signIn()">
+                            @if (!signInForm.disabled) {
+                            <span> Sign in </span>
+                            }
+                            @if (signInForm.disabled) {
+                            <mat-progress-spinner [diameter]="24" [mode]="'indeterminate'"></mat-progress-spinner>
+                            }
+                        </button>
+                    </form>
+                </mat-tab>
+
+                <!-- Track Parcel Tab -->
+                <mat-tab label="Track Parcel">
+                    <div class="mt-6">
+                        <div class="mb-4 text-lg font-medium text-gray-600">
+                            Track your parcel using the tracking number provided
+                        </div>
+
+                        <!-- Tracking Alert -->
+                        @if (showTrackingAlert) {
+                        <fuse-alert class="mb-6" [appearance]="'outline'" [showIcon]="false" [type]="trackingAlert.type"
+                            [@shake]="trackingAlert.type === 'error'">
+                            {{ trackingAlert.message }}
+                        </fuse-alert>
                         }
-                        @if (passwordField.type === 'text') {
-                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:eye-slash'"></mat-icon>
+
+                        <!-- Tracking form -->
+                        <form [formGroup]="trackingForm" (ngSubmit)="trackParcel()">
+                            <mat-form-field class="w-full">
+                                <mat-label>Tracking Number</mat-label>
+                                <input matInput [formControlName]="'trackingNumber'" placeholder="Enter your tracking number" />
+                                @if (trackingForm.get('trackingNumber').hasError('required')) {
+                                <mat-error> Tracking number is required </mat-error>
+                                }
+                            </mat-form-field>
+
+                            <button class="fuse-mat-button-large mt-4 w-full" mat-flat-button [color]="'primary'"
+                                [disabled]="trackingForm.invalid || isTrackingLoading" type="submit">
+                                @if (!isTrackingLoading) {
+                                <span> Track Parcel </span>
+                                }
+                                @if (isTrackingLoading) {
+                                <mat-progress-spinner [diameter]="24" [mode]="'indeterminate'"></mat-progress-spinner>
+                                }
+                            </button>
+                        </form>
+
+                        <!-- Parcel Information -->
+                        @if (parcelInfo) {
+                        <mat-card class="mt-6">
+                            <mat-card-header>
+                                <mat-card-title class="flex items-center justify-between">
+                                    <span>Tracking #{{ parcelInfo.parcelNumber }}</span>
+                                    <span class="px-3 py-1 text-xs font-medium rounded-full"
+                                        [ngClass]="getStatusBadgeClass(parcelInfo.status)">
+                                        {{ formatStatusText(parcelInfo.status) }}
+                                    </span>
+                                </mat-card-title>
+                            </mat-card-header>
+
+                            <mat-card-content>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <!-- Sender Information -->
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2">Sender</h4>
+                                        <p class="text-sm text-gray-600">
+                                            {{ parcelInfo.sender.firstName }} {{ parcelInfo.sender.lastName }}<br>
+                                            {{ parcelInfo.sender.phoneNumber }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Receiver Information -->
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2">Receiver</h4>
+                                        <p class="text-sm text-gray-600">
+                                            {{ parcelInfo.receiver.firstName }} {{ parcelInfo.receiver.lastName }}<br>
+                                            {{ parcelInfo.receiver.phoneNumber }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Destination -->
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2">Destination</h4>
+                                        <p class="text-sm text-gray-600">
+                                            {{ parcelInfo.destination.name }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Current Location -->
+                                    @if (parcelInfo.currentLocation) {
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 mb-2">Current Location</h4>
+                                        <p class="text-sm text-gray-600">
+                                            {{ parcelInfo.currentLocation.name }}<br>
+                                            <span class="text-xs text-gray-500">
+                                                {{ parcelInfo.currentLocation.timestamp | date:'medium' }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    }
+                                </div>
+
+                                <!-- Tracking History -->
+                                @if (parcelInfo.trackingHistory && parcelInfo.trackingHistory.length > 0) {
+                                <mat-divider class="my-6"></mat-divider>
+                                <h4 class="font-medium text-gray-900 mb-4">Tracking History</h4>
+                                <div class="space-y-3">
+                                    @for (item of parcelInfo.trackingHistory; track item.timestamp) {
+                                    <div class="flex items-start space-x-3">
+                                        <div class="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">{{ item.status }}</p>
+                                            <p class="text-sm text-gray-600">{{ item.description }}</p>
+                                            <p class="text-xs text-gray-500">
+                                                {{ item.location }} • {{ item.timestamp | date:'medium' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    }
+                                </div>
+                                }
+                            </mat-card-content>
+                        </mat-card>
                         }
-                    </button>
-                    <mat-error> Password is required </mat-error>
-                </mat-form-field>
-
-                <!-- Actions -->
-                <div class="mt-1.5 inline-flex w-full items-center justify-between">
-                    <mat-checkbox class="-ml-2" [color]="'primary'" [formControlName]="'rememberMe'">
-                        Remember me
-                    </mat-checkbox>
-                    <!-- <a class="text-md font-medium text-primary-500 hover:underline"
-                        [routerLink]="['/forgot-password']">Forgot password?
-                    </a> -->
-                </div>
-
-                <!-- Submit button -->
-                <button class="fuse-mat-button-large mt-6 w-full" mat-flat-button [color]="'primary'"
-                    [disabled]="signInForm.disabled" (click)="signIn()">
-                    @if (!signInForm.disabled) {
-                    <span> Sign in </span>
-                    }
-                    @if (signInForm.disabled) {
-                    <mat-progress-spinner [diameter]="24" [mode]="'indeterminate'"></mat-progress-spinner>
-                    }
-                </button>
-            </form>
+                    </div>
+                </mat-tab>
+            </mat-tab-group>
         </div>
     </div>
     <div
