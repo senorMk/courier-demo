@@ -20,13 +20,41 @@ import * as path from "path";
 import * as archiver from "archiver";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
 
+const PARCEL_CREATE_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "supervisor",
+  "cashier",
+] as const;
+
+const PARCEL_VIEW_ROLES = [
+  ...PARCEL_CREATE_ROLES,
+  "customer-service-agent",
+  "customer-service-director",
+  "dispatcher",
+] as const;
+
+const PARCEL_RECEIPT_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "supervisor",
+  "cashier",
+] as const;
+
+const PARCEL_COLLECTION_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "supervisor",
+  "cashier",
+] as const;
+
 @Controller("api/v1/parcels")
 export class ParcelController {
   constructor(private readonly parcelService: ParcelService) { }
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director", "cashier"])
+  @SetMetadata("roles", PARCEL_CREATE_ROLES)
   async create(
     @Body()
     body:
@@ -82,7 +110,7 @@ export class ParcelController {
 
   @Get("paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director", "cashier"])
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10,
@@ -102,7 +130,7 @@ export class ParcelController {
 
   @Post(":parcelId/items")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_CREATE_ROLES)
   async addItem(
     @Param("parcelId") parcelId: string,
     @Body()
@@ -124,7 +152,7 @@ export class ParcelController {
 
   @Get(":parcelId/items")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
   async getParcelItems(@Param("parcelId") parcelId: string) {
     try {
       return await this.parcelService.getParcelItems(parcelId);
@@ -136,7 +164,7 @@ export class ParcelController {
 
   @Get(":parcelId/receipts/download")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_RECEIPT_ROLES)
   async downloadReceipts(
     @Param("parcelId") parcelId: string,
     @Res() res: Response
@@ -182,7 +210,7 @@ export class ParcelController {
 
   @Get(":parcelId/receipts/:type")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_RECEIPT_ROLES)
   async downloadReceipt(
     @Param("parcelId") parcelId: string,
     @Param("type") type: string,
@@ -228,7 +256,7 @@ export class ParcelController {
 
   @Post(":parcelId/collect")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
   async markCollected(@Param("parcelId") parcelId: string) {
     try {
       return await this.parcelService.markCollected(parcelId);
@@ -240,7 +268,7 @@ export class ParcelController {
 
   @Get("search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
   async searchByCode(@Query("code") code: string) {
     try {
       if (!code || !code.trim()) {
@@ -255,7 +283,7 @@ export class ParcelController {
 
   @Post("collect-by-code")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", PARCEL_COLLECTION_ROLES)
   async collectByCode(@Body() body: { code: string }) {
     try {
       if (!body?.code) throw new BadRequestException("Tracking code is required");

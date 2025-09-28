@@ -11,13 +11,26 @@ import { AuthGuard } from "@nestjs/passport";
 import { CustomerService } from "./customer.service";
 import { RolesGuard } from "../common/guards/roles.guard";
 
+const CUSTOMER_WRITE_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "supervisor",
+  "cashier",
+] as const;
+
+const CUSTOMER_READ_ROLES = [
+  ...CUSTOMER_WRITE_ROLES,
+  "customer-service-agent",
+  "customer-service-director",
+] as const;
+
 @Controller("api/v1/customers")
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", CUSTOMER_WRITE_ROLES)
   async create(
     @Body()
     body: {
@@ -37,7 +50,7 @@ export class CustomerController {
 
   @Get("paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", CUSTOMER_READ_ROLES)
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10
@@ -54,7 +67,7 @@ export class CustomerController {
    */
   @Get("search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ["managing-director"])
+  @SetMetadata("roles", CUSTOMER_READ_ROLES)
   async searchCustomers(@Query("q") q: string) {
     if (!q || q.trim().length === 0) {
       return [];

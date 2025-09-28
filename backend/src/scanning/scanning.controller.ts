@@ -24,6 +24,16 @@ import {
 } from "../utils/delivery-note-generator";
 const fs = require("fs");
 
+const SCANNING_ROLES = [
+  "managing-director",
+  "cashier",
+  "supervisor",
+  "driver",
+  "assistant-driver",
+  "dispatcher",
+  "operations-officer",
+];
+
 interface JwtUser {
   sub?: string;
   userId?: string;
@@ -33,7 +43,7 @@ interface JwtUser {
 
 @Controller("api/v1/scanning")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
-@SetMetadata("roles", ["managing-director"])
+@SetMetadata("roles", SCANNING_ROLES)
 export class ScanningController {
   constructor(
     private service: ScanningService,

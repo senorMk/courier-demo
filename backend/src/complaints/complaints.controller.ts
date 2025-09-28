@@ -4,13 +4,33 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Request } from 'express';
 
+const COMPLAINT_LOG_ROLES = [
+  "managing-director",
+  "supervisor",
+  "cashier",
+  "customer-service-agent",
+  "customer-service-director",
+] as const;
+
+const COMPLAINT_MANAGE_ROLES = [
+  "managing-director",
+  "supervisor",
+  "customer-service-agent",
+  "customer-service-director",
+] as const;
+
+const COMPLAINT_REPORT_ROLES = [
+  "managing-director",
+  "customer-service-director",
+] as const;
+
 @Controller('api/v1/complaints')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@SetMetadata('roles', ['managing-director'])
 export class ComplaintsController {
   constructor(private service: ComplaintsService) {}
 
   @Post('damaged')
+  @SetMetadata('roles', COMPLAINT_LOG_ROLES)
   fileDamaged(@Body() body: { code: string; reason?: string }, @Req() req: Request) {
     if (!body?.code) {
       throw new BadRequestException('Tracking code is required');
@@ -20,6 +40,7 @@ export class ComplaintsController {
   }
 
   @Post('from-collected')
+  @SetMetadata('roles', COMPLAINT_LOG_ROLES)
   fileFromCollected(@Body() body: { code: string; reason?: string }, @Req() req: Request) {
     if (!body?.code) {
       throw new BadRequestException('Tracking code is required');
@@ -29,6 +50,7 @@ export class ComplaintsController {
   }
 
   @Get('paginated')
+  @SetMetadata('roles', COMPLAINT_MANAGE_ROLES)
   list(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
@@ -38,17 +60,20 @@ export class ComplaintsController {
   }
 
   @Post(':id/close')
+  @SetMetadata('roles', COMPLAINT_MANAGE_ROLES)
   close(@Param('id') id: string, @Body() body: { note?: string }) {
     return this.service.close(id, body?.note);
   }
 
   @Get(':id/events')
+  @SetMetadata('roles', COMPLAINT_MANAGE_ROLES)
   events(@Param('id') id: string) {
     return this.service.getEvents(id);
   }
 
   // Generic complaint logging (explicit button on parcel UI)
   @Post('log')
+  @SetMetadata('roles', COMPLAINT_LOG_ROLES)
   log(@Body() body: { parcelId?: string; code?: string; reason?: string }, @Req() req: Request) {
     const reporterId = this.extractUserId(req);
     return this.service.logGeneric({ ...body, reporterId });
@@ -56,6 +81,7 @@ export class ComplaintsController {
 
   // Report summary for dashboard (director)
   @Get('report/summary')
+  @SetMetadata('roles', COMPLAINT_REPORT_ROLES)
   report(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
