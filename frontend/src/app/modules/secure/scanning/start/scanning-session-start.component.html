@@ -107,6 +107,7 @@
               <mat-form-field appearance="outline" class="w-full">
                 <mat-label>Select Route</mat-label>
                 <mat-select formControlName="routeId" placeholder="Choose a route"
+                            (selectionChange)="onRouteSelected($event.value)"
                             [disabled]="routesLoading()">
                   <mat-option *ngIf="routesLoading()" disabled>Loading routes…</mat-option>
                   <mat-option *ngFor="let route of routes()" [value]="route.id">

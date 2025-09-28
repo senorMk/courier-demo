@@ -66,16 +66,6 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.fetchSessions();
     this.loadRoutes();
-    this.form.controls.routeId?.valueChanges?.subscribe((id) => {
-      if (!id) {
-        this.openTrips = [];
-        return;
-      }
-      this._tripsApi.getOpenTrips(id).subscribe({
-        next: (trips) => (this.openTrips = trips || []),
-        error: () => (this.openTrips = []),
-      });
-    });
     if (this.paginator) {
       this.paginator.page.subscribe(() => {
         this.pageIndex = this.paginator.pageIndex;
@@ -90,11 +80,13 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     this._routesSearch.listRoutes(limit).subscribe({
       next: (routes) => {
         this.routes.set(routes || []);
-        if (!this.form.controls.routeId.value && routes?.length) {
-          // If only one route is available, preselect it to streamline setup
-          if (routes.length === 1) {
-            this.form.controls.routeId.setValue(routes[0].id);
-          }
+        const current = this.form.controls.routeId.value;
+        if (current) {
+          this.fetchOpenTrips(current);
+        } else if (routes?.length === 1) {
+          const onlyRoute = routes[0];
+          this.form.controls.routeId.setValue(onlyRoute.id);
+          this.fetchOpenTrips(onlyRoute.id);
         }
       },
       error: () => {
@@ -106,6 +98,40 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   }
 
   openTrips: Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string }> = [];
+
+  onRouteSelected(routeId: string | null) {
+    if (!routeId) {
+      this.form.controls.routeId.setValue('', { emitEvent: false });
+      this.openTrips = [];
+      this.form.patchValue({ tripId: '' }, { emitEvent: false });
+      return;
+    }
+
+    // Ensure the reactive form control reflects the selection and validators run
+    this.form.controls.routeId.setValue(routeId, { emitEvent: false });
+    this.form.controls.routeId.updateValueAndValidity({ emitEvent: false });
+
+    this.fetchOpenTrips(routeId);
+  }
+
+  private fetchOpenTrips(routeId: string) {
+    if (!routeId) {
+      this.openTrips = [];
+      this.form.patchValue({ tripId: '' }, { emitEvent: false });
+      return;
+    }
+
+    this._tripsApi.getOpenTrips(routeId).subscribe({
+      next: (trips) => {
+        this.openTrips = trips || [];
+        this.form.patchValue({ tripId: '' }, { emitEvent: false });
+      },
+      error: () => {
+        this.openTrips = [];
+        this.form.patchValue({ tripId: '' }, { emitEvent: false });
+      },
+    });
+  }
 
   fetchSessions() {
     this._scanningSessionsService
