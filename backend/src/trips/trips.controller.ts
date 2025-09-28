@@ -14,6 +14,7 @@ const TRIP_MANAGE_ROLES = [
 
 const TRIP_EXECUTION_ROLES = [
   ...TRIP_MANAGE_ROLES,
+  'cashier',
   'driver',
   'assistant-driver',
 ] as const;
