@@ -41,7 +41,7 @@ export class RoutesController {
 
   @Get("paginated")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
+  @SetMetadata("roles", ROUTE_READ_ROLES)
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10
