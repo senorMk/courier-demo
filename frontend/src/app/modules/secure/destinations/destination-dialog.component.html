@@ -2,13 +2,26 @@
   style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">{{ editingId ? 'Edit Office' : 'Create Office' }}</h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-form-field appearance="fill">
-    <mat-label>Code</mat-label>
-    <input matInput formControlName="code"
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="name"
       style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
   </mat-form-field>
   <mat-form-field appearance="fill">
-    <mat-label>Name</mat-label>
-    <input matInput formControlName="name"
+    <mat-label>Route</mat-label>
+    <input type="text" matInput [formControl]="form.controls['routeId']" [matAutocomplete]="autoRoute"
+      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
+      (input)="onRouteInput($event.target.value)" autocomplete="off" />
+    <mat-autocomplete #autoRoute="matAutocomplete" (optionSelected)="onRouteSelected($event.option.value)"
+      [displayWith]="routeDisplayFn">
+      <mat-option *ngFor="let route of filteredRoutes$ | async" [value]="route">
+        <span>{{ route.name }}</span>
+        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ route.code }}</span>
+      </mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Area Code</mat-label>
+    <input matInput formControlName="areaCode"
       style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
   </mat-form-field>
   <mat-form-field appearance="fill">
@@ -25,19 +38,6 @@
       <mat-option value="DISPATCH">Dispatch</mat-option>
       <mat-option value="TRANSIT">Transit</mat-option>
     </mat-select>
-  </mat-form-field>
-  <mat-form-field appearance="fill">
-    <mat-label>Route</mat-label>
-    <input type="text" matInput [formControl]="form.controls['routeId']" [matAutocomplete]="autoRoute"
-      style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
-      (input)="onRouteInput($event.target.value)" autocomplete="off" />
-    <mat-autocomplete #autoRoute="matAutocomplete" (optionSelected)="onRouteSelected($event.option.value)"
-      [displayWith]="routeDisplayFn">
-      <mat-option *ngFor="let route of filteredRoutes$ | async" [value]="route">
-        <span>{{ route.name }}</span>
-        <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ route.code }}</span>
-      </mat-option>
-    </mat-autocomplete>
   </mat-form-field>
 </div>
 <div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
