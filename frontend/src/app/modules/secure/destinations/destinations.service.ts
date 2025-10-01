@@ -5,12 +5,13 @@ import { environment } from "../../../../environments/environment";
 
 export interface Destination {
   id?: string;
-  code: string;
   name: string;
+  areaCode: string;
   branchCode: string;
   routeId: string;
   officeTypes?: string[];
   route?: { id: string; name: string; code: string };
+  createdAt?: string;
 }
 
 @Injectable()

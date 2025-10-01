@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 export interface Office {
   id: string;
   branchCode: string;
+  areaCode?: string;
   officeTypes: string[];
   name: string;
   routeId?: string;

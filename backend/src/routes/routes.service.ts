@@ -13,17 +13,19 @@ export class RoutesService {
 
   async createOffice(data: {
     branchCode: string;
+    areaCode?: string;
     officeTypes: OfficeType[]; // use Prisma enum array
     name: string;
     routeId: string;
   }) {
     return this.prisma.office.create({
-      data: {
+      data: ({
         branchCode: data.branchCode,
+        areaCode: data.areaCode || null,
         officeTypes: data.officeTypes, // e.g., [OfficeType.SENDING, OfficeType.DISPATCH]
         name: data.name,
         route: { connect: { id: data.routeId } },
-      },
+      } as any),
     });
   }
 
@@ -69,13 +71,15 @@ export class RoutesService {
    * Limited to 50 results
    */
   async searchOffices(q: string) {
+    const where: any = {
+      OR: [
+        { branchCode: { contains: q, mode: "insensitive" } },
+        { areaCode: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+      ],
+    };
     return this.prisma.office.findMany({
-      where: {
-        OR: [
-          { branchCode: { contains: q, mode: "insensitive" } },
-          { name: { contains: q, mode: "insensitive" } },
-        ],
-      },
+      where,
       take: 50,
       orderBy: { createdAt: "desc" },
     });
@@ -105,13 +109,15 @@ export class RoutesService {
     id: string,
     data: Partial<{
       branchCode: string;
+      areaCode: string;
       officeTypes: OfficeType[];
       name: string;
       routeId: string;
     }>
   ) {
-    const updateData: Prisma.OfficeUpdateInput = {};
+  const updateData: Prisma.OfficeUpdateInput = {};
     if (typeof data.branchCode !== 'undefined') updateData.branchCode = data.branchCode;
+  if (typeof data.areaCode !== 'undefined') (updateData as any).areaCode = data.areaCode;
     if (typeof data.name !== 'undefined') updateData.name = data.name;
     if (typeof data.officeTypes !== 'undefined') updateData.officeTypes = data.officeTypes as any;
     if (typeof data.routeId !== 'undefined') updateData.route = { connect: { id: data.routeId } };

@@ -11,6 +11,14 @@
         <th mat-header-cell *matHeaderCellDef>Name</th>
         <td mat-cell *matCellDef="let element">{{ element.name }}</td>
       </ng-container>
+      <ng-container matColumnDef="routeName">
+        <th mat-header-cell *matHeaderCellDef>Route</th>
+        <td mat-cell *matCellDef="let element">{{ element.route?.name || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="areaCode">
+        <th mat-header-cell *matHeaderCellDef>Area Code</th>
+        <td mat-cell *matCellDef="let element">{{ element.areaCode || '—' }}</td>
+      </ng-container>
       <ng-container matColumnDef="branchCode">
         <th mat-header-cell *matHeaderCellDef>Branch Code</th>
         <td mat-cell *matCellDef="let element">{{ element.branchCode }}</td>
@@ -23,10 +31,6 @@
           </ng-container>
           <ng-template #none>—</ng-template>
         </td>
-      </ng-container>
-      <ng-container matColumnDef="routeName">
-        <th mat-header-cell *matHeaderCellDef>Route</th>
-        <td mat-cell *matCellDef="let element">{{ element.route?.name || '—' }}</td>
       </ng-container>
       <ng-container matColumnDef="createdAt">
         <th mat-header-cell *matHeaderCellDef>Created At</th>

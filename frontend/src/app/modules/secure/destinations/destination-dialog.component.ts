@@ -57,22 +57,23 @@ export class DestinationDialogComponent {
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: any
   ) {
     this.form = this._fb.group({
-      code: ["", Validators.required],
       name: ["", Validators.required],
+      routeId: ["", Validators.required],
+      areaCode: ["", Validators.required],
       branchCode: ["", Validators.required],
       officeTypes: [[], Validators.required],
-      routeId: ["", Validators.required],
     });
 
     // If dialog opened in edit mode, patch values
     if (this.data && this.data.office) {
       const o = this.data.office as any;
       this.editingId = o.id;
-      const branchCode = o.branchCode ?? o.branch_code ?? o.code ?? "";
+      const branchCode = o.branchCode ?? o.branch_code ?? "";
+      const areaCode = o.areaCode ?? o.area_code ?? "";
       this.form.patchValue({
-        code: o.branchCode || "",
         name: o.name || "",
         branchCode,
+        areaCode,
         officeTypes: o.officeTypes || [],
         routeId: o.routeId || o.route?.id || "",
       });
@@ -81,28 +82,21 @@ export class DestinationDialogComponent {
       const rName = o.route?.name;
       const rCode = o.route?.code;
       if (rId && rName) {
-        this.routesCache[rId] = {
-          id: rId,
-          name: rName,
-          code: rCode || "",
-        } as RouteItem;
+        this.routesCache[rId] = { id: rId, name: rName, code: rCode || "" } as RouteItem;
       }
       // If essential fields are missing, fetch full record
-      if (!branchCode && this.editingId) {
+      if ((!branchCode || !areaCode) && this.editingId) {
         this._service.getDestination(this.editingId).subscribe((full) => {
           this.form.patchValue({
-            branchCode: (full as any).branchCode ?? (full as any).code ?? "",
-            name: full.name,
+            branchCode: (full as any).branchCode ?? "",
+            areaCode: (full as any).areaCode ?? "",
+            name: (full as any).name,
             officeTypes: (full as any).officeTypes || [],
             routeId: (full as any).routeId || (full as any).route?.id || "",
           });
           const route = (full as any).route;
           if (route?.id && route?.name) {
-            this.routesCache[route.id] = {
-              id: route.id,
-              name: route.name,
-              code: route.code || "",
-            } as RouteItem;
+            this.routesCache[route.id] = { id: route.id, name: route.name, code: route.code || "" } as RouteItem;
           }
         });
       }
@@ -112,12 +106,12 @@ export class DestinationDialogComponent {
       debounceTime(300),
       switchMap((q) =>
         q
-          ? this._routesSearch.searchRoutes(q).pipe(
-              tap((routes) =>
-                routes.forEach((r) => (this.routesCache[r.id] = r))
-              ),
-              catchError(() => of([]))
-            )
+          ? this._routesSearch
+              .searchRoutes(q)
+              .pipe(
+                tap((routes) => routes.forEach((r) => (this.routesCache[r.id] = r))),
+                catchError(() => of([]))
+              )
           : of([])
       )
     );

@@ -133,7 +133,7 @@ export class ParcelService {
     }
 
     const routeCode = route.code;
-    const destinationCode = office.branchCode;
+  const destinationCode = (office as any).areaCode ?? office.branchCode;
     const branchCode = office.branchCode;
     const parcelNumber = parcel.parcelNumber;
     const plainTextCode = `${routeCode}-${destinationCode}-${branchCode}-${parcelNumber}`;

@@ -18,9 +18,10 @@ import { CommonModule } from "@angular/common";
 export class DestinationsComponent implements OnInit {
   displayedColumns: string[] = [
     "name",
+    "routeName",
+    "areaCode",
     "branchCode",
     "officeTypes",
-    "routeName",
     "createdAt",
     "actions",
   ];

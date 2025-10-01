@@ -69,6 +69,7 @@ export class RoutesController {
     @Body()
     body: {
       branchCode: string;
+      areaCode?: string;
       officeTypes: OfficeType[];
       routeId: string;
       name: string;
@@ -119,6 +120,7 @@ export class RoutesController {
     @Body()
     body: {
       branchCode?: string;
+      areaCode?: string;
       officeTypes?: OfficeType[];
       routeId?: string;
       name?: string;
