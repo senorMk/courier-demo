@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -16,8 +16,21 @@ export interface Customer {
 export class CustomersSearchService {
   constructor(private _http: HttpClient) {}
 
+  getToken() {
+    return localStorage.getItem('accessToken');
+  }
+
+  getHeader() {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.getToken()}`,
+      }),
+    };
+    return httpOptions;
+  }
+
   searchCustomers(query: string) {
     const baseUrl = environment.serverURL;
-    return this._http.get<Customer[]>(`${baseUrl}/v1/customers/search?q=${encodeURIComponent(query)}`);
+    return this._http.get<Customer[]>(`${baseUrl}/v1/customers/search?q=${encodeURIComponent(query)}`, this.getHeader());
   }
 }
