@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { FuseNavigationItem } from '@fuse/components/navigation';
 import { RoleKey } from 'app/core/auth/role-permissions';
@@ -25,6 +25,23 @@ export class NavigationService {
     }
 
     // -----------------------------------------------------------------------------------------------------
+    // @ Private methods
+    // -----------------------------------------------------------------------------------------------------
+
+    private getToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    private getHeader() {
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `Bearer ${this.getToken()}`,
+            }),
+        };
+        return httpOptions;
+    }
+
+    // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
 
@@ -32,7 +49,7 @@ export class NavigationService {
      * Get all navigation data
      */
     get(): Observable<Navigation> {
-        return this._httpClient.get<Navigation>('api/common/navigation').pipe(
+        return this._httpClient.get<Navigation>('api/common/navigation', this.getHeader()).pipe(
             map((navigation) => this._filterNavigationByRole(navigation)),
             tap((navigation) => {
                 this._navigation.next(navigation);

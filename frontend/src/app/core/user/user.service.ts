@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { User } from 'app/core/user/user.types';
 import { map, Observable, ReplaySubject, tap } from 'rxjs';
@@ -27,6 +27,23 @@ export class UserService {
     }
 
     // -----------------------------------------------------------------------------------------------------
+    // @ Private methods
+    // -----------------------------------------------------------------------------------------------------
+
+    private getToken() {
+        return localStorage.getItem('accessToken');
+    }
+
+    private getHeader() {
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `Bearer ${this.getToken()}`,
+            }),
+        };
+        return httpOptions;
+    }
+
+    // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
 
@@ -34,7 +51,7 @@ export class UserService {
      * Get the current signed-in user data
      */
     get(): Observable<User> {
-        return this._httpClient.get<User>('api/common/user').pipe(
+        return this._httpClient.get<User>('api/common/user', this.getHeader()).pipe(
             tap((user) => {
                 this._user.next(user);
             })
@@ -47,7 +64,7 @@ export class UserService {
      * @param user
      */
     update(user: User): Observable<any> {
-        return this._httpClient.patch<User>('api/common/user', { user }).pipe(
+        return this._httpClient.patch<User>('api/common/user', { user }, this.getHeader()).pipe(
             map((response) => {
                 this._user.next(response);
             })
