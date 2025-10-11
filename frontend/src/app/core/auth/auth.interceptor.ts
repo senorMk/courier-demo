@@ -6,7 +6,6 @@ import {
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from 'app/core/auth/auth.service';
-import { AuthUtils } from 'app/core/auth/auth.utils';
 import { Observable, catchError, throwError } from 'rxjs';
 
 /**
@@ -36,17 +35,12 @@ export const authInterceptor = (
 
     // Request
     //
-    // If the access token didn't expire and it's not a public endpoint, add the Authorization header.
-    // We won't add the Authorization header if the access token expired.
-    // This will force the server to return a "401 Unauthorized" response
-    // for the protected API routes which our response interceptor will
-    // catch and delete the access token from the local storage while logging
-    // the user out from the app.
-    if (
-        !isPublicEndpoint &&
-        authService.accessToken &&
-        !AuthUtils.isTokenExpired(authService.accessToken)
-    ) {
+    // If the access token exists and it's not a public endpoint, add the Authorization header.
+    // The server will return a "401 Unauthorized" response if the token is expired or invalid,
+    // which our response interceptor will catch and handle by logging the user out.
+    // This approach is more reliable than checking token expiration locally, as it avoids
+    // issues with incorrect system time on the user's machine.
+    if (!isPublicEndpoint && authService.accessToken) {
         newReq = req.clone({
             headers: req.headers.set(
                 'Authorization',

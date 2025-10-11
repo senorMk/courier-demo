@@ -1,6 +1,5 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { AuthUtils } from "app/core/auth/auth.utils";
 import { UserService } from "app/core/user/user.service";
 import { environment } from "../../../environments/environment";
 import { catchError, Observable, of, switchMap, throwError } from "rxjs";
@@ -190,13 +189,11 @@ export class AuthService {
       return of(false);
     }
 
-    // Check the access token expire date
-    if (AuthUtils.isTokenExpired(this.accessToken)) {
-      return of(false);
-    }
-
+    // If the access token exists, assume it's valid.
+    // The server will return 401 if it's expired or invalid,
+    // which will be handled by the auth interceptor.
+    // This approach avoids issues with incorrect system time.
     // TODO: Implement refresh token mechanism
-    // If the access token exists, and it didn't expire, sign in using it
     return of(true);
   }
 }
