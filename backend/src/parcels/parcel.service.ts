@@ -9,10 +9,14 @@ import { generateBarcodeForId } from "../utils/barcode-generator";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
 import { sendSms } from "../utils/sms-sender";
 import { normalizeZMBPhone } from "../utils/phone.util";
+import { TimeService } from "../common/time/time.service";
 
 @Injectable()
 export class ParcelService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly time: TimeService,
+  ) { }
 
   async createParcel(
     data:
@@ -437,7 +441,7 @@ export class ParcelService {
       trackingHistory.push({
         status: "PENDING",
         location: "Sender Office",
-        timestamp: parcel.createdAt.toISOString(),
+        timestamp: this.time.toISO(parcel.createdAt),
         description: "Parcel received at sender office",
       });
     }
@@ -446,28 +450,28 @@ export class ParcelService {
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: "In Transit",
-        timestamp: new Date(parcel.createdAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
         description: "Parcel in transit to destination",
       });
 
       trackingHistory.push({
         status: "DELIVERED",
         location: parcel.office.name,
-        timestamp: new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString(),
+        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
         description: "Parcel collected by recipient",
       });
     } else if (parcel.status === "READY_FOR_COLLECTION") {
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: "In Transit",
-        timestamp: new Date(parcel.createdAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
         description: "Parcel in transit to destination",
       });
 
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: parcel.office.name,
-        timestamp: new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString(),
+        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
         description: "Parcel ready for collection at destination office",
       });
     }
@@ -488,8 +492,10 @@ export class ParcelService {
       id: parcel.id,
       parcelNumber: tracking.plainTextCode,
       status: parcel.status === "COLLECTED" ? "DELIVERED" : parcel.status || "PENDING",
-      createdAt: parcel.createdAt.toISOString(),
-      deliveredAt: parcel.status === "COLLECTED" ? new Date(parcel.createdAt.getTime() + 48 * 60 * 60 * 1000).toISOString() : undefined,
+      createdAt: this.time.toISO(parcel.createdAt),
+      deliveredAt: parcel.status === "COLLECTED"
+        ? this.time.toISO(this.time.addHours(parcel.createdAt, 48))
+        : undefined,
       sender: {
         firstName: maskName(parcel.customer.firstName),
         lastName: maskName(parcel.customer.lastName),

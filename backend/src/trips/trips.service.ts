@@ -2,10 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { sendSms } from '../utils/sms-sender';
 import { normalizeZMBPhone } from '../utils/phone.util';
+import { TimeService } from "../common/time/time.service";
 
 @Injectable()
 export class TripsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly time: TimeService,
+  ) {}
 
   async createTrip(payload: { routeId: string; officeId: string; driverName: string; truckReg: string; }) {
     // Validate office belongs to route
@@ -39,7 +43,10 @@ export class TripsService {
 
   async startTrip(id: string) {
     // Set status IN_TRANSIT and departedAt
-    const trip = await this.prisma.trip.update({ where: { id }, data: { status: 'IN_TRANSIT' as any, departedAt: new Date() } });
+    const trip = await this.prisma.trip.update({
+      where: { id },
+      data: { status: 'IN_TRANSIT' as any, departedAt: this.time.now() },
+    });
 
     // Fetch all parcels scanned under this trip's sessions
     const sessions = await this.prisma.scanningSession.findMany({ where: { tripId: id }, select: { id: true } });
@@ -80,7 +87,10 @@ export class TripsService {
     if (trip.status !== 'IN_TRANSIT') {
       throw new BadRequestException('Only in-transit trips can be completed');
     }
-    const updated = await this.prisma.trip.update({ where: { id }, data: { status: 'COMPLETED' as any, completedAt: new Date() } });
+    const updated = await this.prisma.trip.update({
+      where: { id },
+      data: { status: 'COMPLETED' as any, completedAt: this.time.now() },
+    });
 
     // Optional: send arrival SMS to sender & receiver
     const sessions = await this.prisma.scanningSession.findMany({ where: { tripId: id }, select: { id: true } });

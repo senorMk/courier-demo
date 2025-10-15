@@ -1,27 +1,35 @@
-import { Component } from "@angular/core";
+import { Component, DestroyRef, inject } from "@angular/core";
 import {
   FormBuilder,
   FormGroup,
   Validators,
   ReactiveFormsModule,
+  FormControl,
 } from "@angular/forms";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ParcelsService } from "./parcels.service";
-import { Observable, BehaviorSubject, of } from "rxjs";
-import { debounceTime, switchMap, catchError, tap } from "rxjs/operators";
+import { Observable, of } from "rxjs";
+import {
+  debounceTime,
+  switchMap,
+  catchError,
+  map,
+  startWith,
+  distinctUntilChanged,
+} from "rxjs/operators";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
   OfficesSearchService,
   Office,
 } from "../offices/offices-search.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatPaginatorModule } from "@angular/material/paginator";
-import { MatTableModule } from "@angular/material/table";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatStepperModule } from "@angular/material/stepper";
 import { MatSelectModule } from "@angular/material/select";
+import { MatIconModule } from "@angular/material/icon";
 import { CommonModule } from "@angular/common";
 
 @Component({
@@ -33,20 +41,24 @@ import { CommonModule } from "@angular/common";
     MatFormFieldModule,
     MatInputModule,
     ReactiveFormsModule,
-    MatPaginatorModule,
-    MatTableModule,
     MatDialogModule,
     MatButtonModule,
     MatSnackBarModule,
     MatAutocompleteModule,
     MatStepperModule,
     MatSelectModule,
+    MatIconModule,
   ],
 })
 export class ParcelDialogComponent {
   form: FormGroup;
   loading = false;
   offices$: Observable<Office[]> = of([]);
+  officeSearchControl = new FormControl<string | Office>("", {
+    nonNullable: true,
+  });
+  selectedOffice: Office | null = null;
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private _fb: FormBuilder,
@@ -84,11 +96,48 @@ export class ParcelDialogComponent {
         reference: [""],
       }),
     });
-  // Fetch all offices for dropdown
-  this.offices$ = this._officesSearch.searchOffices("");
+    this.offices$ = this.officeSearchControl.valueChanges.pipe(
+      startWith(""),
+      map((value) =>
+        typeof value === "string"
+          ? value
+          : value?.name || value?.branchCode || value?.route?.name || ""
+      ),
+      map((value) => value.trim()),
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) =>
+        this._officesSearch
+          .searchOffices(query)
+          .pipe(catchError(() => of([])))
+      )
+    );
+
+    this.officeSearchControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (typeof value === "string") {
+          this.form.controls["officeId"].setValue("", { emitEvent: false });
+          this.selectedOffice = null;
+          return;
+        }
+        if (value && value.id) {
+          this.form.controls["officeId"].setValue(value.id);
+          this.selectedOffice = value;
+        }
+      });
   }
 
-  // Autocomplete logic removed for dropdown
+  displayOffice = (office?: Office | string | null): string => {
+    if (!office) {
+      return "";
+    }
+    if (typeof office === "string") {
+      return office;
+    }
+    const parts = [office.name, office.branchCode, office.route?.name].filter(Boolean);
+    return parts.join(" • ");
+  };
 
   save(): void {
     if (this.form.invalid) {

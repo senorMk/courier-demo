@@ -3,7 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { normalizeZMBPhone } from './phone.util';
+import { TimeService } from '../common/time/time.service';
 const prisma = new PrismaClient();
+const time = new TimeService();
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -50,12 +52,8 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     { key: 'accounts', title: 'Accounts Copy' },
   ];
 
-  const createdAt = new Date(parcel.createdAt as unknown as string);
-  const formattedDate = createdAt.toLocaleDateString('en-ZM', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  });
+  const createdAt = time.toDate(parcel.createdAt as unknown as string);
+  const formattedDate = time.format(createdAt, 'dd LLL yyyy');
 
   const formatAmt = (n?: number) => (n || 0).toFixed(2);
 

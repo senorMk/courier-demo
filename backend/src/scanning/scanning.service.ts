@@ -9,10 +9,14 @@ import { Prisma, ParcelStatus } from "@prisma/client";
 import { sendSms } from "../utils/sms-sender";
 import { normalizeZMBPhone } from "../utils/phone.util";
 import { generateDeliveryNote } from "../utils/delivery-note-generator";
+import { TimeService } from "../common/time/time.service";
 
 @Injectable()
 export class ScanningService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly time: TimeService,
+  ) {}
 
   async startSession(
     userId: string,
@@ -67,7 +71,7 @@ export class ScanningService {
         routeId,
         mode,
         tripId: tripId || null,
-        mailBagCode: mode === "bag" ? `MB-${Date.now()}` : null,
+        mailBagCode: mode === "bag" ? `MB-${this.time.now().getTime()}` : null,
       },
     });
     return session;
@@ -387,7 +391,7 @@ export class ScanningService {
 
     const closed = await this.prisma.scanningSession.update({
       where: { id: sessionId },
-      data: { closedAt: new Date() },
+      data: { closedAt: this.time.now() },
     });
 
     // Generate delivery note PDF once on close (no-op if already exists)

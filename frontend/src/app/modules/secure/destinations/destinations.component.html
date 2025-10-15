@@ -1,6 +1,26 @@
 <div class="flex flex-col gap-4" style="width: 100%; padding: 20px;">
-  <div class="flex justify-end">
-    <button mat-raised-button (click)="openCreateDialog()" class="custom-primary-btn">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <mat-form-field appearance="outline" class="w-full md:max-w-sm">
+      <mat-label>Search offices</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Search by name, branch or route"
+        [formControl]="searchControl"
+      />
+      <button
+        *ngIf="searchControl.value"
+        mat-icon-button
+        matSuffix
+        type="button"
+        aria-label="Clear search"
+        (click)="clearSearch()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" (click)="openCreateDialog()" class="custom-primary-btn self-end md:self-auto">
       <mat-icon style="color: #fff;">add</mat-icon>
       Create Office
     </button>
@@ -33,8 +53,8 @@
         </td>
       </ng-container>
       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef>Created At</th>
-        <td mat-cell *matCellDef="let element">{{ element.createdAt | date: 'short' }}</td>
+        <th mat-header-cell *matHeaderCellDef>Created</th>
+        <td mat-cell *matCellDef="let element">{{ element.createdAt | date: 'dd/MM/yyyy':'Africa/Johannesburg' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
@@ -53,5 +73,11 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
   </div>
-  <mat-paginator [pageSize]="10"></mat-paginator>
+  <mat-paginator
+    [length]="totalCount"
+    [pageIndex]="currentPageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPageChange($event)"
+  ></mat-paginator>
 </div>

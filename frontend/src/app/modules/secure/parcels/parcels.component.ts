@@ -64,6 +64,7 @@ export class ParcelsComponent implements OnInit {
   selectedParcel: Parcel | null = null;
   total = 0;
   pageSize = 10;
+  currentPageIndex = 0;
   @ViewChild(MatPaginator) paginator?: MatPaginator;
   readonly searchControl = new FormControl('', { nonNullable: true });
   private readonly destroyRef = inject(DestroyRef);
@@ -96,10 +97,12 @@ export class ParcelsComponent implements OnInit {
       this.dataSource.data = data.data || [];
       this.total = Number(data.total || 0);
       this.pageSize = pageSize;
+      this.currentPageIndex = pageIndex;
     });
   }
 
   onPage(event: PageEvent): void {
+    this.currentPageIndex = event.pageIndex;
     this.loadData(event.pageIndex, event.pageSize);
   }
 

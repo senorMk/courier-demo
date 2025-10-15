@@ -1,11 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { OfficeType, Prisma } from "@prisma/client";
+import { TimeService } from "../common/time/time.service";
 // Define OfficeType as a string literal type matching your schema
 
 @Injectable()
 export class RoutesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly time: TimeService,
+  ) {}
+
+  private mapOfficeForResponse(office: any) {
+    if (!office) {
+      return office;
+    }
+    return {
+      ...office,
+      createdAt: this.time.toISO(office.createdAt),
+      updatedAt: this.time.toISO(office.updatedAt),
+    };
+  }
 
   async createRoute(data: { code: string; name: string }) {
     return this.prisma.route.create({ data });
@@ -18,7 +33,7 @@ export class RoutesService {
     name: string;
     routeId: string;
   }) {
-    return this.prisma.office.create({
+    const office = await this.prisma.office.create({
       data: ({
         branchCode: data.branchCode,
         areaCode: data.areaCode || null,
@@ -27,20 +42,40 @@ export class RoutesService {
         route: { connect: { id: data.routeId } },
       } as any),
     });
+    return this.mapOfficeForResponse(office);
   }
 
-  async getOfficesPaginated(page: number = 1, pageSize: number = 10) {
+  async getOfficesPaginated(page: number = 1, pageSize: number = 10, search?: string) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
-    const [data, total] = await Promise.all([
+    const where: Prisma.OfficeWhereInput | undefined = search
+      ? {
+          OR: [
+            { branchCode: { contains: search, mode: "insensitive" } },
+            { areaCode: { contains: search, mode: "insensitive" } },
+            { name: { contains: search, mode: "insensitive" } },
+            {
+              route: {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" } },
+                  { code: { contains: search, mode: "insensitive" } },
+                ],
+              },
+            },
+          ],
+        }
+      : undefined;
+    const [offices, total] = await Promise.all([
       this.prisma.office.findMany({
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
         include: { route: { select: { id: true, name: true, code: true } } },
+        where,
       }),
-      this.prisma.office.count(),
+      this.prisma.office.count({ where }),
     ]);
+    const data = offices.map((office) => this.mapOfficeForResponse(office));
     return {
       data,
       total,
@@ -76,13 +111,23 @@ export class RoutesService {
         { branchCode: { contains: q, mode: "insensitive" } },
         { areaCode: { contains: q, mode: "insensitive" } },
         { name: { contains: q, mode: "insensitive" } },
+        {
+          route: {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" } },
+            ],
+          },
+        },
       ],
     };
-    return this.prisma.office.findMany({
+    const offices = await this.prisma.office.findMany({
       where,
       take: 50,
       orderBy: { createdAt: "desc" },
+      include: { route: { select: { id: true, name: true, code: true } } },
     });
+    return offices.map((office) => this.mapOfficeForResponse(office));
   }
 
   async searchRoutes(q: string) {
@@ -99,10 +144,11 @@ export class RoutesService {
   }
 
   async getOffice(id: string) {
-    return this.prisma.office.findUnique({
+    const office = await this.prisma.office.findUnique({
       where: { id },
       include: { route: { select: { id: true, name: true, code: true } } },
     });
+    return this.mapOfficeForResponse(office);
   }
 
   async updateOffice(
@@ -121,10 +167,12 @@ export class RoutesService {
     if (typeof data.name !== 'undefined') updateData.name = data.name;
     if (typeof data.officeTypes !== 'undefined') updateData.officeTypes = data.officeTypes as any;
     if (typeof data.routeId !== 'undefined') updateData.route = { connect: { id: data.routeId } };
-    return this.prisma.office.update({ where: { id }, data: updateData });
+    const office = await this.prisma.office.update({ where: { id }, data: updateData, include: { route: { select: { id: true, name: true, code: true } } } });
+    return this.mapOfficeForResponse(office);
   }
 
   async deleteOffice(id: string) {
-    return this.prisma.office.delete({ where: { id } });
+    const office = await this.prisma.office.delete({ where: { id } });
+    return this.mapOfficeForResponse(office);
   }
 }

@@ -1,8 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
-import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ComplaintsApiService } from './complaints-api.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
@@ -68,7 +68,7 @@ import { ComplaintDetailsDialogComponent } from './complaint-details-dialog.comp
           </ng-container>
           <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef>Created</th>
-            <td mat-cell *matCellDef="let r">{{ r.createdAt | date: 'short' }}</td>
+            <td mat-cell *matCellDef="let r">{{ r.createdAt | date: 'dd/MM/yyyy' }}</td>
           </ng-container>
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
@@ -81,22 +81,61 @@ import { ComplaintDetailsDialogComponent } from './complaint-details-dialog.comp
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
       </div>
-      <mat-paginator [pageSize]="10"></mat-paginator>
+      <mat-paginator
+        [length]="totalCount"
+        [pageSize]="pageSize"
+        [pageIndex]="currentPageIndex"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+      ></mat-paginator>
     </div>
   `,
 })
-export class ComplaintsComponent {
+export class ComplaintsComponent implements OnInit {
   private api = inject(ComplaintsApiService);
   private dialog = inject(MatDialog);
   displayedColumns = ['code','sender','receiver','office','reporter','status','createdAt','actions'];
   rows: any[] = [];
   summary: any = null;
+  totalCount = 0;
+  pageSize = 10;
+  currentPageIndex = 0;
 
-  constructor() { this.refresh(); }
+  ngOnInit(): void {
+    this.loadData();
+    this.refreshSummary();
+  }
 
-  refresh() {
-    this.api.list(1, 10).subscribe({ next: (res: any) => this.rows = res.data || [], error: () => this.rows = [] });
+  refresh(): void {
+    this.currentPageIndex = 0;
+    this.loadData(0, this.pageSize);
+    this.refreshSummary();
+  }
+
+  private loadData(pageIndex: number = this.currentPageIndex, pageSize: number = this.pageSize): void {
+    const apiPage = pageIndex + 1;
+    this.api.list(apiPage, pageSize).subscribe({
+      next: (res) => {
+        this.rows = res.data || [];
+        this.totalCount = Number(res.total || 0);
+        this.pageSize = res.pageSize || pageSize;
+        this.currentPageIndex = (res.page ?? apiPage) - 1;
+      },
+      error: () => {
+        this.rows = [];
+        this.totalCount = 0;
+      },
+    });
+  }
+
+  private refreshSummary(): void {
     this.api.summary().subscribe({ next: (s: any) => this.summary = s, error: () => this.summary = null });
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.currentPageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.loadData(event.pageIndex, event.pageSize);
   }
 
   close(r: any) {
@@ -112,7 +151,10 @@ export class ComplaintsComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (!confirmed) return;
-      this.api.close(r.id).subscribe({ next: () => this.refresh() });
+      this.api.close(r.id).subscribe({ next: () => {
+        this.loadData(this.currentPageIndex, this.pageSize);
+        this.refreshSummary();
+      }});
     });
   }
 

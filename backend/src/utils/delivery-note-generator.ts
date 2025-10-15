@@ -2,6 +2,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { TimeService } from '../common/time/time.service';
+
+const time = new TimeService();
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -67,9 +70,9 @@ export async function generateDeliveryNote(
   doc.text(`Office: ${session.office?.name} (${session.office?.branchCode})`);
   doc.text(`Mode: ${session.mode}`);
   doc.text(`Staff: ${((session.user?.firstName || '') + ' ' + (session.user?.lastName || '')).trim()}`);
-  doc.text(`Started: ${new Date(session.startedAt as unknown as string).toLocaleString()}`);
+  doc.text(`Started: ${time.format(session.startedAt, 'dd/LL/yyyy HH:mm')}`);
   if ((session as any).closedAt)
-    doc.text(`Closed: ${new Date((session as any).closedAt as unknown as string).toLocaleString()}`);
+    doc.text(`Closed: ${time.format((session as any).closedAt as unknown as string, 'dd/LL/yyyy HH:mm')}`);
 
   doc.moveDown(1);
   doc.font('Helvetica-Bold').fontSize(11).text('Scanned Parcels');
@@ -117,12 +120,7 @@ export async function generateDeliveryNote(
   const bodyFontSize = 8.5;
   doc.fontSize(bodyFontSize);
   function formatShortDate(d: string | number | Date) {
-    const dt = new Date(d);
-    const dd = String(dt.getDate()).padStart(2, '0');
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    const hh = String(dt.getHours()).padStart(2, '0');
-    const mi = String(dt.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm} ${hh}:${mi}`;
+    return time.format(d, 'dd/LL HH:mm');
   }
 
   for (const s of (session as any).scans) {

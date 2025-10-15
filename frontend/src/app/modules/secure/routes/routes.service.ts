@@ -29,12 +29,22 @@ export class RoutesService {
   }
 
   getRoutes(
-    pageIndex = 0,
-    pageSize = 10
-  ): Observable<{ data: RouteItem[]; total: number }> {
-    const params = `?page=${pageIndex}&pageSize=${pageSize}`;
-    return this._httpClient.get<{ data: RouteItem[]; total: number }>(
-      `${this.baseUrl}/v1/routes/paginated${params}`,
+    page: number = 1,
+    pageSize: number = 10
+  ): Observable<{ data: RouteItem[]; total: number; page: number; pageSize: number; totalPages: number }> {
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    return this._httpClient.get<{
+      data: RouteItem[];
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    }>(
+      `${this.baseUrl}/v1/routes/paginated?${query.toString()}`,
       this.getHeader()
     );
   }

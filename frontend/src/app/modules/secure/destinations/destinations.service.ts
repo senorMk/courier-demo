@@ -32,11 +32,27 @@ export class DestinationsService {
   }
 
   getDestinations(
-    pageIndex = 0,
-    pageSize = 10
-  ): Observable<{ data: Destination[]; total: number }> {
-    const params = `?page=${pageIndex}&size=${pageSize}`;
-    return this._httpClient.get<{ data: Destination[]; total: number }>(
+    page: number = 1,
+    pageSize: number = 10,
+    search?: string
+  ): Observable<{ data: Destination[]; total: number; page: number; pageSize: number; totalPages: number }> {
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    if (search && search.trim().length) {
+      query.append("q", search.trim());
+    }
+
+    const params = `?${query.toString()}`;
+    return this._httpClient.get<{
+      data: Destination[];
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    }>(
       `${environment.serverURL}/v1/routes/offices/paginated${params}`,
       this.getHeader()
     );

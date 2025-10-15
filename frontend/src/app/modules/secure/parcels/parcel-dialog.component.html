@@ -88,11 +88,37 @@
       <div class="flex flex-col gap-4">
         <mat-form-field appearance="fill">
           <mat-label>Destination</mat-label>
-          <mat-select [formControl]="form.controls['officeId']">
-            <mat-option *ngFor="let office of offices$ | async" [value]="office.id">
-              {{ office.name }} <span style="color: #888; font-size: 0.8em; margin-left: 10px;">{{ office.branchCode }}<span *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span></span>
+          <input
+            type="text"
+            matInput
+            [matAutocomplete]="officeAuto"
+            [formControl]="officeSearchControl"
+            [placeholder]="'Search destination by name, branch, or route'"
+          />
+          <button
+            matSuffix
+            mat-icon-button
+            type="button"
+            aria-label="Clear destination search"
+            *ngIf="officeSearchControl.value"
+            (click)="officeSearchControl.setValue('')"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+          <mat-autocomplete
+            #officeAuto="matAutocomplete"
+            [displayWith]="displayOffice"
+          >
+            <mat-option *ngFor="let office of offices$ | async" [value]="office">
+              <div class="flex flex-col">
+                <span class="font-medium">{{ office.name }}</span>
+                <span class="text-xs text-gray-500">
+                  {{ office.branchCode }}<span *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span>
+                  <span *ngIf="office.route?.name"> • {{ office.route?.name }}</span>
+                </span>
+              </div>
             </mat-option>
-          </mat-select>
+          </mat-autocomplete>
           <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
         </mat-form-field>
 
@@ -141,6 +167,7 @@
           <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
           <div>Sender: {{ form.value.customer.firstName }} {{ form.value.customer.lastName }} · +260{{ form.value.customer.phoneNumber }}</div>
           <div>Receiver: {{ form.value.receiver.firstName }} {{ form.value.receiver.lastName }} · +260{{ form.value.receiver.phoneNumber }}</div>
+          <div>Destination: {{ selectedOffice ? displayOffice(selectedOffice) : 'Not selected' }}</div>
           <div>Size: {{ form.value.size }} · Amount: ZMW {{ form.value.payment?.amount }} ({{ form.value.payment?.method }})</div>
         </div>
       </div>
