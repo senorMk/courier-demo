@@ -6,10 +6,14 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { ComplaintStatus, ParcelStatus } from "@prisma/client";
 import { sendSms } from "../utils/sms-sender";
+import { TimeService } from "../common/time/time.service";
 
 @Injectable()
 export class ComplaintsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly time: TimeService,
+  ) { }
 
   private normalizeZMBPhone(msisdn?: string): string {
     if (!msisdn) return "";
@@ -251,8 +255,12 @@ export class ComplaintsService {
     const where: any = {};
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) where.createdAt.lte = new Date(endDate);
+      try {
+        if (startDate) where.createdAt.gte = this.time.parse(startDate);
+        if (endDate) where.createdAt.lte = this.time.parse(endDate);
+      } catch {
+        throw new BadRequestException("Invalid date range supplied");
+      }
     }
     const [openCount, closed, all] = await this.prisma.$transaction([
       this.prisma.complaint.count({ where: { ...where, status: ComplaintStatus.OPEN } }),

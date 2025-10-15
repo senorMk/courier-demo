@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewChild } from "@angular/core";
-import { MatPaginatorModule } from "@angular/material/paginator";
+import { Component, OnInit } from "@angular/core";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
-import { MatPaginator } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { MatDialog } from "@angular/material/dialog";
 import { RoutesService, RouteItem } from "./routes.service";
@@ -19,7 +18,9 @@ import { CommonModule } from "@angular/common";
 export class RoutesComponent implements OnInit {
   displayedColumns: string[] = ["code", "name", "createdAt"];
   dataSource = new MatTableDataSource<RouteItem>([]);
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  totalCount = 0;
+  pageSize = 10;
+  currentPageIndex = 0;
 
   constructor(
     private _service: RoutesService,
@@ -30,14 +31,20 @@ export class RoutesComponent implements OnInit {
     this.loadData();
   }
 
-  loadData(pageIndex: number = 0, pageSize: number = 10): void {
-    this._service.getRoutes(pageIndex, pageSize).subscribe((data) => {
+  loadData(pageIndex: number = this.currentPageIndex, pageSize: number = this.pageSize): void {
+    const apiPage = pageIndex + 1;
+    this._service.getRoutes(apiPage, pageSize).subscribe((data) => {
       this.dataSource.data = data.data || [];
-      if (this.paginator) {
-        this.paginator.length = data.total || this.dataSource.data.length;
-        this.dataSource.paginator = this.paginator;
-      }
+      this.totalCount = Number(data.total || 0);
+      this.pageSize = data.pageSize || pageSize;
+      this.currentPageIndex = (data.page ?? apiPage) - 1;
     });
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.currentPageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.loadData(event.pageIndex, event.pageSize);
   }
 
   openCreateDialog(): void {

@@ -26,7 +26,7 @@ import { CommonModule } from '@angular/common';
       </div>
       <div>
         <div class="text-xs font-semibold uppercase text-gray-500">Created</div>
-        <div class="text-sm">{{ data?.createdAt | date: 'medium' }}</div>
+        <div class="text-sm">{{ data?.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
       </div>
       <div>
         <div class="text-xs font-semibold uppercase text-gray-500">Reason</div>

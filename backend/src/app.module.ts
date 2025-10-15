@@ -21,6 +21,7 @@ import { ParcelModule } from './parcels/parcel.module';
 import { RoutesModule } from './routes/routes.module';
 import { ScanningModule } from './scanning/scanning.module';
 import { ReportsModule } from './reports/reports.module';
+import { TimeModule } from "./common/time/time.module";
 
 
 @Module({
@@ -48,6 +49,7 @@ import { ReportsModule } from './reports/reports.module';
     RoutesModule,
     ScanningModule,
     ReportsModule,
+    TimeModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

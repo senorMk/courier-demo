@@ -5,6 +5,9 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { TimeService } from '../time/time.service';
+
+const time = new TimeService();
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -38,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message,
       error: errorName,
-      timestamp: new Date().toISOString(),
+  timestamp: time.nowISO(),
       path: request?.url,
     };
 

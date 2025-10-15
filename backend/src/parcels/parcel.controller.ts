@@ -19,6 +19,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as archiver from "archiver";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
+import { TimeService } from "../common/time/time.service";
 
 const PARCEL_CREATE_ROLES = [
   "managing-director",
@@ -50,7 +51,10 @@ const PARCEL_COLLECTION_ROLES = [
 
 @Controller("api/v1/parcels")
 export class ParcelController {
-  constructor(private readonly parcelService: ParcelService) { }
+  constructor(
+    private readonly parcelService: ParcelService,
+    private readonly time: TimeService,
+  ) { }
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -316,7 +320,7 @@ export class ParcelController {
       // Don't log sensitive information, just log that an attempt was made
       console.error('ParcelController.trackParcel attempt:', {
         codeLength: trackingCode?.length,
-        timestamp: new Date().toISOString()
+        timestamp: this.time.nowISO()
       });
 
       // Always return NotFoundException for security (don't reveal if parcel exists)

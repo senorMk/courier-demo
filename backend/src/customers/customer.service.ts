@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { Customer } from "@prisma/client";
+import { Customer, Prisma } from "@prisma/client";
 
 @Injectable()
 export class CustomerService {
@@ -16,12 +16,58 @@ export class CustomerService {
     return this.prisma.customer.create({ data });
   }
 
-  async getCustomersPaginated(page: number = 1, pageSize: number = 10) {
+  async getCustomersPaginated(
+    page: number = 1,
+    pageSize: number = 10,
+    search?: string
+  ) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
+    const trimmed = search?.trim();
+    const where: Prisma.CustomerWhereInput | undefined = trimmed
+      ? {
+          OR: [
+            {
+              firstName: {
+                contains: trimmed,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              lastName: {
+                contains: trimmed,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              idNumber: {
+                contains: trimmed,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              emailAddress: {
+                contains: trimmed,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              phoneNumber: {
+                contains: trimmed,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : undefined;
     const [data, total] = await Promise.all([
-      this.prisma.customer.findMany({ skip, take: pageSize }),
-      this.prisma.customer.count(),
+      this.prisma.customer.findMany({
+        skip,
+        take: pageSize,
+        where,
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.customer.count({ where }),
     ]);
     return {
       data,

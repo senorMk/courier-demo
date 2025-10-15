@@ -21,12 +21,28 @@ export class ComplaintsApiService {
     return httpOptions;
   }
 
-  list(page = 1, pageSize = 10, status?: 'OPEN' | 'CLOSED'): Observable<any> {
+  list(
+    page = 1,
+    pageSize = 10,
+    status?: 'OPEN' | 'CLOSED'
+  ): Observable<{
+    data: any[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
     const q = new URLSearchParams();
     q.set('page', String(page));
     q.set('pageSize', String(pageSize));
     if (status) q.set('status', status);
-    return this.http.get(`${this.baseUrl}/v1/complaints/paginated?${q.toString()}`, this.getHeader());
+    return this.http.get<{
+      data: any[];
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    }>(`${this.baseUrl}/v1/complaints/paginated?${q.toString()}`, this.getHeader());
   }
 
   close(id: string) {

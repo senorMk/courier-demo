@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '.../../environments/environment';
+import { Injectable } from "@angular/core";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Observable } from "rxjs";
+import { environment } from "../../../../environments/environment";
 
 export interface Customer {
   id?: string;
@@ -14,10 +14,12 @@ export interface Customer {
 
 @Injectable()
 export class CustomersService {
+  private readonly baseUrl = environment.serverURL;
+
   constructor(private _httpClient: HttpClient) {}
 
   getToken() {
-    return localStorage.getItem('accessToken');
+    return localStorage.getItem("accessToken");
   }
 
   getHeader() {
@@ -29,12 +31,42 @@ export class CustomersService {
     return httpOptions;
   }
 
-  getCustomers(pageIndex = 0, pageSize = 10): Observable<{data: Customer[]; total: number}> {
-    const params = `?page=${pageIndex}&pageSize=${pageSize}`;
-    return this._httpClient.get<{data: Customer[]; total: number}>(`${environment.serverURL}/v1/customers/paginated${params}` , this.getHeader());
+  getCustomers(
+    page: number = 1,
+    pageSize: number = 10,
+    search?: string
+  ): Observable<{
+    data: Customer[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    if (search && search.trim()) {
+      params.set("search", search.trim());
+    }
+
+    return this._httpClient.get<{
+      data: Customer[];
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    }>(
+      `${this.baseUrl}/v1/customers/paginated?${params.toString()}`,
+      this.getHeader()
+    );
   }
 
   createCustomer(data: Customer): Observable<Customer> {
-    return this._httpClient.post<Customer>(`${environment.serverURL}/v1/customers/create`, data, this.getHeader());
+    return this._httpClient.post<Customer>(
+      `${this.baseUrl}/v1/customers/create`,
+      data,
+      this.getHeader()
+    );
   }
 }

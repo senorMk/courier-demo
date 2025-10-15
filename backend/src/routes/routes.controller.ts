@@ -83,11 +83,13 @@ export class RoutesController {
   @SetMetadata("roles", ROUTE_ADMIN_ROLES)
   async getOfficesPaginated(
     @Query("page") page: number = 1,
-    @Query("pageSize") pageSize: number = 10
+    @Query("pageSize") pageSize: number = 10,
+    @Query("q") q?: string
   ) {
     return this.routesService.getOfficesPaginated(
       Number(page),
-      Number(pageSize)
+      Number(pageSize),
+      q
     );
   }
 

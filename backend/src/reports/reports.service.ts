@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ComplaintStatus, ParcelStatus, TripStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { TimeService } from '../common/time/time.service';
 
 type DateRange = {
   start: Date;
@@ -13,28 +12,29 @@ type RevenueGranularity = 'daily' | 'monthly';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly time: TimeService,
+  ) {}
 
   private parseDate(value: string | undefined, label: 'startDate' | 'endDate'): Date | undefined {
     if (!value) {
       return undefined;
     }
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
+    try {
+      return this.time.parse(value);
+    } catch {
       throw new BadRequestException(`Invalid ${label}. Expected an ISO date string.`);
     }
-    return parsed;
   }
 
   private normalizeRange(startInput?: string, endInput?: string, fallbackDays = 30): DateRange {
-    const endRaw = this.parseDate(endInput, 'endDate') ?? new Date();
-    const end = new Date(endRaw);
-    end.setHours(23, 59, 59, 999);
+    const endRaw = this.parseDate(endInput, 'endDate') ?? this.time.now();
+    const end = this.time.endOfDay(endRaw);
 
     const startRaw = this.parseDate(startInput, 'startDate')
-      ?? new Date(end.getTime() - (fallbackDays - 1) * DAY_MS);
-    const start = new Date(startRaw);
-    start.setHours(0, 0, 0, 0);
+      ?? this.time.addDays(end, -(fallbackDays - 1));
+    const start = this.time.startOfDay(startRaw);
 
     if (start > end) {
       throw new BadRequestException('startDate must be before endDate.');
@@ -44,10 +44,7 @@ export class ReportsService {
   }
 
   private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return this.time.format(date, 'yyyy-LL-dd');
   }
 
   private parseGranularity(input?: string): RevenueGranularity {
@@ -96,12 +93,12 @@ export class ReportsService {
 
     return {
       granularity,
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString(),
+      startDate: this.time.toISO(range.start),
+      endDate: this.time.toISO(range.end),
       totalAmount: Number(totalAmount.toFixed(2)),
       totalPayments: payments.length,
       data,
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.time.nowISO(),
     };
   }
 
@@ -176,12 +173,12 @@ export class ReportsService {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString(),
+      startDate: this.time.toISO(range.start),
+      endDate: this.time.toISO(range.end),
       totalParcels: parcels.length,
       statusBreakdown: Object.entries(statusBreakdown).map(([status, count]) => ({ status, count })),
       daily,
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.time.nowISO(),
     };
   }
 
@@ -231,8 +228,8 @@ export class ReportsService {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString(),
+      startDate: this.time.toISO(range.start),
+      endDate: this.time.toISO(range.end),
       totals: {
         open: openCount,
         closed: closedCount,
@@ -240,7 +237,7 @@ export class ReportsService {
         avgResolutionMinutes: Number((avgResolutionMs / 60000).toFixed(2)),
       },
       daily,
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.time.nowISO(),
     };
   }
 
@@ -351,12 +348,12 @@ export class ReportsService {
       }));
 
     return {
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString(),
+      startDate: this.time.toISO(range.start),
+      endDate: this.time.toISO(range.end),
       totalTrips: trips.length,
       statusBreakdown: Object.entries(statusBreakdown).map(([status, count]) => ({ status, count })),
       drivers,
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.time.nowISO(),
     };
   }
 
@@ -443,13 +440,13 @@ export class ReportsService {
     });
 
     return {
-      startDate: range.start.toISOString(),
-      endDate: range.end.toISOString(),
+      startDate: this.time.toISO(range.start),
+      endDate: this.time.toISO(range.end),
       total: records.length,
       totalDeclaredValue: Number(totalDeclaredValue.toFixed(2)),
       totalPaymentAmount: Number(totalPaymentAmount.toFixed(2)),
       records,
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.time.nowISO(),
     };
   }
 }

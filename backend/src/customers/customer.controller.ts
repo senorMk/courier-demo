@@ -53,11 +53,14 @@ export class CustomerController {
   @SetMetadata("roles", CUSTOMER_READ_ROLES)
   async getPaginated(
     @Query("page") page: number = 1,
-    @Query("pageSize") pageSize: number = 10
+    @Query("pageSize") pageSize: number = 10,
+    @Query("search") search?: string
   ) {
+    const cleanSearch = typeof search === "string" ? search.trim() : undefined;
     return this.customerService.getCustomersPaginated(
       Number(page),
-      Number(pageSize)
+      Number(pageSize),
+      cleanSearch && cleanSearch.length ? cleanSearch : undefined
     );
   }
 
