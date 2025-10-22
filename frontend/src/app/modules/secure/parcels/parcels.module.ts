@@ -4,6 +4,7 @@ import { parcelsRoutes } from "./parcels.routing";
 import { ParcelsComponent } from "./parcels.component";
 import { ParcelDialogComponent } from "./parcel-dialog.component";
 import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
+import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatPaginatorModule } from "@angular/material/paginator";
@@ -19,6 +20,7 @@ import { ParcelsService } from "./parcels.service";
     ParcelsComponent,
     ParcelDialogComponent,
     ParcelItemDialogComponent,
+    ParcelTrackDialogComponent,
     RouterModule.forChild(parcelsRoutes),
     CommonModule,
     MatTableModule,

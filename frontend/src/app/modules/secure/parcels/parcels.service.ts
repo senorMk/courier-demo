@@ -10,6 +10,10 @@ export interface Parcel {
   receiverId: string;
   destinationId: string;
   createdAt?: string;
+  office?: { name: string; branchCode: string };
+  TrackingCode?: { plainTextCode: string };
+  customer?: { firstName?: string; lastName?: string };
+  receiver?: { firstName?: string; lastName?: string };
 }
 
 export interface CustomerPayload {
@@ -29,6 +33,52 @@ export interface ParcelItem {
   pricePerUnit: number;
   value: number;
   amount: number;
+}
+
+export interface ParcelScanHistoryEntry {
+  id: string;
+  scannedAt: string;
+  scannedBy: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  };
+  office: {
+    id: string;
+    name: string;
+    branchCode: string;
+  } | null;
+  bay: {
+    id: string | null;
+    name: string;
+    bayType: string;
+  } | null;
+  route: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  trip: {
+    id: string;
+    driverName: string;
+    truckReg: string;
+    status: string;
+  } | null;
+  session: {
+    id: string;
+    mode: string;
+    startedAt: string;
+    closedAt: string | null;
+  };
+}
+
+export interface ParcelScanHistoryResponse {
+  parcel: {
+    id: string;
+    trackingCode: string | null;
+  };
+  scans: ParcelScanHistoryEntry[];
 }
 
 @Injectable()
@@ -124,6 +174,13 @@ export class ParcelsService {
       responseType: "blob",
       ...this.getHeader(),
     });
+  }
+
+  getParcelTrackHistory(parcelId: string): Observable<ParcelScanHistoryResponse> {
+    return this._httpClient.get<ParcelScanHistoryResponse>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/track`,
+      this.getHeader()
+    );
   }
 
   createParcelItem(parcelId: string, data: ParcelItem): Observable<ParcelItem> {
