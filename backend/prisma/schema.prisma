@@ -203,6 +203,7 @@ model Office {
   scanningSessions ScanningSession[]
   bays             Bay[]
   trips            Trip[]
+  destinationTrips Trip[]            @relation("TripDestination")
   routeId          String
   route            Route             @relation(fields: [routeId], references: [id])
   sentParcels      Parcel[]          @relation("SendingOffice")
@@ -266,6 +267,7 @@ model Trip {
   id          String            @id @default(uuid())
   routeId     String
   officeId    String
+  destinationOfficeId String?
   driverName  String
   truckReg    String
   status      TripStatus        @default(PLANNED)
@@ -274,6 +276,7 @@ model Trip {
   completedAt DateTime?
   route       Route             @relation(fields: [routeId], references: [id])
   office      Office            @relation(fields: [officeId], references: [id])
+  destinationOffice Office?      @relation("TripDestination", fields: [destinationOfficeId], references: [id])
   sessions    ScanningSession[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
