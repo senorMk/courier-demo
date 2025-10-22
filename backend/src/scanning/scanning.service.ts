@@ -16,7 +16,7 @@ export class ScanningService {
   constructor(
     private prisma: PrismaService,
     private readonly time: TimeService,
-  ) {}
+  ) { }
 
   async startSession(
     userId: string,
@@ -37,8 +37,9 @@ export class ScanningService {
     }
 
     // Validate bay if provided
+    let bay: any = null;
     if (bayId) {
-      const bay = await this.prisma.bay.findUnique({
+      bay = await this.prisma.bay.findUnique({
         where: { id: bayId },
       });
       if (!bay) throw new BadRequestException("Bay not found");
@@ -79,25 +80,23 @@ export class ScanningService {
           "Bay already has 2 active sessions. Please close one before starting a new session."
         );
       }
-    }
 
-    // Dispatch scanner: require a trip and ensure it is loadable
-    if (
-      Array.isArray((office as any).officeTypes) &&
-      (office as any).officeTypes.includes("DISPATCH")
-    ) {
-      if (!tripId) {
-        throw new BadRequestException(
-          "Dispatch scanning requires an active trip"
-        );
-      }
-      const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-      if (!trip) throw new BadRequestException("Trip not found");
-      if (trip.routeId !== routeId || trip.officeId !== officeId) {
-        throw new BadRequestException("Trip does not match route/office");
-      }
-      if (trip.status === "IN_TRANSIT" || trip.status === "COMPLETED") {
-        throw new BadRequestException("Trip already departed or completed");
+      // Dispatch bay scanner: require a trip and ensure it is loadable
+      // Only require trip if scanning from a DISPATCH bay, not for SENDING bay (which is just recording parcels)
+      if (bay.bayType === "DISPATCH") {
+        if (!tripId) {
+          throw new BadRequestException(
+            "Dispatch bay scanning requires an active trip. SENDING bay operations do not need a trip."
+          );
+        }
+        const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+        if (!trip) throw new BadRequestException("Trip not found");
+        if (trip.routeId !== routeId || trip.officeId !== officeId) {
+          throw new BadRequestException("Trip does not match route/office");
+        }
+        if (trip.status === "IN_TRANSIT" || trip.status === "COMPLETED") {
+          throw new BadRequestException("Trip already departed or completed");
+        }
       }
     }
 
@@ -132,15 +131,25 @@ export class ScanningService {
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
 
-    // Dispatch scanner: must be tied to a loadable trip
-    if (
-      Array.isArray((session.office as any)?.officeTypes) &&
-      (session.office as any).officeTypes.includes("DISPATCH")
-    ) {
+    const bayType = session.bay?.bayType;
+    const officeIsDispatch = Array.isArray((session.office as any)?.officeTypes) &&
+      (session.office as any).officeTypes.includes("DISPATCH");
+
+    // Only enforce the trip requirement if this session is associated with a dispatch bay.
+    // SENDING bay operations may happen inside the same office but do not require a trip.
+    if (bayType === "DISPATCH") {
       if (!session.trip)
         throw new BadRequestException(
           "Dispatch session must be linked to a trip"
         );
+      if (
+        session.trip.status === "IN_TRANSIT" ||
+        session.trip.status === "COMPLETED"
+      ) {
+        throw new BadRequestException("Cannot scan after trip departure");
+      }
+    } else if (!session.bay && officeIsDispatch && session.trip) {
+      // Legacy sessions created against a dispatch office without explicit bay still need trip validation
       if (
         session.trip.status === "IN_TRANSIT" ||
         session.trip.status === "COMPLETED"
@@ -167,22 +176,25 @@ export class ScanningService {
       throw new BadRequestException("Invalid tracking code");
     }
     const parcel = tracking.parcel;
-    // Validate route & office alignment
+    const officeTypes = Array.isArray((session.office as any)?.officeTypes)
+      ? (session.office as any).officeTypes
+      : [];
+    const isSendingContext = bayType === "SENDING" || (!bayType && officeTypes.includes("SENDING"));
     const correctDest = `${parcel.office.name} (${parcel.office.branchCode})`;
     const currentOffice = session.office
       ? `${session.office.name} (${session.office.branchCode})`
       : "current office";
-    if (parcel.office.routeId !== session.routeId) {
+
+    // Route validation is skipped for sending bays so parcels can simply be logged.
+    if (!isSendingContext && parcel.office.routeId !== session.routeId) {
       throw new BadRequestException(
         `Parcel meant for ${correctDest}, not ${currentOffice}.`
       );
     }
-    // Receiving-office offload: enforce correct office
-    if (
-      session.office &&
-      Array.isArray((session.office as any).officeTypes) &&
-      (session.office as any).officeTypes.includes("RECEIVING")
-    ) {
+
+    // Receiving-office offload: enforce correct office (sending bays are exempt).
+    const isReceivingOffice = officeTypes.includes("RECEIVING");
+    if (!isSendingContext && session.office && isReceivingOffice) {
       if (parcel.officeId !== session.officeId) {
         throw new BadRequestException(
           `Parcel meant for ${correctDest}, not ${currentOffice}.`
@@ -204,24 +216,7 @@ export class ScanningService {
         if (dupTrip)
           throw new BadRequestException("Parcel already scanned for this trip");
       }
-      // 2) If receiving office, ensure not already scanned at this office
-      if (
-        session.office &&
-        Array.isArray((session.office as any).officeTypes) &&
-        (session.office as any).officeTypes.includes("RECEIVING")
-      ) {
-        const dupOffice = await this.prisma.scannedParcel.findFirst({
-          where: {
-            parcelId: parcel.id,
-            scanningSession: { officeId: session.officeId },
-          },
-        });
-        if (dupOffice)
-          throw new BadRequestException(
-            "Parcel already scanned at this office"
-          );
-      }
-      // 3) Always block duplicate within the same session (defensive in case DB constraint missing)
+      // 2) Always block duplicate within the same session (defensive in case DB constraint missing)
       const dupSession = await this.prisma.scannedParcel.findUnique({
         where: {
           scanningSessionId_parcelId: {
@@ -410,7 +405,7 @@ export class ScanningService {
             const msisdn = normalizeZMBPhone(parcel.customer.phoneNumber as any);
             if (msisdn) await sendSms(msisdn, msgSender);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       return created;
     } catch (e) {

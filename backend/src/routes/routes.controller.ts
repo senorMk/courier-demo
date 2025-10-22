@@ -106,7 +106,7 @@ export class RoutesController {
 
   @Get("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
+  @SetMetadata("roles", ROUTE_READ_ROLES)
   async getOffice(@Param('id') id: string) {
     return this.routesService.getOffice(id);
   }

@@ -166,6 +166,18 @@ export class ParcelController {
     }
   }
 
+  @Get(":parcelId/track")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
+  async getParcelTrackHistory(@Param("parcelId") parcelId: string) {
+    try {
+      return await this.parcelService.getParcelScanHistory(parcelId);
+    } catch (e) {
+      console.error('ParcelController.getParcelTrackHistory error:', e);
+      throw e;
+    }
+  }
+
   @Get(":parcelId/receipts/download")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", PARCEL_RECEIPT_ROLES)

@@ -346,6 +346,156 @@ export class ParcelService {
     });
   }
 
+  async getParcelScanHistory(parcelId: string) {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      select: {
+        id: true,
+        TrackingCode: { select: { plainTextCode: true } },
+      },
+    });
+    if (!parcel) {
+      throw new NotFoundException("Parcel not found");
+    }
+
+    const scans = await this.prisma.scannedParcel.findMany({
+      where: { parcelId },
+      orderBy: { scannedAt: 'asc' },
+      include: {
+        scannedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        scanningSession: {
+          select: {
+            id: true,
+            mode: true,
+            startedAt: true,
+            closedAt: true,
+            bay: {
+              select: {
+                id: true,
+                name: true,
+                bayType: true,
+              },
+            },
+            office: {
+              select: {
+                id: true,
+                name: true,
+                branchCode: true,
+                officeTypes: true,
+              },
+            },
+            route: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+            trip: {
+              select: {
+                id: true,
+                driverName: true,
+                truckReg: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      parcel: {
+        id: parcel.id,
+        trackingCode: parcel.TrackingCode?.plainTextCode ?? null,
+      },
+      scans: scans.map((scan) => ({
+        id: scan.id,
+        scannedAt: scan.scannedAt,
+        scannedBy: {
+          id: scan.scannedBy.id,
+          firstName: scan.scannedBy.firstName,
+          lastName: scan.scannedBy.lastName,
+          email: scan.scannedBy.email,
+        },
+        office: scan.scanningSession.office
+          ? {
+              id: scan.scanningSession.office.id,
+              name: scan.scanningSession.office.name,
+              branchCode: scan.scanningSession.office.branchCode,
+            }
+          : null,
+        bay: (() => {
+          const session = scan.scanningSession;
+          if (session.bay) {
+            return {
+              id: session.bay.id,
+              name: session.bay.name,
+              bayType: session.bay.bayType,
+            };
+          }
+
+          const officeTypes = Array.isArray(session.office?.officeTypes)
+            ? session.office.officeTypes
+            : [];
+
+          let fallbackType: string | null = null;
+          if (session.trip) {
+            fallbackType = "DISPATCH";
+          } else if (officeTypes.includes("RECEIVING")) {
+            fallbackType = "RECEIVING";
+          } else if (officeTypes.includes("SENDING")) {
+            fallbackType = "SENDING";
+          }
+
+          const fallbackName = (() => {
+            if (fallbackType === "DISPATCH") return "Dispatch Bay";
+            if (fallbackType === "RECEIVING") return "Receiving Bay";
+            if (fallbackType === "SENDING") return "Sending Bay";
+            if (session.office?.name) return `${session.office.name} Bay`;
+            return "Unknown Bay";
+          })();
+
+          const resolvedType = fallbackType ?? "UNKNOWN";
+
+          return {
+            id: null,
+            name: fallbackName,
+            bayType: resolvedType,
+          };
+        })(),
+        route: scan.scanningSession.route
+          ? {
+              id: scan.scanningSession.route.id,
+              name: scan.scanningSession.route.name,
+              code: scan.scanningSession.route.code,
+            }
+          : null,
+        trip: scan.scanningSession.trip
+          ? {
+              id: scan.scanningSession.trip.id,
+              driverName: scan.scanningSession.trip.driverName,
+              truckReg: scan.scanningSession.trip.truckReg,
+              status: scan.scanningSession.trip.status,
+            }
+          : null,
+        session: {
+          id: scan.scanningSession.id,
+          mode: scan.scanningSession.mode,
+          startedAt: scan.scanningSession.startedAt,
+          closedAt: scan.scanningSession.closedAt,
+        },
+      })),
+    };
+  }
+
   async markCollected(parcelId: string): Promise<Parcel> {
     const parcel = await this.prisma.parcel.findUnique({
       where: { id: parcelId },
