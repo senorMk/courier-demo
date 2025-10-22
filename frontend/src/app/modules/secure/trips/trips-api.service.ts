@@ -29,7 +29,7 @@ export class TripsApiService {
     return this.http.get(`${this.baseUrl}/v1/trips?${q.toString()}`, this.getHeader());
   }
 
-  create(payload: { routeId: string; officeId: string; driverName: string; truckReg: string; }): Observable<any> {
+  create(payload: { routeId: string; officeId: string; destinationOfficeId: string; driverName: string; truckReg: string; }): Observable<any> {
     return this.http.post(`${this.baseUrl}/v1/trips`, payload, this.getHeader());
   }
 
