@@ -98,6 +98,16 @@ export const defaultNavigation: FuseNavigationItem[] = [
     link: "/secure/complaints",
     meta: metaFor("complaints"),
   },
+  {
+    id: "users",
+    title: "Users",
+    type: "basic",
+    icon: "heroicons_outline:user-group",
+    link: "/secure/users",
+    meta: {
+      allowedRoles: ["managing-director"],
+    },
+  },
 ];
 export const compactNavigation: FuseNavigationItem[] = [
   {

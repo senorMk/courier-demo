@@ -60,6 +60,7 @@ export class ScanningController {
       mode: "bag" | "individual";
       staffId?: string;
       tripId?: string;
+      bayId?: string;
     }
   ) {
     const user = req.user as JwtUser;
@@ -79,7 +80,8 @@ export class ScanningController {
       officeId,
       body.routeId,
       body.mode,
-      body.tripId
+      body.tripId,
+      body.bayId
     );
   }
 

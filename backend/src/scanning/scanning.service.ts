@@ -23,7 +23,8 @@ export class ScanningService {
     officeId: string,
     routeId: string,
     mode: "bag" | "individual",
-    tripId?: string
+    tripId?: string,
+    bayId?: string
   ) {
     // Basic validation: ensure office belongs to route
     const office = await this.prisma.office.findUnique({
@@ -33,6 +34,51 @@ export class ScanningService {
     if (office.routeId !== routeId) {
       // TODO: Clarify with PM - temporarily disabled to allow cross-route scanning
       // throw new BadRequestException("Office not on selected route");
+    }
+
+    // Validate bay if provided
+    if (bayId) {
+      const bay = await this.prisma.bay.findUnique({
+        where: { id: bayId },
+      });
+      if (!bay) throw new BadRequestException("Bay not found");
+      if (bay.officeId !== officeId) {
+        throw new BadRequestException("Bay does not belong to this office");
+      }
+      if (!bay.active) {
+        throw new BadRequestException("Bay is not active");
+      }
+
+      // Check if user is authorized for this bay type
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { authorizedBayTypes: true },
+      });
+
+      if (
+        user &&
+        Array.isArray(user.authorizedBayTypes) &&
+        user.authorizedBayTypes.length > 0 &&
+        !(user.authorizedBayTypes as any[]).includes(bay.bayType)
+      ) {
+        throw new BadRequestException(
+          `You are not authorized to work in ${bay.bayType} bay`
+        );
+      }
+
+      // Check if bay can start a new session (max 2 active sessions)
+      const activeSessionsCount = await this.prisma.scanningSession.count({
+        where: {
+          bayId,
+          closedAt: null,
+        },
+      });
+
+      if (activeSessionsCount >= 2) {
+        throw new BadRequestException(
+          "Bay already has 2 active sessions. Please close one before starting a new session."
+        );
+      }
     }
 
     // Dispatch scanner: require a trip and ensure it is loadable
@@ -70,6 +116,7 @@ export class ScanningService {
         officeId,
         routeId,
         mode,
+        bayId: bayId || null,
         tripId: tripId || null,
         mailBagCode: mode === "bag" ? `MB-${this.time.now().getTime()}` : null,
       },
@@ -80,7 +127,7 @@ export class ScanningService {
   async scanParcel(sessionId: string, code: string, userId: string) {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
-      include: { office: true, trip: true },
+      include: { office: true, trip: true, bay: true },
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -247,7 +294,7 @@ export class ScanningService {
   ) {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
-      include: { office: true, trip: true },
+      include: { office: true, trip: true, bay: true },
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -422,6 +469,13 @@ export class ScanningService {
         },
         route: { select: { id: true, name: true, code: true } },
         office: { select: { id: true, name: true, branchCode: true } },
+        bay: {
+          select: {
+            id: true,
+            name: true,
+            bayType: true,
+          },
+        },
         scans: {
           include: {
             scannedBy: {
@@ -472,6 +526,13 @@ export class ScanningService {
             },
             office: { select: { id: true, name: true, branchCode: true } },
             route: { select: { id: true, name: true, code: true } },
+            bay: {
+              select: {
+                id: true,
+                name: true,
+                bayType: true,
+              },
+            },
             _count: { select: { scans: true } },
           },
         }),

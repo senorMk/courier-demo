@@ -5,6 +5,12 @@ enum OfficeType {
   TRANSIT
 }
 
+enum BayType {
+  SENDING
+  RECEIVING
+  DISPATCH
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -23,21 +29,22 @@ model Role {
 }
 
 model User {
-  id               String            @id @default(uuid())
-  email            String            @unique
-  password         String
-  firstName        String?
-  lastName         String?
-  roleId           String
-  role             Role              @relation(fields: [roleId], references: [id])
-  logs             AccessLog[]
-  scanningSessions ScanningSession[] @relation("UserScanningSessions")
-  scans            ScannedParcel[]   @relation("UserParcelScans")
-  officeId         String?
-  office           Office?           @relation(fields: [officeId], references: [id])
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  reportedComplaints Complaint[]     @relation("ComplaintReporter")
+  id                 String            @id @default(uuid())
+  email              String            @unique
+  password           String
+  firstName          String?
+  lastName           String?
+  roleId             String
+  role               Role              @relation(fields: [roleId], references: [id])
+  logs               AccessLog[]
+  scanningSessions   ScanningSession[] @relation("UserScanningSessions")
+  scans              ScannedParcel[]   @relation("UserParcelScans")
+  officeId           String?
+  office             Office?           @relation(fields: [officeId], references: [id])
+  authorizedBayTypes BayType[]         @default([])
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  reportedComplaints Complaint[]       @relation("ComplaintReporter")
 }
 
 model AccessLog {
@@ -194,6 +201,7 @@ model Office {
   parcels          Parcel[]
   users            User[]
   scanningSessions ScanningSession[]
+  bays             Bay[]
   trips            Trip[]
   routeId          String
   route            Route             @relation(fields: [routeId], references: [id])
@@ -212,10 +220,25 @@ model BranchCode {
   updatedAt DateTime @updatedAt
 }
 
+model Bay {
+  id               String            @id @default(uuid())
+  name             String
+  bayType          BayType
+  officeId         String
+  office           Office            @relation(fields: [officeId], references: [id])
+  active           Boolean           @default(true)
+  scanningSessions ScanningSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([officeId, bayType])
+}
+
 model ScanningSession {
   id          String          @id @default(uuid())
   routeId     String
   officeId    String
+  bayId       String?
   staffId     String // references User.id
   mode        String // 'bag' | 'individual'
   mailBagCode String?         @unique
@@ -226,6 +249,7 @@ model ScanningSession {
   scans       ScannedParcel[]
   user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
   office      Office          @relation(fields: [officeId], references: [id])
+  bay         Bay?            @relation(fields: [bayId], references: [id])
   route       Route           @relation(fields: [routeId], references: [id])
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
