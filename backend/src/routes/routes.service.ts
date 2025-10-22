@@ -103,10 +103,10 @@ export class RoutesService {
 
   /**
    * Search offices by branch code, office type, or name
-   * Limited to 50 results
+   * Limited to 50 results. If no query provided, returns all offices.
    */
-  async searchOffices(q: string) {
-    const where: any = {
+  async searchOffices(q?: string) {
+    const where: any = q && q.trim() ? {
       OR: [
         { branchCode: { contains: q, mode: "insensitive" } },
         { areaCode: { contains: q, mode: "insensitive" } },
@@ -120,11 +120,11 @@ export class RoutesService {
           },
         },
       ],
-    };
+    } : {};
     const offices = await this.prisma.office.findMany({
       where,
-      take: 50,
-      orderBy: { createdAt: "desc" },
+      take: 100,
+      orderBy: { name: "asc" },
       include: { route: { select: { id: true, name: true, code: true } } },
     });
     return offices.map((office) => this.mapOfficeForResponse(office));

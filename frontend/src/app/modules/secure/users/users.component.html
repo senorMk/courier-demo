@@ -1,0 +1,95 @@
+<div class="flex flex-col flex-auto min-w-0">
+  <!-- Header -->
+  <div class="bg-card p-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-3xl font-semibold">Back Office Users</h2>
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon class="icon-size-5">add</mat-icon>
+        <span class="ml-2">Create User</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="flex flex-auto overflow-hidden">
+    <div class="flex flex-col flex-auto overflow-auto bg-card">
+      <table mat-table [dataSource]="dataSource" class="w-full">
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+        </ng-container>
+
+        <!-- First Name Column -->
+        <ng-container matColumnDef="firstName">
+          <th mat-header-cell *matHeaderCellDef>First Name</th>
+          <td mat-cell *matCellDef="let row">{{ row.firstName || '-' }}</td>
+        </ng-container>
+
+        <!-- Last Name Column -->
+        <ng-container matColumnDef="lastName">
+          <th mat-header-cell *matHeaderCellDef>Last Name</th>
+          <td mat-cell *matCellDef="let row">{{ row.lastName || '-' }}</td>
+        </ng-container>
+
+        <!-- Role Column -->
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>Role</th>
+          <td mat-cell *matCellDef="let row">{{ row.role?.name || '-' }}</td>
+        </ng-container>
+
+        <!-- Office Column -->
+        <ng-container matColumnDef="office">
+          <th mat-header-cell *matHeaderCellDef>Office</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.office ? row.office.name + ' (' + row.office.branchCode + ')' : '-' }}
+          </td>
+        </ng-container>
+
+        <!-- Authorized Bay Types Column -->
+        <ng-container matColumnDef="authorizedBayTypes">
+          <th mat-header-cell *matHeaderCellDef>Authorized Bays</th>
+          <td mat-cell *matCellDef="let row">
+            <div class="flex gap-1 flex-wrap">
+              <mat-chip *ngFor="let bay of row.authorizedBayTypes" class="text-xs">
+                {{ bay }}
+              </mat-chip>
+              <span *ngIf="!row.authorizedBayTypes || row.authorizedBayTypes.length === 0">All</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Created At Column -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'short' }}</td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let row">
+            <button mat-icon-button (click)="edit(row)" matTooltip="Edit">
+              <mat-icon class="icon-size-5">edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="delete(row)" matTooltip="Delete">
+              <mat-icon class="icon-size-5">delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount"
+        [pageSize]="pageSize"
+        [pageIndex]="currentPageIndex"
+        [pageSizeOptions]="[10, 20, 50, 100]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      ></mat-paginator>
+    </div>
+  </div>
+</div>

@@ -6,6 +6,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { ScanningSessionsService } from "../scanning-sessions-api.service";
+import { BayAuthorizationService } from "app/services/bay-authorization.service";
 import { MailbagSummaryComponent } from "./mailbag-summary.component";
 
 @Component({
@@ -26,6 +27,7 @@ export class ScanningWorkspaceComponent {
   private router = inject(Router);
   private api = inject(ScanningSessionsService);
   private _snackBar = inject(MatSnackBar);
+  private _bayAuth = inject(BayAuthorizationService);
 
   sessionId = signal<string>("");
   session = signal<any | null>(null);
@@ -106,13 +108,23 @@ export class ScanningWorkspaceComponent {
       });
       return;
     }
+    const isDispatch = this.session()?.bay?.bayType === "DISPATCH" || this._bayAuth.canScanDispatch();
     this.api.closeSession(this.sessionId()).subscribe({
-      next: () =>
-        this.router.navigate([
-          "/secure/scanning/session",
-          this.sessionId(),
-          "delivery-note",
-        ]),
+      next: () => {
+        if (isDispatch) {
+          this.router.navigate([
+            "/secure/scanning/session",
+            this.sessionId(),
+            "delivery-note",
+          ]);
+        } else {
+          this._snackBar.open("Session closed successfully", "Close", {
+            duration: 3000,
+            verticalPosition: "top",
+          });
+          this.router.navigate(["/secure/scanning"]);
+        }
+      },
       error: (err) => {
         const msg = err?.error?.message || "Failed to close session";
         this.error.set(msg);

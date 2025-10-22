@@ -84,6 +84,7 @@ export class AuthService {
             userId: payload.sub,
             firstName: response.firstName,
             lastName: response.lastName,
+            authorizedBayTypes: payload.authorizedBayTypes || [],
           };
 
           this.userSelectionService.setUser(user);

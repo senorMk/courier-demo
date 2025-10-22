@@ -22,6 +22,7 @@ import { RoutesModule } from './routes/routes.module';
 import { ScanningModule } from './scanning/scanning.module';
 import { ReportsModule } from './reports/reports.module';
 import { TimeModule } from "./common/time/time.module";
+import { BaysModule } from './bays/bays.module';
 
 
 @Module({
@@ -48,6 +49,7 @@ import { TimeModule } from "./common/time/time.module";
     ParcelModule,
     RoutesModule,
     ScanningModule,
+    BaysModule,
     ReportsModule,
     TimeModule,
   ],

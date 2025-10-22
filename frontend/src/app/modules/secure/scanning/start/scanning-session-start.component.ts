@@ -20,6 +20,7 @@ import { MatPaginatorModule, MatPaginator } from "@angular/material/paginator";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
 import { TripsApiService } from '../trips-api.service';
+import { BayAuthorizationService } from 'app/services/bay-authorization.service';
 
 @Component({
   selector: "scanning-session-start",
@@ -45,15 +46,28 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   private _routesSearch = inject(RoutesSearchService);
   private _snackBar = inject(MatSnackBar);
   private _tripsApi = inject(TripsApiService);
+  private _bayAuth = inject(BayAuthorizationService);
 
   routes = signal<RouteItem[]>([]);
   routesLoading = signal<boolean>(false);
+  // Check if user is dispatch bay cashier - only they should see trip assignment
+  get canAssignTrips(): boolean {
+    return this._bayAuth.canScanDispatch();
+  }
 
   form = this.fb.group({
     routeId: ["", Validators.required],
     mode: ["bag", Validators.required],
-    tripId: [""]
+    tripId: [""] // Validators will be added dynamically based on bay type
   });
+
+  constructor() {
+    // Non-dispatch users don't select a bay, so drop the validator up front
+    if (this.canAssignTrips) {
+      this.form.controls.tripId.setValidators([Validators.required]);
+      this.form.controls.tripId.updateValueAndValidity({ emitEvent: false });
+    }
+  }
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   displayedColumns = ["route", "mode", "staff", "createdAt", "status", "actions"];
@@ -81,12 +95,14 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       next: (routes) => {
         this.routes.set(routes || []);
         const current = this.form.controls.routeId.value;
-        if (current) {
-          this.fetchOpenTrips(current);
-        } else if (routes?.length === 1) {
-          const onlyRoute = routes[0];
-          this.form.controls.routeId.setValue(onlyRoute.id);
-          this.fetchOpenTrips(onlyRoute.id);
+        if (this.canAssignTrips) {
+          if (current) {
+            this.fetchOpenTrips(current);
+          } else if (routes?.length === 1) {
+            const onlyRoute = routes[0];
+            this.form.controls.routeId.setValue(onlyRoute.id);
+            this.fetchOpenTrips(onlyRoute.id);
+          }
         }
       },
       error: () => {
@@ -97,7 +113,15 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     });
   }
 
-  openTrips: Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string }> = [];
+  openTrips: Array<{
+    id: string;
+    driverName: string;
+    truckReg: string;
+    status: string;
+    createdAt: string;
+    destinationOffice?: { name: string; branchCode: string; }
+    destinationOfficeId?: string;
+  }> = [];
 
   onRouteSelected(routeId: string | null) {
     if (!routeId) {
@@ -111,7 +135,9 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     this.form.controls.routeId.setValue(routeId, { emitEvent: false });
     this.form.controls.routeId.updateValueAndValidity({ emitEvent: false });
 
-    this.fetchOpenTrips(routeId);
+    if (this.canAssignTrips) {
+      this.fetchOpenTrips(routeId);
+    }
   }
 
   private fetchOpenTrips(routeId: string) {
@@ -123,7 +149,15 @@ export class ScanningSessionStartComponent implements AfterViewInit {
 
     this._tripsApi.getOpenTrips(routeId).subscribe({
       next: (trips) => {
-        this.openTrips = trips || [];
+        this.openTrips = (trips || []).map((t: any) => ({
+          id: t.id,
+          driverName: t.driverName,
+          truckReg: t.truckReg,
+          status: t.status,
+          createdAt: t.createdAt,
+          destinationOffice: t.destinationOffice,
+          destinationOfficeId: t.destinationOfficeId,
+        }));
         this.form.patchValue({ tripId: '' }, { emitEvent: false });
       },
       error: () => {
@@ -160,12 +194,14 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   start() {
     if (this.form.invalid) return;
     const value = this.form.value;
-    this._scanningSessionsService.startSession({
+    const payload: any = {
       routeId: value.routeId!,
       mode: value.mode as any,
-      // Pass tripId only if selected; backend enforces requirement for DISPATCH offices
+      // Pass tripId only if selected; backend enforces requirement for DISPATCH bays
       ...(value.tripId ? { tripId: value.tripId } : {}),
-    }).subscribe({
+    };
+
+    this._scanningSessionsService.startSession(payload).subscribe({
       next: (session: any) => {
         this.router.navigate(["/secure/scanning/session", session.id]);
       },

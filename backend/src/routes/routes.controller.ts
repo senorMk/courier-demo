@@ -95,21 +95,18 @@ export class RoutesController {
 
   /**
    * Search offices by branch code, office type, or name
-   * @param query search string
+   * @param query search string (optional)
    */
   @Get("offices/search")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", ROUTE_READ_ROLES)
-  async searchOffices(@Query("q") q: string) {
-    // if (!q || q.trim().length === 0) {
-    //   return [];
-    // }
+  async searchOffices(@Query("q") q?: string) {
     return this.routesService.searchOffices(q);
   }
 
   @Get("offices/:id")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", ROUTE_ADMIN_ROLES)
+  @SetMetadata("roles", ROUTE_READ_ROLES)
   async getOffice(@Param('id') id: string) {
     return this.routesService.getOffice(id);
   }

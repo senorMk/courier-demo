@@ -240,6 +240,16 @@ export const appRoutes: Route[] = [
             (m) => m.ComplaintsComponent
           ),
       },
+      {
+        path: "users",
+        data: {
+          allowedRoles: ["managing-director"],
+        },
+        loadChildren: () =>
+          import("app/modules/secure/users/users.module").then(
+            (m) => m.UsersModule
+          ),
+      },
     ],
   },
 ];

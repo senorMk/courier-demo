@@ -15,6 +15,7 @@ export interface UserInformation {
   userId: string;
   firstName: string;
   lastName: string;
+  authorizedBayTypes: string[];
 }
 
 const defaultUser: UserInformation = {
@@ -26,6 +27,7 @@ const defaultUser: UserInformation = {
   userId: "",
   firstName: "",
   lastName: "",
+  authorizedBayTypes: [],
 };
 
 @Injectable({
@@ -92,6 +94,7 @@ export class UserSelectionService {
         typeof userProfile?.firstName === "string" ? userProfile.firstName : "",
       lastName:
         typeof userProfile?.lastName === "string" ? userProfile.lastName : "",
+      authorizedBayTypes: Array.isArray(userProfile?.authorizedBayTypes) ? userProfile.authorizedBayTypes : [],
     };
 
     if (!normalized.roleKey && normalized.role) {

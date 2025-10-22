@@ -11,13 +11,33 @@ export class TripsService {
     private readonly time: TimeService,
   ) {}
 
-  async createTrip(payload: { routeId: string; officeId: string; driverName: string; truckReg: string; }) {
-    // Validate office belongs to route
-    const office = await this.prisma.office.findUnique({ where: { id: payload.officeId } });
-    if (!office) throw new BadRequestException('Office not found');
-    if (office.routeId !== payload.routeId) throw new BadRequestException('Office not on selected route');
+  async createTrip(payload: { routeId: string; officeId: string; destinationOfficeId: string; driverName: string; truckReg: string; }) {
+    const { routeId, officeId, destinationOfficeId, driverName, truckReg } = payload;
 
-    return this.prisma.trip.create({ data: { ...payload, status: 'PLANNED' as any } });
+    // Validate origin office belongs to route
+    const origin = await this.prisma.office.findUnique({ where: { id: officeId } });
+    if (!origin) throw new BadRequestException('Origin office not found');
+    if (origin.routeId !== routeId) throw new BadRequestException('Origin office not on selected route');
+
+    // Validate destination office belongs to route
+    const destination = await this.prisma.office.findUnique({ where: { id: destinationOfficeId } });
+    if (!destination) throw new BadRequestException('Destination office not found');
+    if (destination.routeId !== routeId) throw new BadRequestException('Destination office not on selected route');
+
+    if (destinationOfficeId === officeId) {
+      throw new BadRequestException('Destination office must be different from origin office');
+    }
+
+    return this.prisma.trip.create({
+      data: {
+        routeId,
+        officeId,
+        destinationOfficeId,
+        driverName,
+        truckReg,
+        status: 'PLANNED' as any,
+      },
+    });
   }
 
   async assignTrip(id: string, payload: { driverName?: string; truckReg?: string; }) {
@@ -131,7 +151,7 @@ export class TripsService {
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        include: { route: true, office: true },
+        include: { route: true, office: true, destinationOffice: true },
       }),
       this.prisma.trip.count({ where }),
     ]);
@@ -143,7 +163,21 @@ export class TripsService {
     return this.prisma.trip.findMany({
       where: { routeId, officeId, status: { in: ['PLANNED' as any, 'LOADING' as any] } },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, driverName: true, truckReg: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        driverName: true,
+        truckReg: true,
+        status: true,
+        createdAt: true,
+        destinationOfficeId: true,
+        destinationOffice: {
+          select: {
+            id: true,
+            name: true,
+            branchCode: true,
+          },
+        },
+      },
     });
   }
 }

@@ -26,6 +26,8 @@ import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { debounceTime, distinctUntilChanged } from "rxjs/operators";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { BayAuthorizationService } from "app/services/bay-authorization.service";
+import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -68,6 +70,12 @@ export class ParcelsComponent implements OnInit {
   @ViewChild(MatPaginator) paginator?: MatPaginator;
   readonly searchControl = new FormControl('', { nonNullable: true });
   private readonly destroyRef = inject(DestroyRef);
+  private readonly bayAuth = inject(BayAuthorizationService);
+
+  // Bay authorization check - only SENDING bay users can create parcels
+  get canCreateParcels(): boolean {
+    return this.bayAuth.canCreateParcels();
+  }
 
   constructor(
     private _service: ParcelsService,
@@ -188,6 +196,22 @@ export class ParcelsComponent implements OnInit {
       error: () => {
         this._snackBar.open('Failed to download receipt', 'Close', { duration: 3000, verticalPosition: 'top' });
       }
+    });
+  }
+
+  openTrackDialog(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) {
+      this._snackBar.open('Parcel identifier missing', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    this._dialog.open(ParcelTrackDialogComponent, {
+      width: '900px',
+      data: {
+        parcelId: id,
+        trackingCode: (row as any)?.TrackingCode?.plainTextCode,
+      },
     });
   }
 

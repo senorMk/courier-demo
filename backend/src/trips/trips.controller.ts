@@ -26,7 +26,7 @@ export class TripsController {
 
   @Post()
   @SetMetadata('roles', TRIP_MANAGE_ROLES)
-  create(@Body() body: { routeId: string; officeId: string; driverName: string; truckReg: string; }) {
+  create(@Body() body: { routeId: string; officeId: string; destinationOfficeId: string; driverName: string; truckReg: string; }) {
     return this.service.createTrip(body);
   }
 

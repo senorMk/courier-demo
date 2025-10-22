@@ -39,57 +39,111 @@ export class TripsComponent {
   form = this.fb.group({
     routeId: ['', Validators.required],
     officeId: ['', Validators.required],
+    destinationOfficeId: ['', Validators.required],
     driverName: ['', Validators.required],
     truckReg: ['', Validators.required],
   });
 
-  displayedColumns = ['route', 'office', 'driver', 'truck', 'status', 'actions'];
+  displayedColumns = ['route', 'office', 'destination', 'driver', 'truck', 'status', 'actions'];
   trips: any[] = [];
 
   routes = signal<RouteItem[]>([]);
   routesLoading = signal<boolean>(false);
-  office = signal<OfficeItem | null>(null);
+  offices = signal<OfficeItem[]>([]);
+  officesLoading = signal<boolean>(false);
   drivers = signal<DriverItem[]>([]);
   trucks = signal<TruckItem[]>([]);
 
   constructor() {
     this.initializeSelections();
     this.refresh();
+    this.setupRouteChangeListener();
+    this.setupOfficeChangeListener();
+  }
+
+  private setupRouteChangeListener() {
+    this.form.controls.routeId.valueChanges.subscribe((routeId) => {
+      if (routeId) {
+        this.loadOfficesForRoute(routeId);
+      } else {
+        this.offices.set([]);
+        this.form.patchValue({ officeId: '', destinationOfficeId: '' });
+      }
+    });
+  }
+
+  private loadOfficesForRoute(routeId: string) {
+    this.officesLoading.set(true);
+    this.officesSearch.search('').subscribe({
+      next: (allOffices) => {
+        const filteredOffices = allOffices.filter(o =>
+          o.routeId === routeId || o.route?.id === routeId
+        );
+        this.offices.set(filteredOffices);
+
+        // Auto-select if only one office or if user's office is in the list
+        const token = localStorage.getItem('accessToken') || '';
+        const payload: any = token ? decodeJwt(token) : null;
+        const userOfficeId = payload?.officeId;
+
+        if (filteredOffices.length === 1) {
+          this.form.patchValue({ officeId: filteredOffices[0].id });
+          if (this.form.controls['destinationOfficeId'].value === filteredOffices[0].id) {
+            this.form.patchValue({ destinationOfficeId: '' });
+          }
+        } else if (userOfficeId && filteredOffices.some(o => o.id === userOfficeId)) {
+          this.form.patchValue({ officeId: userOfficeId });
+        }
+
+        // Ensure destination selection remains valid for new route
+        const currentDestination = this.form.controls['destinationOfficeId'].value;
+        if (currentDestination && !filteredOffices.some(o => o.id === currentDestination)) {
+          this.form.patchValue({ destinationOfficeId: '' });
+        }
+
+        this.officesLoading.set(false);
+      },
+      error: () => {
+        this.offices.set([]);
+        this.officesLoading.set(false);
+      },
+    });
+  }
+
+  private setupOfficeChangeListener() {
+    this.form.controls.officeId.valueChanges.subscribe((originId) => {
+      const destinationControl = this.form.controls.destinationOfficeId;
+      if (originId && destinationControl.value === originId) {
+        destinationControl.patchValue('');
+      }
+    });
   }
 
   private initializeSelections() {
     const token = localStorage.getItem('accessToken') || '';
     const payload: any = token ? decodeJwt(token) : null;
-    const officeId = payload?.officeId;
+    const userOfficeId = payload?.officeId;
 
-    if (officeId) {
-      this.form.patchValue({ officeId });
-      this.officesSearch.getById(officeId).subscribe({
-        next: (office) => {
-          this.office.set(office);
-          const routeId = office?.routeId || office?.route?.id;
-          if (routeId && !this.form.controls['routeId'].value) {
-            this.form.patchValue({ routeId });
-          }
-          this.ensureRouteInOptions(routeId, office?.route);
-        },
-        error: () => {
-          this.office.set(null);
-        },
-      });
-    }
-
+    // Load routes
     this.routesLoading.set(true);
     this.routesSearch.listRoutes(200).subscribe({
       next: (routes) => {
         this.routes.set(routes || []);
-        const officeRouteId = this.office()?.routeId || this.office()?.route?.id;
-        if (officeRouteId) {
-          this.ensureRouteInOptions(officeRouteId, this.office()?.route);
-          const routeControl = this.form.controls['routeId'];
-          if (!routeControl.value && routes.some((r) => r.id === officeRouteId)) {
-            routeControl.patchValue(officeRouteId);
-          }
+
+        // If user has an office, try to pre-select their route
+        if (userOfficeId) {
+          this.officesSearch.getById(userOfficeId).subscribe({
+            next: (office) => {
+              const routeId = office?.routeId || office?.route?.id;
+              if (routeId && routes.some((r) => r.id === routeId)) {
+                this.form.patchValue({ routeId });
+                // loadOfficesForRoute will be triggered by valueChanges
+              }
+            },
+            error: () => {
+              // Ignore error, user can select route manually
+            },
+          });
         }
       },
       error: () => {
@@ -99,32 +153,17 @@ export class TripsComponent {
       complete: () => this.routesLoading.set(false),
     });
 
+    // Load drivers
     this.driversApi.list(200).subscribe({
       next: (drivers) => this.drivers.set(drivers || []),
       error: () => this.drivers.set([]),
     });
 
+    // Load trucks
     this.trucksApi.list(200).subscribe({
       next: (trucks) => this.trucks.set(trucks || []),
       error: () => this.trucks.set([]),
     });
-  }
-
-  private ensureRouteInOptions(routeId?: string, route?: { id: string; name: string; code?: string }) {
-    if (!routeId) return;
-    const current = this.routes();
-    if (current.some((r) => r.id === routeId)) return;
-    if (route) {
-      this.routes.set([
-        { id: route.id, name: route.name, code: route.code ?? '' },
-        ...current,
-      ]);
-    } else {
-      this.routes.set([
-        { id: routeId, name: 'Selected Route', code: '' },
-        ...current,
-      ]);
-    }
   }
 
   formatDriverName(driver: DriverItem | { firstName?: string; lastName?: string } | null): string {
@@ -152,7 +191,8 @@ export class TripsComponent {
   createTrip() {
     if (this.form.invalid) return;
     const { routeId, officeId, driverName, truckReg } = this.form.value as any;
-    this.tripsApi.create({ routeId, officeId, driverName, truckReg }).subscribe({
+    const destinationOfficeId = this.form.value.destinationOfficeId as string;
+    this.tripsApi.create({ routeId, officeId, destinationOfficeId, driverName, truckReg }).subscribe({
       next: () => {
         this.refresh();
       },
