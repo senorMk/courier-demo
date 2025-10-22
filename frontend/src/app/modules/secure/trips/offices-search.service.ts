@@ -29,8 +29,13 @@ export class OfficesSearchService {
     return httpOptions;
   }
 
-  search(q: string): Observable<OfficeItem[]> {
-    return this.http.get<OfficeItem[]>(`${this.baseUrl}/v1/routes/offices/search?q=${encodeURIComponent(q)}`, this.getHeader());
+  search(q?: string): Observable<OfficeItem[]> {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    return this.http.get<OfficeItem[]>(`${this.baseUrl}/v1/routes/offices/search${query}`, this.getHeader());
+  }
+
+  listAll(): Observable<OfficeItem[]> {
+    return this.http.get<OfficeItem[]>(`${this.baseUrl}/v1/routes/offices/search`, this.getHeader());
   }
 
   getById(id: string): Observable<OfficeItem> {
