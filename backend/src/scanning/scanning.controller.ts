@@ -58,31 +58,38 @@ export class ScanningController {
       routeId: string;
       officeId?: string;
       mode: "bag" | "individual";
-      staffId?: string;
+      staffId: string;
       tripId?: string;
       bayId?: string;
     }
   ) {
     const user = req.user as JwtUser;
+    const userId = user.sub || (user as any).userId;
+    const staffId = body.staffId?.trim();
+    if (!staffId) {
+      throw new BadRequestException("Staff ID is required");
+    }
+    if (!userId) {
+      throw new BadRequestException("User context missing");
+    }
     let officeId = body.officeId ?? user.officeId ?? null;
-    const staffId = body.staffId || user.sub || (user as any).userId;
     if (!officeId) {
-      if (!staffId) throw new BadRequestException("User context missing");
       const dbUser = await this.prisma.user.findUnique({
-        where: { id: staffId },
+        where: { id: userId },
         select: { officeId: true },
       });
       officeId = dbUser?.officeId ?? null;
     }
     if (!officeId) throw new BadRequestException("Office context required");
-    return this.service.startSession(
+    return this.service.startSession({
       staffId,
+      userId,
       officeId,
-      body.routeId,
-      body.mode,
-      body.tripId,
-      body.bayId
-    );
+      routeId: body.routeId,
+      mode: body.mode,
+      tripId: body.tripId,
+      bayId: body.bayId,
+    });
   }
 
   @Post(":id/scan")

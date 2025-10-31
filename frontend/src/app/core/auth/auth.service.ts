@@ -71,20 +71,32 @@ export class AuthService {
           // Set the authenticated flag to true
           this._authenticated = true;
 
+          const payload = decodeJwt(response.access_token) || {};
+          const firstName = (payload as any).firstName || "";
+          const lastName = (payload as any).lastName || "";
+          const fullName = [firstName, lastName]
+            .map((part: string) => part?.trim())
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          const email = (payload as any).email || "";
+
           // Store the user on the user service
-          this._userService.user = response.user;
+          this._userService.user = {
+            id: (payload as any).sub || "",
+            name: fullName || email || "Unknown User",
+            email: email || "",
+          };
 
-          const payload = decodeJwt(response.access_token);
-
-          let user = {
-            role: payload.role,
+          const user = {
+            role: (payload as any).role,
             token: response.access_token,
-            email: payload.email,
-            createdAt: response.createdAt,
-            userId: payload.sub,
-            firstName: response.firstName,
-            lastName: response.lastName,
-            authorizedBayTypes: payload.authorizedBayTypes || [],
+            email,
+            createdAt: (payload as any).createdAt,
+            userId: (payload as any).sub,
+            firstName,
+            lastName,
+            authorizedBayTypes: (payload as any).authorizedBayTypes || [],
           };
 
           this.userSelectionService.setUser(user);
@@ -110,24 +122,30 @@ export class AuthService {
           of(false)
         ),
         switchMap((response: any) => {
-          // Replace the access token with the new one if it's available on
-          // the response object.
-          //
-          // This is an added optional step for better security. Once you sign
-          // in using the token, you should generate a new one on the server
-          // side and attach it to the response object. Then the following
-          // piece of code can replace the token with the refreshed one.
-          if (response.access_token) {
+          const token = response?.access_token || this.accessToken;
+          if (response?.access_token) {
             this.accessToken = response.access_token;
           }
 
           // Set the authenticated flag to true
           this._authenticated = true;
 
-          // Store the user on the user service
-          this._userService.user = response.user;
+          const payload = decodeJwt(token) || {};
+          const firstName = (payload as any).firstName || "";
+          const lastName = (payload as any).lastName || "";
+          const fullName = [firstName, lastName]
+            .map((part: string) => part?.trim())
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          const email = (payload as any).email || "";
 
-          // Return true
+          this._userService.user = {
+            id: (payload as any).sub || "",
+            name: fullName || email || "Unknown User",
+            email: email || "",
+          };
+
           return of(true);
         })
       );

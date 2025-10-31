@@ -21,6 +21,7 @@ import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
 import { TripsApiService } from '../trips-api.service';
 import { BayAuthorizationService } from 'app/services/bay-authorization.service';
+import { MatInputModule } from "@angular/material/input";
 
 @Component({
   selector: "scanning-session-start",
@@ -36,6 +37,7 @@ import { BayAuthorizationService } from 'app/services/bay-authorization.service'
     MatTableModule,
     MatPaginatorModule,
     MatSnackBarModule,
+    MatInputModule,
   ],
   templateUrl: "./scanning-session-start.component.html",
 })
@@ -56,6 +58,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   }
 
   form = this.fb.group({
+    staffId: ["", Validators.required],
     routeId: ["", Validators.required],
     mode: ["bag", Validators.required],
     tripId: [""] // Validators will be added dynamically based on bay type
@@ -177,6 +180,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
             routeName: s.route?.name || s.routeId,
             mode: s.mode,
             staff:
+              s.staffId ||
               ((s.user?.firstName || "") + " " + (s.user?.lastName || "")).trim(),
             createdAt: s.createdAt,
             status: s.closedAt ? "Completed" : "Draft",
@@ -194,9 +198,17 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   start() {
     if (this.form.invalid) return;
     const value = this.form.value;
+    const staffId = (value.staffId ?? '').trim();
+    if (!staffId) {
+      this.form.controls.staffId.setErrors({ required: true });
+      this.form.controls.staffId.markAsTouched();
+      this.form.controls.staffId.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
     const payload: any = {
       routeId: value.routeId!,
       mode: value.mode as any,
+      staffId,
       // Pass tripId only if selected; backend enforces requirement for DISPATCH bays
       ...(value.tripId ? { tripId: value.tripId } : {}),
     };
