@@ -70,7 +70,6 @@ export async function generateDeliveryNote(
   doc.text(`Office: ${session.office?.name} (${session.office?.branchCode})`);
   doc.text(`Mode: ${session.mode}`);
   doc.text(`Staff: ${((session.user?.firstName || '') + ' ' + (session.user?.lastName || '')).trim()}`);
-  doc.text(`Staff ID: ${session.staffId}`);
   doc.text(`Started: ${time.format(session.startedAt, 'dd/LL/yyyy HH:mm')}`);
   if ((session as any).closedAt)
     doc.text(`Closed: ${time.format((session as any).closedAt as unknown as string, 'dd/LL/yyyy HH:mm')}`);

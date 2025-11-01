@@ -1,5 +1,5 @@
 import { BooleanInput } from "@angular/cdk/coercion";
-import { NgClass, NgIf } from "@angular/common";
+import { NgClass } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -22,7 +22,6 @@ import { finalize, Subject, takeUntil, takeWhile, tap, timer } from "rxjs";
 @Component({
   selector: "user",
   templateUrl: "./user.component.html",
-  styleUrls: ["./user.component.scss"],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   exportAs: "user",
@@ -30,8 +29,7 @@ import { finalize, Subject, takeUntil, takeWhile, tap, timer } from "rxjs";
     MatButtonModule,
     MatMenuModule,
     MatIconModule,
-  NgClass,
-  NgIf,
+    NgClass,
     MatDividerModule,
   ],
 })
@@ -78,15 +76,6 @@ export class UserComponent implements OnInit, OnDestroy {
         // Mark for check
         this._changeDetectorRef.markForCheck();
       });
-  }
-
-  get displayName(): string {
-    const name = this.user?.name?.trim();
-    return name && name.length > 0 ? name : "Unknown User";
-  }
-
-  get displayEmail(): string {
-    return this.user?.email?.trim() || "No email on file";
   }
 
   /**
