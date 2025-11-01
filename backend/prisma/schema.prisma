@@ -134,16 +134,16 @@ enum ParcelStatus {
 }
 
 model Complaint {
-  id         String           @id @default(uuid())
-  parcelId   String
+  id        String           @id @default(uuid())
+  parcelId  String
   reporterId String
-  parcel     Parcel           @relation(fields: [parcelId], references: [id])
-  reporter   User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
-  reason     String?
-  status     ComplaintStatus  @default(OPEN)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  events     ComplaintEvent[]
+  parcel    Parcel           @relation(fields: [parcelId], references: [id])
+  reporter  User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  reason    String?
+  status    ComplaintStatus  @default(OPEN)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  events    ComplaintEvent[]
 }
 
 enum ComplaintStatus {
@@ -240,8 +240,7 @@ model ScanningSession {
   routeId     String
   officeId    String
   bayId       String?
-  staffId     String
-  userId      String
+  staffId     String // references User.id
   mode        String // 'bag' | 'individual'
   mailBagCode String?         @unique
   startedAt   DateTime        @default(now())
@@ -249,7 +248,7 @@ model ScanningSession {
   tripId      String?
   trip        Trip?           @relation(fields: [tripId], references: [id])
   scans       ScannedParcel[]
-  user        User            @relation("UserScanningSessions", fields: [userId], references: [id])
+  user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
   office      Office          @relation(fields: [officeId], references: [id])
   bay         Bay?            @relation(fields: [bayId], references: [id])
   route       Route           @relation(fields: [routeId], references: [id])
@@ -265,22 +264,22 @@ enum TripStatus {
 }
 
 model Trip {
-  id                  String            @id @default(uuid())
-  routeId             String
-  officeId            String
+  id          String            @id @default(uuid())
+  routeId     String
+  officeId    String
   destinationOfficeId String?
-  driverName          String
-  truckReg            String
-  status              TripStatus        @default(PLANNED)
-  plannedAt           DateTime          @default(now())
-  departedAt          DateTime?
-  completedAt         DateTime?
-  route               Route             @relation(fields: [routeId], references: [id])
-  office              Office            @relation(fields: [officeId], references: [id])
-  destinationOffice   Office?           @relation("TripDestination", fields: [destinationOfficeId], references: [id])
-  sessions            ScanningSession[]
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  driverName  String
+  truckReg    String
+  status      TripStatus        @default(PLANNED)
+  plannedAt   DateTime          @default(now())
+  departedAt  DateTime?
+  completedAt DateTime?
+  route       Route             @relation(fields: [routeId], references: [id])
+  office      Office            @relation(fields: [officeId], references: [id])
+  destinationOffice Office?      @relation("TripDestination", fields: [destinationOfficeId], references: [id])
+  sessions    ScanningSession[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model Driver {

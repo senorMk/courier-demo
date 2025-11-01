@@ -84,52 +84,25 @@
           <!-- Progress Steps -->
           <div class="flex items-center gap-2 mt-6">
             <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
-                 [class.active]="form.get('staffId')?.value"
-                 [class.completed]="!!form.get('staffId')?.value">1</div>
-            <div class="h-0.5 bg-white/30 flex-1"></div>
-            <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
-                 [class.active]="form.get('routeId')?.value"
-                 [class.completed]="!!form.get('routeId')?.value">2</div>
+                 [class.active]="form.get('routeId')?.value">1</div>
             <div class="h-0.5 bg-white/30 flex-1"></div>
             <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
                  [class.active]="form.get('mode')?.value"
-                 [class.completed]="!canAssignTrips ? form.valid : !!form.get('tripId')?.value">3</div>
+                 [class.completed]="!canAssignTrips && form.valid">2</div>
             <ng-container *ngIf="canAssignTrips">
               <div class="h-0.5 bg-white/30 flex-1"></div>
               <div class="step-indicator w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold"
-                   [class.active]="form.get('tripId')?.value"
-                   [class.completed]="form.valid">4</div>
+                   [class.completed]="form.valid">3</div>
             </ng-container>
           </div>
         </div>
 
         <!-- Form Content -->
-  <form class="p-8 space-y-10" [formGroup]="form" (ngSubmit)="startNewSession()">
-          <!-- Step 1: Staff ID -->
+        <div class="p-8 space-y-10">
+          <!-- Step 1: Route and Bay Selection -->
           <div class="space-y-6">
             <div class="flex items-center gap-3 mb-6">
               <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">1</div>
-              <h3 class="text-2xl font-semibold text-gray-900">Enter Staff ID</h3>
-            </div>
-
-            <div class="grid gap-6 md:grid-cols-2">
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Staff ID</mat-label>
-                <input matInput placeholder="Enter staff ID" formControlName="staffId" />
-                <mat-icon matSuffix [class.text-green-500]="form.get('staffId')?.valid">
-                  {{ form.get('staffId')?.valid ? 'check_circle' : 'person' }}
-                </mat-icon>
-                <mat-error *ngIf="form.controls['staffId'].hasError('required')">
-                  Staff ID is required
-                </mat-error>
-              </mat-form-field>
-            </div>
-          </div>
-
-          <!-- Step 2: Route and Bay Selection -->
-          <div class="space-y-6">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">2</div>
               <h3 class="text-2xl font-semibold text-gray-900">Select Route & Bay</h3>
             </div>
 
@@ -156,10 +129,10 @@
             </div>
           </div>
 
-          <!-- Step 3: Scanning Mode -->
+          <!-- Step 2: Scanning Mode -->
           <div class="space-y-6">
             <div class="flex items-center gap-3 mb-6">
-              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">3</div>
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">2</div>
               <h3 class="text-2xl font-semibold text-gray-900">Scanning Mode</h3>
             </div>
 
@@ -198,10 +171,10 @@
             </mat-radio-group>
           </div>
 
-          <!-- Step 4: Trip Assignment (Only for Dispatch Bay) -->
+          <!-- Step 3: Trip Assignment (Only for Dispatch Bay) -->
           <div *ngIf="canAssignTrips" class="space-y-6" [class.opacity-50]="!form.get('mode')?.value">
             <div class="flex items-center gap-3 mb-6">
-              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">4</div>
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">3</div>
               <h3 class="text-2xl font-semibold text-gray-900">Trip Assignment</h3>
               <span class="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-full font-medium">Required</span>
             </div>
@@ -256,31 +229,26 @@
             <div class="max-w-md mx-auto">
               <button mat-flat-button color="primary"
                       class="w-full h-14 text-xl font-bold"
-                      type="submit"
+                      (click)="startNewSession()"
                       [disabled]="form.invalid">
                 <mat-icon class="mr-3 text-2xl">play_arrow</mat-icon>
                 Start Scanning Session
               </button>
 
               <div *ngIf="form.invalid" class="mt-4 text-center">
-                <div class="flex items-center justify-center gap-2"
-                     [class.text-red-600]="form.controls['staffId'].invalid || (canAssignTrips && form.controls['tripId'].invalid)"
-                     [class.text-gray-500]="!form.controls['staffId'].invalid && (!canAssignTrips || !form.controls['tripId'].invalid)">
+                <div class="flex items-center justify-center gap-2" [class.text-red-600]="canAssignTrips && form.controls['tripId'].invalid" [class.text-gray-500]="!canAssignTrips || !form.controls['tripId'].invalid">
                   <mat-icon class="text-lg">info</mat-icon>
-                  <span *ngIf="form.controls['staffId'].invalid">
-                    Enter your staff ID to continue
-                  </span>
-                  <span *ngIf="!form.controls['staffId'].invalid && canAssignTrips && form.controls['tripId'].invalid">
+                  <span *ngIf="canAssignTrips && form.controls['tripId'].invalid">
                     Please select a trip to continue (required for Dispatch bay)
                   </span>
-                  <span *ngIf="!form.controls['staffId'].invalid && (!canAssignTrips || !form.controls['tripId'].invalid)">
+                  <span *ngIf="!canAssignTrips || !form.controls['tripId'].invalid">
                     Please complete the required fields above to continue
                   </span>
                 </div>
               </div>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
