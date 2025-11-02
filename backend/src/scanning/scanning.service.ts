@@ -18,23 +18,14 @@ export class ScanningService {
     private readonly time: TimeService,
   ) { }
 
-  async startSession({
-    userId,
-    staffId,
-    officeId,
-    routeId,
-    mode,
-    tripId,
-    bayId,
-  }: {
-    userId: string;
-    staffId: string;
-    officeId: string;
-    routeId: string;
-    mode: "bag" | "individual";
-    tripId?: string;
-    bayId?: string;
-  }) {
+  async startSession(
+    userId: string,
+    officeId: string,
+    routeId: string,
+    mode: "bag" | "individual",
+    tripId?: string,
+    bayId?: string
+  ) {
     // Basic validation: ensure office belongs to route
     const office = await this.prisma.office.findUnique({
       where: { id: officeId },
@@ -118,11 +109,9 @@ export class ScanningService {
       }
     }
 
-    const cleanedStaffId = staffId.trim();
     const session = await this.prisma.scanningSession.create({
       data: {
-        staffId: cleanedStaffId,
-        userId,
+        staffId: userId,
         officeId,
         routeId,
         mode,
@@ -131,7 +120,6 @@ export class ScanningService {
         mailBagCode: mode === "bag" ? `MB-${this.time.now().getTime()}` : null,
       },
     });
-    console.log("Scanning session created:", session);
     return session;
   }
 
@@ -447,7 +435,6 @@ export class ScanningService {
       where: { id: sessionId },
       data: { closedAt: this.time.now() },
     });
-    console.log("Scanning session closed:", closed);
 
     // Generate delivery note PDF once on close (no-op if already exists)
     try {
