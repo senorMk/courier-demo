@@ -34,10 +34,11 @@ export class ScanningSessionsService {
 
   startSession(payload: {
     routeId: string;
-    bayId: string;
     mode: "bag" | "individual";
+    staffId: string;
     officeId?: string;
     tripId?: string;
+    bayId?: string;
   }): Observable<any> {
     const url = `${this.baseUrl}/v1/scanning/start`;
     return this._http.post(url, payload, this.getHeader());
