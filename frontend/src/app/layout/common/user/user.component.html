@@ -1,21 +1,6 @@
 <!-- Button -->
-<button
-    mat-button
-    type="button"
-    class="user-trigger"
-    [matMenuTriggerFor]="userActions"
->
-    <div class="user-trigger__details">
-        <span class="user-trigger__name">{{ displayName }}</span>
-        <span class="user-trigger__email">{{ displayEmail }}</span>
-    </div>
-
-
-    <mat-icon
-        class="user-trigger__caret"
-        [class.user-trigger__caret--solo]="!showAvatar"
-        [svgIcon]="'heroicons_mini:chevron-down'"
-    ></mat-icon>
+<button mat-icon-button [matMenuTriggerFor]="userActions">
+    <mat-icon [svgIcon]="'heroicons_outline:user'"></mat-icon>
 </button>
 
 <mat-menu [xPosition]="'before'" #userActions="matMenu">
