@@ -77,4 +77,15 @@ export class TripsController {
     const officeId = user?.officeId;
     return this.service.openTrips(routeId, officeId);
   }
+
+  @Get('arrived')
+  @SetMetadata('roles', [...TRIP_EXECUTION_ROLES, 'receiver'])
+  arrived(
+    @Req() req: Request,
+    @Query('routeId') routeId: string,
+  ) {
+    const user: any = (req as any).user || {};
+    const officeId = user?.officeId;
+    return this.service.arrivedTrips(routeId, officeId);
+  }
 }
