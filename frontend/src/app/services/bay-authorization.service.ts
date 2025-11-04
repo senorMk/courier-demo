@@ -6,6 +6,7 @@ export enum BayType {
   SENDING = 'SENDING',
   RECEIVING = 'RECEIVING',
   DISPATCH = 'DISPATCH',
+  SORTING = 'SORTING',
 }
 
 @Injectable({
@@ -106,5 +107,16 @@ export class BayAuthorizationService {
     }
 
     return user.authorizedBayTypes.includes(BayType.DISPATCH);
+  }
+
+  /**
+   * Check if user requires trip assignment when scanning
+   * Only dispatchers need to assign trips - sorters and receivers don't
+   */
+  requiresTripAssignment(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    // Only dispatcher role requires trip assignment
+    return user.roleKey === 'dispatcher';
   }
 }

@@ -1,6 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
     ApplicationConfig,
+    ErrorHandler,
     inject,
     isDevMode,
     provideAppInitializer,
@@ -18,9 +19,16 @@ import { MockApiService } from 'app/mock-api';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { GlobalErrorHandler } from './core/error/global-error-handler.service';
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        // Global Error Handler
+        {
+            provide: ErrorHandler,
+            useClass: GlobalErrorHandler,
+        },
+
         provideAnimations(),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideRouter(
@@ -69,11 +77,25 @@ export const appConfig: ApplicationConfig = {
             loader: TranslocoHttpLoader,
         }),
         provideAppInitializer(() => {
+            console.log('🌍 [APP_INIT] Loading translations...');
+            console.time('⏱️ Translation Loading');
+
             const translocoService = inject(TranslocoService);
             const defaultLang = translocoService.getDefaultLang();
+
+            console.log(`📝 [APP_INIT] Default language: ${defaultLang}`);
             translocoService.setActiveLang(defaultLang);
 
-            return firstValueFrom(translocoService.load(defaultLang));
+            return firstValueFrom(translocoService.load(defaultLang))
+                .then(() => {
+                    console.timeEnd('⏱️ Translation Loading');
+                    console.log('✅ [APP_INIT] Translations loaded successfully');
+                })
+                .catch((error) => {
+                    console.timeEnd('⏱️ Translation Loading');
+                    console.error('❌ [APP_INIT] Failed to load translations:', error);
+                    throw error;
+                });
         }),
 
         // Fuse

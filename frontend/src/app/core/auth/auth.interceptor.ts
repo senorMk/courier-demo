@@ -33,6 +33,13 @@ export const authInterceptor = (
         req.url.includes(endpoint)
     );
 
+    const hasToken = !!authService.accessToken;
+    console.log(`🔐 [AUTH_INTERCEPTOR] ${req.method} ${req.url}`, {
+        isPublicEndpoint,
+        hasToken,
+        willAddAuth: !isPublicEndpoint && hasToken
+    });
+
     // Request
     //
     // If the access token exists and it's not a public endpoint, add the Authorization header.
@@ -54,6 +61,7 @@ export const authInterceptor = (
         catchError((error) => {
             // Catch "401 Unauthorized" responses
             if (error instanceof HttpErrorResponse && error.status === 401) {
+                console.warn('🚫 [AUTH_INTERCEPTOR] 401 Unauthorized - Signing out');
                 // Sign out
                 authService.signOut();
 

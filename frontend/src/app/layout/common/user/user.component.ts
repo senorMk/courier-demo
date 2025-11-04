@@ -1,5 +1,5 @@
 import { BooleanInput } from "@angular/cdk/coercion";
-import { NgClass } from "@angular/common";
+import { NgClass, CommonModule } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -17,6 +17,7 @@ import { Router } from "@angular/router";
 import { UserService } from "app/core/user/user.service";
 import { User } from "app/core/user/user.types";
 import { AuthService } from "app/core/auth/auth.service";
+import { UserSelectionService } from "app/services/user-selection.service";
 import { finalize, Subject, takeUntil, takeWhile, tap, timer } from "rxjs";
 
 @Component({
@@ -26,6 +27,7 @@ import { finalize, Subject, takeUntil, takeWhile, tap, timer } from "rxjs";
   changeDetection: ChangeDetectionStrategy.OnPush,
   exportAs: "user",
   imports: [
+    CommonModule,
     MatButtonModule,
     MatMenuModule,
     MatIconModule,
@@ -46,6 +48,7 @@ export class UserComponent implements OnInit, OnDestroy {
 
   @Input() showAvatar: boolean = true;
   user: User;
+  userEmail: string = '';
 
   private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -56,7 +59,8 @@ export class UserComponent implements OnInit, OnDestroy {
     private _changeDetectorRef: ChangeDetectorRef,
     private _router: Router,
     private _userService: UserService,
-    private _authService: AuthService
+    private _authService: AuthService,
+    private _userSelectionService: UserSelectionService
   ) {}
 
   // -----------------------------------------------------------------------------------------------------
@@ -72,6 +76,16 @@ export class UserComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this._unsubscribeAll))
       .subscribe((user: User) => {
         this.user = user;
+
+        // Mark for check
+        this._changeDetectorRef.markForCheck();
+      });
+
+    // Get email from UserSelectionService
+    this._userSelectionService.selectedUser$
+      .pipe(takeUntil(this._unsubscribeAll))
+      .subscribe((userInfo) => {
+        this.userEmail = userInfo.email || '';
 
         // Mark for check
         this._changeDetectorRef.markForCheck();

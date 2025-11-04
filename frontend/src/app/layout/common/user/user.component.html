@@ -1,7 +1,10 @@
-<!-- Button -->
-<button mat-icon-button [matMenuTriggerFor]="userActions">
-    <mat-icon [svgIcon]="'heroicons_outline:user'"></mat-icon>
-</button>
+<!-- User info with email -->
+<div class="flex items-center gap-2">
+    <span class="text-sm font-medium text-gray-700" *ngIf="userEmail">{{ userEmail }}</span>
+    <button mat-icon-button [matMenuTriggerFor]="userActions">
+        <mat-icon [svgIcon]="'heroicons_outline:user'"></mat-icon>
+    </button>
+</div>
 
 <mat-menu [xPosition]="'before'" #userActions="matMenu">
     <button mat-menu-item (click)="signOut()">

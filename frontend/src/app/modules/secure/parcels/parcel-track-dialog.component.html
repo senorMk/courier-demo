@@ -30,7 +30,7 @@
         <th mat-header-cell *matHeaderCellDef>Bay</th>
         <td mat-cell *matCellDef="let entry">
           <div class="cell-primary">{{ entry.bay?.name || '—' }}</div>
-          <div class="cell-secondary" *ngIf="entry.bay?.bayType">{{ entry.bay?.bayType }}</div>
+          <div class="cell-secondary" *ngIf="entry.bay?.bayType">{{ bayTypeLabel(entry.bay?.bayType) }}</div>
         </td>
       </ng-container>
 

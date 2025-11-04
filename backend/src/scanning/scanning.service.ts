@@ -186,21 +186,21 @@ export class ScanningService {
       : "current office";
 
     // Route validation is skipped for sending bays so parcels can simply be logged.
-    // if (!isSendingContext && parcel.office.routeId !== session.routeId) {
-    //   throw new BadRequestException(
-    //     `Parcel meant for ${correctDest}, not ${currentOffice}.`
-    //   );
-    // }
+    if (!isSendingContext && parcel.office.routeId !== session.routeId) {
+      throw new BadRequestException(
+        `Parcel meant for ${correctDest}, not ${currentOffice}.`
+      );
+    }
 
     // Receiving-office offload: enforce correct office (sending bays are exempt).
     const isReceivingOffice = officeTypes.includes("RECEIVING");
-    // if (!isSendingContext && session.office && isReceivingOffice) {
-    //   if (parcel.officeId !== session.officeId) {
-    //     throw new BadRequestException(
-    //       `Parcel meant for ${correctDest}, not ${currentOffice}.`
-    //     );
-    //   }
-    // }
+    if (!isSendingContext && session.office && isReceivingOffice) {
+      if (parcel.officeId !== session.officeId) {
+        throw new BadRequestException(
+          `Parcel meant for ${correctDest}, not ${currentOffice}.`
+        );
+      }
+    }
 
     // Record scan (unique constraint prevents duplicates)
     try {
@@ -324,21 +324,21 @@ export class ScanningService {
     const currentOffice2 = session.office
       ? `${session.office.name} (${session.office.branchCode})`
       : "current office";
-    // if (parcel.office.routeId !== session.routeId) {
-    //   throw new BadRequestException(
-    //     `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
-    //   );
-    // }
+    if (parcel.office.routeId !== session.routeId) {
+      throw new BadRequestException(
+        `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
+      );
+    }
     if (
       session.office &&
       Array.isArray((session.office as any).officeTypes) &&
       (session.office as any).officeTypes.includes("RECEIVING")
     ) {
-      // if (parcel.officeId !== session.officeId) {
-      //   throw new BadRequestException(
-      //     `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
-      //   );
-      // }
+      if (parcel.officeId !== session.officeId) {
+        throw new BadRequestException(
+          `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
+        );
+      }
     }
 
     try {

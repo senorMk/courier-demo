@@ -9,17 +9,23 @@ export const NoAuthGuard: CanActivateFn | CanActivateChildFn = (
 ) => {
     const router: Router = inject(Router);
 
+    console.log(`🚫 [NO_AUTH_GUARD] Checking access to: ${state.url}`);
+
     // Check the authentication status
     return inject(AuthService)
         .check()
         .pipe(
             switchMap((authenticated) => {
+                console.log(`🔍 [NO_AUTH_GUARD] Authenticated: ${authenticated}`);
+
                 // If the user is authenticated...
                 if (authenticated) {
-                    return of(router.parseUrl(''));
+                    console.log(`🔄 [NO_AUTH_GUARD] User is authenticated, redirecting to signed-in-redirect`);
+                    return of(router.parseUrl('signed-in-redirect'));
                 }
 
                 // Allow the access
+                console.log(`✅ [NO_AUTH_GUARD] User not authenticated, allowing access`);
                 return of(true);
             })
         );
