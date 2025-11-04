@@ -8,7 +8,9 @@ export type RoleKey =
   | "managing-director"
   | "customer-service-agent"
   | "customer-service-director"
-  | "dispatcher";
+  | "dispatcher"
+  | "sorter"
+  | "receiver";
 
 export type FeatureKey =
   | "dashboard"
@@ -66,6 +68,8 @@ const ROLE_NAME_ALIASES: Record<string, RoleKey> = {
   "cs-agent": "customer-service-agent",
   "customer-service-director": "customer-service-director",
   "cs-director": "customer-service-director",
+  sorter: "sorter",
+  receiver: "receiver",
 };
 
 const ROLE_KEYS: RoleKey[] = [
@@ -79,6 +83,8 @@ const ROLE_KEYS: RoleKey[] = [
   "customer-service-agent",
   "customer-service-director",
   "dispatcher",
+  "sorter",
+  "receiver",
 ];
 
 const ALL_FEATURES: FeatureKey[] = [
@@ -104,13 +110,10 @@ const ALL_FEATURES: FeatureKey[] = [
 
 const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
   customer: [],
-  // Cashiers can operate in sending or receiving offices; we grant the union of
-  // features they need in either context, without exposing reports or dashboards.
+  // Cashiers handle parcel creation and customer information only
   cashier: [
     "parcels",
-    "parcels-history",
     "customers",
-    "scanning",
   ],
   supervisor: [
     "dashboard",
@@ -166,15 +169,23 @@ const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
   ],
   dispatcher: [
     "dashboard",
-    "parcels",
-    "parcels-history",
     "scanning",
-    "routes",
-    "destinations",
+    "parcels",
     "trips",
     "drivers",
     "trucks",
-    "live-tracking",
+  ],
+  // Sorter scans and sorts parcels at sending office for dispatch
+  sorter: [
+    "scanning",
+    "parcels",
+    "parcels-history",
+  ],
+  // Receiver scans and verifies incoming parcels
+  receiver: [
+    "scanning",
+    "parcels",
+    "parcels-history",
   ],
 };
 
@@ -210,7 +221,9 @@ const ROLE_DEFAULT_ROUTE: Record<RoleKey, string> = {
   "managing-director": "/secure/dashboard",
   "customer-service-agent": "/secure/complaints",
   "customer-service-director": "/secure/complaints",
-  dispatcher: "/secure/trips",
+  dispatcher: "/secure/dashboard",
+  sorter: "/secure/scanning",
+  receiver: "/secure/scanning",
 };
 
 export const REPORT_TYPES: ReportType[] = [

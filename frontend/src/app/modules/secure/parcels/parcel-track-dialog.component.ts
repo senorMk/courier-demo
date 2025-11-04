@@ -72,4 +72,17 @@ export class ParcelTrackDialogComponent implements OnInit {
     const name = `${first} ${last}`.trim();
     return name || entry.scannedBy?.email || "Unknown";
   }
+
+  bayTypeLabel(bayType: string | null | undefined): string {
+    if (!bayType) return "";
+
+    const labels: Record<string, string> = {
+      'SENDING': 'Sending Bay',
+      'RECEIVING': 'Receiving Bay',
+      'SORTING': 'Sorting Bay',
+      'DISPATCH': 'Dispatch Bay',
+    };
+
+    return labels[bayType] || bayType;
+  }
 }

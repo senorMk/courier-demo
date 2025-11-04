@@ -22,5 +22,13 @@ export class TripsApiService {
       this.header()
     );
   }
+
+  // Returns in-transit trips heading to current user's office on a route (for receiver validation)
+  getArrivedTrips(routeId: string): Observable<Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string; completedAt: string }>> {
+    return this.http.get<Array<{ id: string; driverName: string; truckReg: string; status: string; createdAt: string; completedAt: string }>>(
+      `${this.baseUrl}/v1/trips/arrived?routeId=${encodeURIComponent(routeId)}`,
+      this.header()
+    );
+  }
 }
 

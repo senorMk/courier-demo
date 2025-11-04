@@ -45,6 +45,7 @@ export async function generateDeliveryNote(
       office: true,
       route: true,
       user: { select: { firstName: true, lastName: true, email: true } },
+      trip: { select: { driverName: true, truckReg: true, status: true } },
       scans: {
         include: {
           parcel: { include: { TrackingCode: true, office: true } },
@@ -70,6 +71,13 @@ export async function generateDeliveryNote(
   doc.text(`Office: ${session.office?.name} (${session.office?.branchCode})`);
   doc.text(`Mode: ${session.mode}`);
   doc.text(`Staff: ${((session.user?.firstName || '') + ' ' + (session.user?.lastName || '')).trim()}`);
+
+  // Include trip details if session is linked to a trip
+  if ((session as any).trip) {
+    doc.text(`Driver: ${(session as any).trip.driverName || 'N/A'}`);
+    doc.text(`Truck Registration: ${(session as any).trip.truckReg || 'N/A'}`);
+  }
+
   doc.text(`Started: ${time.format(session.startedAt, 'dd/LL/yyyy HH:mm')}`);
   if ((session as any).closedAt)
     doc.text(`Closed: ${time.format((session as any).closedAt as unknown as string, 'dd/LL/yyyy HH:mm')}`);

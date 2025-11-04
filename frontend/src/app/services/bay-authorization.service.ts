@@ -6,6 +6,7 @@ export enum BayType {
   SENDING = 'SENDING',
   RECEIVING = 'RECEIVING',
   DISPATCH = 'DISPATCH',
+  SORTING = 'SORTING',
 }
 
 @Injectable({
@@ -106,5 +107,42 @@ export class BayAuthorizationService {
     }
 
     return user.authorizedBayTypes.includes(BayType.DISPATCH);
+  }
+
+  /**
+   * Check if user requires trip assignment when scanning
+   * Dispatchers assign trips for dispatch, receivers select trips for validation
+   */
+  requiresTripAssignment(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    // Dispatchers and receivers both need to select trips
+    // Dispatchers: to assign parcels to trips
+    // Receivers: to validate incoming parcels against trip manifest
+    return user.roleKey === 'dispatcher' || user.roleKey === 'receiver';
+  }
+
+  /**
+   * Check if user can access delivery notes
+   * Dispatchers, sorters, and receivers can access delivery notes
+   */
+  canAccessDeliveryNotes(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    // Dispatchers, sorters, and receivers can access delivery notes
+    return user.roleKey === 'dispatcher' || user.roleKey === 'sorter' || user.roleKey === 'receiver';
+  }
+
+  /**
+   * Check if user can scan for sorting (must be authorized for SORTING bay)
+   */
+  canScanSorting(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    if (!user.authorizedBayTypes || user.authorizedBayTypes.length === 0) {
+      return true;
+    }
+
+    return user.authorizedBayTypes.includes(BayType.SORTING);
   }
 }

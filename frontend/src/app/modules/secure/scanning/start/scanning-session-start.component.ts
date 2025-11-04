@@ -21,6 +21,7 @@ import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { RoutesSearchService, RouteItem } from "../../routes/routes-search.service";
 import { TripsApiService } from '../trips-api.service';
 import { BayAuthorizationService } from 'app/services/bay-authorization.service';
+import { UserSelectionService } from 'app/services/user-selection.service';
 
 @Component({
   selector: "scanning-session-start",
@@ -47,12 +48,24 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   private _snackBar = inject(MatSnackBar);
   private _tripsApi = inject(TripsApiService);
   private _bayAuth = inject(BayAuthorizationService);
+  private _userSelection = inject(UserSelectionService);
 
   routes = signal<RouteItem[]>([]);
   routesLoading = signal<boolean>(false);
-  // Check if user is dispatch bay cashier - only they should see trip assignment
+  // Check if user requires trip assignment - dispatchers and receivers need this
   get canAssignTrips(): boolean {
-    return this._bayAuth.canScanDispatch();
+    return this._bayAuth.requiresTripAssignment();
+  }
+
+  // Check if user can access delivery notes - dispatchers and sorters
+  get canAccessDeliveryNotes(): boolean {
+    return this._bayAuth.canAccessDeliveryNotes();
+  }
+
+  // Check if user is a receiver (different trip selection logic)
+  get isReceiver(): boolean {
+    const user = this._userSelection.getCurrentUser();
+    return user.roleKey === 'receiver';
   }
 
   form = this.fb.group({
@@ -147,7 +160,12 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       return;
     }
 
-    this._tripsApi.getOpenTrips(routeId).subscribe({
+    // Receivers fetch in-transit trips (IN_TRANSIT), dispatchers fetch open trips (PLANNED/LOADING)
+    const apiCall = this.isReceiver
+      ? this._tripsApi.getArrivedTrips(routeId)
+      : this._tripsApi.getOpenTrips(routeId);
+
+    apiCall.subscribe({
       next: (trips) => {
         this.openTrips = (trips || []).map((t: any) => ({
           id: t.id,
@@ -155,8 +173,10 @@ export class ScanningSessionStartComponent implements AfterViewInit {
           truckReg: t.truckReg,
           status: t.status,
           createdAt: t.createdAt,
+          completedAt: t.completedAt,
           destinationOffice: t.destinationOffice,
           destinationOfficeId: t.destinationOfficeId,
+          office: t.office,
         }));
         this.form.patchValue({ tripId: '' }, { emitEvent: false });
       },
@@ -194,11 +214,26 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   start() {
     if (this.form.invalid) return;
     const value = this.form.value;
+
+    // Determine bay type based on user role
+    const userInfo = this._userSelection.getCurrentUser();
+    let bayType: string | undefined;
+
+    if (userInfo.roleKey === 'sorter') {
+      bayType = 'SORTING';  // Sorters work at sorting bay
+    } else if (userInfo.roleKey === 'receiver') {
+      bayType = 'RECEIVING';  // Receivers work at receiving bay
+    } else if (userInfo.roleKey === 'dispatcher') {
+      bayType = 'DISPATCH';  // Dispatchers work at dispatch bay
+    }
+
     const payload: any = {
       routeId: value.routeId!,
       mode: value.mode as any,
       // Pass tripId only if selected; backend enforces requirement for DISPATCH bays
       ...(value.tripId ? { tripId: value.tripId } : {}),
+      // Add bay type based on role
+      ...(bayType ? { bayType } : {}),
     };
 
     this._scanningSessionsService.startSession(payload).subscribe({

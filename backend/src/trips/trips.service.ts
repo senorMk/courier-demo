@@ -62,10 +62,26 @@ export class TripsService {
   }
 
   async startTrip(id: string) {
+    // Get current trip status before update
+    const currentTrip = await this.prisma.trip.findUnique({ where: { id } });
+    if (!currentTrip) throw new NotFoundException('Trip not found');
+
     // Set status IN_TRANSIT and departedAt
     const trip = await this.prisma.trip.update({
       where: { id },
       data: { status: 'IN_TRANSIT' as any, departedAt: this.time.now() },
+    });
+
+    // Log the trip start
+    await this.prisma.tripLog.create({
+      data: {
+        tripId: id,
+        action: 'STARTED',
+        fromStatus: currentTrip.status as any,
+        toStatus: 'IN_TRANSIT' as any,
+        note: `Trip started from ${currentTrip.driverName} with truck ${currentTrip.truckReg}`,
+        timestamp: this.time.now(),
+      },
     });
 
     // Fetch all parcels scanned under this trip's sessions
@@ -112,31 +128,21 @@ export class TripsService {
       data: { status: 'COMPLETED' as any, completedAt: this.time.now() },
     });
 
-    // Optional: send arrival SMS to sender & receiver
-    const sessions = await this.prisma.scanningSession.findMany({ where: { tripId: id }, select: { id: true } });
-    const sessionIds = sessions.map(s => s.id);
-    if (sessionIds.length) {
-      const scans = await this.prisma.scannedParcel.findMany({
-        where: { scanningSessionId: { in: sessionIds } },
-        include: { parcel: { include: { customer: true, receiver: true, TrackingCode: true, office: true } } }
-      });
-      for (const s of scans) {
-        const p = s.parcel;
-        if (!p) continue;
-        const code = p.TrackingCode?.plainTextCode || p.id;
-        const dest = p.office?.name ? `${p.office.name} (${p.office.branchCode})` : 'destination office';
-        const msgSender = `PCS: Parcel ${code} has arrived at ${dest}.`;
-        const msgReceiver = `PCS: Parcel ${code} for you has arrived at ${dest}.`;
-        try {
-          const customerPhone = normalizeZMBPhone(p.customer?.phoneNumber);
-          if (customerPhone) await sendSms(customerPhone, msgSender);
-        } catch {}
-        try {
-          const receiverPhone = normalizeZMBPhone(p.receiver?.phoneNumber);
-          if (receiverPhone) await sendSms(receiverPhone, msgReceiver);
-        } catch {}
-      }
-    }
+    // Log the trip completion
+    await this.prisma.tripLog.create({
+      data: {
+        tripId: id,
+        action: 'COMPLETED',
+        fromStatus: trip.status as any,
+        toStatus: 'COMPLETED' as any,
+        note: `Trip completed. Driver: ${trip.driverName}, Truck: ${trip.truckReg}`,
+        timestamp: this.time.now(),
+      },
+    });
+
+    // SMS notifications removed: customers should only receive SMS when receiver role scans parcels
+    // This ensures SMS is sent only when parcels are ready for collection, not just when trip completes
+
     return updated;
   }
 
@@ -169,6 +175,43 @@ export class TripsService {
         truckReg: true,
         status: true,
         createdAt: true,
+        destinationOfficeId: true,
+        destinationOffice: {
+          select: {
+            id: true,
+            name: true,
+            branchCode: true,
+          },
+        },
+      },
+    });
+  }
+
+  async arrivedTrips(routeId: string, destinationOfficeId: string) {
+    if (!routeId || !destinationOfficeId) throw new BadRequestException('routeId and destinationOfficeId are required');
+    // Fetch in-transit trips heading to this office (for receiver validation)
+    return this.prisma.trip.findMany({
+      where: {
+        routeId,
+        destinationOfficeId,
+        status: 'IN_TRANSIT' as any
+      },
+      orderBy: { departedAt: 'desc' },
+      select: {
+        id: true,
+        driverName: true,
+        truckReg: true,
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        officeId: true,
+        office: {
+          select: {
+            id: true,
+            name: true,
+            branchCode: true,
+          },
+        },
         destinationOfficeId: true,
         destinationOffice: {
           select: {

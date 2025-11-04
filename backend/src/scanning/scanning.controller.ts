@@ -32,6 +32,8 @@ const SCANNING_ROLES = [
   "assistant-driver",
   "dispatcher",
   "operations-officer",
+  "sorter",
+  "receiver",
 ];
 
 interface JwtUser {
@@ -61,6 +63,7 @@ export class ScanningController {
       staffId?: string;
       tripId?: string;
       bayId?: string;
+      bayType?: string;
     }
   ) {
     const user = req.user as JwtUser;
@@ -75,13 +78,47 @@ export class ScanningController {
       officeId = dbUser?.officeId ?? null;
     }
     if (!officeId) throw new BadRequestException("Office context required");
+
+    // Resolve bayId from bayType if provided
+    let bayId = body.bayId;
+    if (!bayId && body.bayType) {
+      // Find or create bay with the specified type for this office
+      let bay = await this.prisma.bay.findFirst({
+        where: {
+          officeId,
+          bayType: body.bayType as any,
+          active: true,
+        },
+      });
+
+      if (!bay) {
+        // Create a bay with the specified type
+        const bayTypeLabels: Record<string, string> = {
+          'SENDING': 'Sending Bay',
+          'RECEIVING': 'Receiving Bay',
+          'SORTING': 'Sorting Bay',
+          'DISPATCH': 'Dispatch Bay',
+        };
+        bay = await this.prisma.bay.create({
+          data: {
+            officeId,
+            bayType: body.bayType as any,
+            name: bayTypeLabels[body.bayType] || `${body.bayType} Bay`,
+            active: true,
+          },
+        });
+      }
+
+      bayId = bay.id;
+    }
+
     return this.service.startSession(
       staffId,
       officeId,
       body.routeId,
       body.mode,
       body.tripId,
-      body.bayId
+      bayId
     );
   }
 

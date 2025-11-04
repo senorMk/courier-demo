@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
@@ -31,6 +32,7 @@ interface Office {
     MatInputModule,
     MatButtonModule,
     MatSelectModule,
+    MatRadioModule,
     ReactiveFormsModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
@@ -45,6 +47,7 @@ export class UserDialogComponent implements OnInit {
   bayTypes = [
     { value: 'SENDING', label: 'Sending Bay' },
     { value: 'RECEIVING', label: 'Receiving Bay' },
+    { value: 'SORTING', label: 'Sorting Bay' },
     { value: 'DISPATCH', label: 'Dispatch Bay' },
   ];
 
@@ -63,7 +66,7 @@ export class UserDialogComponent implements OnInit {
       lastName: [''],
       roleId: ['', Validators.required],
       officeId: [''],
-      authorizedBayTypes: [[]],
+      authorizedBayTypes: [null],
     });
 
     if (this.data) {
@@ -74,7 +77,7 @@ export class UserDialogComponent implements OnInit {
         lastName: this.data.lastName || '',
         roleId: this.data.roleId || '',
         officeId: this.data.officeId || '',
-        authorizedBayTypes: this.data.authorizedBayTypes || [],
+        authorizedBayTypes: this.data.authorizedBayTypes?.[0] || null,
       });
     }
   }
@@ -82,6 +85,14 @@ export class UserDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadRoles();
     this.loadOffices();
+
+    // Clear bay type when role changes to non-cashier
+    this.form.get('roleId')?.valueChanges.subscribe((roleId) => {
+      const selectedRole = this.roles.find(r => r.id === roleId);
+      if (selectedRole && selectedRole.name.toLowerCase() !== 'cashier') {
+        this.form.get('authorizedBayTypes')?.setValue(null);
+      }
+    });
   }
 
   loadRoles() {
@@ -106,6 +117,13 @@ export class UserDialogComponent implements OnInit {
     });
   }
 
+  isCashierRole(): boolean {
+    const roleId = this.form.get('roleId')?.value;
+    if (!roleId) return false;
+    const selectedRole = this.roles.find(r => r.id === roleId);
+    return selectedRole?.name.toLowerCase() === 'cashier';
+  }
+
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -123,6 +141,13 @@ export class UserDialogComponent implements OnInit {
     // Remove officeId if empty
     if (!payload.officeId) {
       payload.officeId = null;
+    }
+
+    // Convert authorizedBayTypes to array format expected by backend
+    if (payload.authorizedBayTypes) {
+      payload.authorizedBayTypes = [payload.authorizedBayTypes];
+    } else {
+      payload.authorizedBayTypes = null;
     }
 
     const req$ = this.editingId
