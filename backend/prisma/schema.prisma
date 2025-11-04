@@ -279,8 +279,23 @@ model Trip {
   office      Office            @relation(fields: [officeId], references: [id])
   destinationOffice Office?      @relation("TripDestination", fields: [destinationOfficeId], references: [id])
   sessions    ScanningSession[]
+  logs        TripLog[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+}
+
+model TripLog {
+  id          String     @id @default(uuid())
+  tripId      String
+  trip        Trip       @relation(fields: [tripId], references: [id])
+  action      String     // e.g., "STARTED", "COMPLETED", "STATUS_CHANGED"
+  fromStatus  TripStatus?
+  toStatus    TripStatus?
+  performedBy String?    // User email or name
+  note        String?    // Additional details
+  timestamp   DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Driver {
