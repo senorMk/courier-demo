@@ -111,12 +111,38 @@ export class BayAuthorizationService {
 
   /**
    * Check if user requires trip assignment when scanning
-   * Only dispatchers need to assign trips - sorters and receivers don't
+   * Dispatchers assign trips for dispatch, receivers select trips for validation
    */
   requiresTripAssignment(): boolean {
     const user = this.userSelectionService.getCurrentUser();
 
-    // Only dispatcher role requires trip assignment
-    return user.roleKey === 'dispatcher';
+    // Dispatchers and receivers both need to select trips
+    // Dispatchers: to assign parcels to trips
+    // Receivers: to validate incoming parcels against trip manifest
+    return user.roleKey === 'dispatcher' || user.roleKey === 'receiver';
+  }
+
+  /**
+   * Check if user can access delivery notes
+   * Dispatchers, sorters, and receivers can access delivery notes
+   */
+  canAccessDeliveryNotes(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    // Dispatchers, sorters, and receivers can access delivery notes
+    return user.roleKey === 'dispatcher' || user.roleKey === 'sorter' || user.roleKey === 'receiver';
+  }
+
+  /**
+   * Check if user can scan for sorting (must be authorized for SORTING bay)
+   */
+  canScanSorting(): boolean {
+    const user = this.userSelectionService.getCurrentUser();
+
+    if (!user.authorizedBayTypes || user.authorizedBayTypes.length === 0) {
+      return true;
+    }
+
+    return user.authorizedBayTypes.includes(BayType.SORTING);
   }
 }
