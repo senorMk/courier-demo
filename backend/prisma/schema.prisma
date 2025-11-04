@@ -9,6 +9,7 @@ enum BayType {
   SENDING
   RECEIVING
   DISPATCH
+  SORTING
 }
 
 datasource db {
