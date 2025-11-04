@@ -108,10 +108,13 @@ export class ScanningWorkspaceComponent {
       });
       return;
     }
-    const isDispatch = this.session()?.bay?.bayType === "DISPATCH" || this._bayAuth.canScanDispatch();
+    // Allow delivery note access for DISPATCH, SORTING, and RECEIVING bay types
+    const bayType = this.session()?.bay?.bayType;
+    const shouldShowDeliveryNote = bayType === "DISPATCH" || bayType === "SORTING" || bayType === "RECEIVING" || this._bayAuth.canAccessDeliveryNotes();
+
     this.api.closeSession(this.sessionId()).subscribe({
       next: () => {
-        if (isDispatch) {
+        if (shouldShowDeliveryNote) {
           this.router.navigate([
             "/secure/scanning/session",
             this.sessionId(),

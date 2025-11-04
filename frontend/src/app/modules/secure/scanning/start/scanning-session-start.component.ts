@@ -52,9 +52,20 @@ export class ScanningSessionStartComponent implements AfterViewInit {
 
   routes = signal<RouteItem[]>([]);
   routesLoading = signal<boolean>(false);
-  // Check if user requires trip assignment - only dispatchers need this
+  // Check if user requires trip assignment - dispatchers and receivers need this
   get canAssignTrips(): boolean {
     return this._bayAuth.requiresTripAssignment();
+  }
+
+  // Check if user can access delivery notes - dispatchers and sorters
+  get canAccessDeliveryNotes(): boolean {
+    return this._bayAuth.canAccessDeliveryNotes();
+  }
+
+  // Check if user is a receiver (different trip selection logic)
+  get isReceiver(): boolean {
+    const user = this._userSelection.getCurrentUser();
+    return user.roleKey === 'receiver';
   }
 
   form = this.fb.group({
@@ -149,7 +160,12 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       return;
     }
 
-    this._tripsApi.getOpenTrips(routeId).subscribe({
+    // Receivers fetch in-transit trips (IN_TRANSIT), dispatchers fetch open trips (PLANNED/LOADING)
+    const apiCall = this.isReceiver
+      ? this._tripsApi.getArrivedTrips(routeId)
+      : this._tripsApi.getOpenTrips(routeId);
+
+    apiCall.subscribe({
       next: (trips) => {
         this.openTrips = (trips || []).map((t: any) => ({
           id: t.id,
@@ -157,8 +173,10 @@ export class ScanningSessionStartComponent implements AfterViewInit {
           truckReg: t.truckReg,
           status: t.status,
           createdAt: t.createdAt,
+          completedAt: t.completedAt,
           destinationOffice: t.destinationOffice,
           destinationOfficeId: t.destinationOfficeId,
+          office: t.office,
         }));
         this.form.patchValue({ tripId: '' }, { emitEvent: false });
       },

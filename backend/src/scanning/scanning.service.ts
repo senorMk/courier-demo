@@ -104,7 +104,14 @@ export class ScanningService {
     if (tripId) {
       const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
       if (!trip) throw new BadRequestException("Trip not found");
-      if (trip.routeId !== routeId || trip.officeId !== officeId) {
+
+      // For RECEIVING bay, validate against destination office; for DISPATCH, validate against origin office
+      const isReceivingBay = bay?.bayType === "RECEIVING";
+      const officeMatch = isReceivingBay
+        ? trip.destinationOfficeId === officeId
+        : trip.officeId === officeId;
+
+      if (trip.routeId !== routeId || !officeMatch) {
         throw new BadRequestException("Trip does not match route/office");
       }
     }
@@ -192,12 +199,29 @@ export class ScanningService {
       );
     }
 
-    // Receiving-office offload: enforce correct office (sending bays are exempt).
-    const isReceivingOffice = officeTypes.includes("RECEIVING");
-    if (!isSendingContext && session.office && isReceivingOffice) {
+    // Receiving bay validation: enforce correct office (other bay types are exempt)
+    const isReceivingBay = session.bay?.bayType === "RECEIVING";
+    if (!isSendingContext && session.office && isReceivingBay) {
       if (parcel.officeId !== session.officeId) {
         throw new BadRequestException(
           `Parcel meant for ${correctDest}, not ${currentOffice}.`
+        );
+      }
+    }
+
+    // Receiver validation: If receiving bay has a trip selected, validate parcel against trip manifest
+    if (isReceivingBay && session.tripId) {
+      // Check if parcel was scanned in a dispatch session linked to this trip
+      const parcelInManifest = await this.prisma.scannedParcel.findFirst({
+        where: {
+          parcelId: parcel.id,
+          scanningSession: { tripId: session.tripId },
+        },
+      });
+      if (!parcelInManifest) {
+        const code = parcel.TrackingCode?.plainTextCode || parcel.id;
+        throw new BadRequestException(
+          `Parcel ${code} is not on this trip's manifest. Please verify the driver and truck selection.`
         );
       }
     }
@@ -206,7 +230,8 @@ export class ScanningService {
     try {
       // Prevent duplicates: already scanned within same logical scope
       // 1) If session is tied to a trip, ensure parcel not already scanned for the same trip
-      if (session.tripId) {
+      // Exception: Receiving bays can scan parcels that were dispatched (for validation)
+      if (session.tripId && !isReceivingBay) {
         const dupTrip = await this.prisma.scannedParcel.findFirst({
           where: {
             parcelId: parcel.id,
@@ -215,6 +240,20 @@ export class ScanningService {
         });
         if (dupTrip)
           throw new BadRequestException("Parcel already scanned for this trip");
+      }
+      // For receiving bays: prevent scanning the same parcel twice in receiving sessions for the same trip
+      if (session.tripId && isReceivingBay) {
+        const dupReceiving = await this.prisma.scannedParcel.findFirst({
+          where: {
+            parcelId: parcel.id,
+            scanningSession: {
+              tripId: session.tripId,
+              bay: { bayType: "RECEIVING" as any },
+            },
+          },
+        });
+        if (dupReceiving)
+          throw new BadRequestException("Parcel already received and scanned for this trip");
       }
       // 2) Always block duplicate within the same session (defensive in case DB constraint missing)
       const dupSession = await this.prisma.scannedParcel.findUnique({
@@ -241,11 +280,9 @@ export class ScanningService {
           data: { status: "LOADING" as any },
         });
       }
-      // Receiving offload: mark ready for collection and send SMS
+      // Receiving bay: mark ready for collection and send SMS
       if (
-        session.office &&
-        Array.isArray((session.office as any).officeTypes) &&
-        (session.office as any).officeTypes.includes("RECEIVING") &&
+        session.bay?.bayType === "RECEIVING" &&
         parcel.officeId === session.officeId
       ) {
         await this.prisma.parcel.update({
@@ -329,11 +366,7 @@ export class ScanningService {
         `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
       );
     }
-    if (
-      session.office &&
-      Array.isArray((session.office as any).officeTypes) &&
-      (session.office as any).officeTypes.includes("RECEIVING")
-    ) {
+    if (session.bay?.bayType === "RECEIVING") {
       if (parcel.officeId !== session.officeId) {
         throw new BadRequestException(
           `Parcel meant for ${correctDest2}, not ${currentOffice2}.`
@@ -350,11 +383,7 @@ export class ScanningService {
         if (dupTrip)
           throw new BadRequestException("Parcel already scanned for this trip");
       }
-      if (
-        session.office &&
-        Array.isArray((session.office as any).officeTypes) &&
-        (session.office as any).officeTypes.includes("RECEIVING")
-      ) {
+      if (session.bay?.bayType === "RECEIVING") {
         const dupOffice = await this.prisma.scannedParcel.findFirst({
           where: { parcelId, scanningSession: { officeId: session.officeId } },
         });
@@ -383,9 +412,7 @@ export class ScanningService {
         });
       }
       if (
-        session.office &&
-        Array.isArray((session.office as any).officeTypes) &&
-        (session.office as any).officeTypes.includes("RECEIVING") &&
+        session.bay?.bayType === "RECEIVING" &&
         parcel.officeId === session.officeId
       ) {
         await this.prisma.parcel.update({
