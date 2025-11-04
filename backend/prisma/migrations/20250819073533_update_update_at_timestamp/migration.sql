@@ -1,20 +1,52 @@
--- CreateEnum
-CREATE TYPE "CustomerType" AS ENUM ('SENDER', 'RECEIVER');
+-- CreateEnum (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'CustomerType') THEN
+        CREATE TYPE "CustomerType" AS ENUM ('SENDER', 'RECEIVER');
+    END IF;
+END $$;
 
--- AlterTable
-ALTER TABLE "AccessLog" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN     "updatedAt" TIMESTAMP(3);
+-- AlterTable (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'AccessLog' AND column_name = 'createdAt') THEN
+        ALTER TABLE "AccessLog" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'AccessLog' AND column_name = 'updatedAt') THEN
+        ALTER TABLE "AccessLog" ADD COLUMN "updatedAt" TIMESTAMP(3);
+    END IF;
+END $$;
 
--- AlterTable
-ALTER TABLE "Role" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN     "updatedAt" TIMESTAMP(3);
+-- AlterTable (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'Role' AND column_name = 'createdAt') THEN
+        ALTER TABLE "Role" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'Role' AND column_name = 'updatedAt') THEN
+        ALTER TABLE "Role" ADD COLUMN "updatedAt" TIMESTAMP(3);
+    END IF;
+END $$;
 
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN     "updatedAt" TIMESTAMP(3);
+-- AlterTable (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'User' AND column_name = 'createdAt') THEN
+        ALTER TABLE "User" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name = 'User' AND column_name = 'updatedAt') THEN
+        ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP(3);
+    END IF;
+END $$;
 
--- CreateTable
-CREATE TABLE "Office" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "Office" (
     "id" TEXT NOT NULL,
     "branchCode" TEXT NOT NULL,
     "officeType" TEXT NOT NULL,
@@ -25,8 +57,8 @@ CREATE TABLE "Office" (
     CONSTRAINT "Office_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "Customer" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "Customer" (
     "id" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
@@ -39,8 +71,8 @@ CREATE TABLE "Customer" (
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "TrackingCode" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "TrackingCode" (
     "id" TEXT NOT NULL,
     "routeCode" TEXT NOT NULL,
     "destinationCode" TEXT NOT NULL,
@@ -52,8 +84,8 @@ CREATE TABLE "TrackingCode" (
     CONSTRAINT "TrackingCode_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "Parcel" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "Parcel" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "receiverId" TEXT NOT NULL,
@@ -64,8 +96,8 @@ CREATE TABLE "Parcel" (
     CONSTRAINT "Parcel_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ParcelItem" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "ParcelItem" (
     "id" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL,
     "description" TEXT NOT NULL,
@@ -79,17 +111,54 @@ CREATE TABLE "ParcelItem" (
     CONSTRAINT "ParcelItem_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "TrackingCode_parcelNumber_key" ON "TrackingCode"("parcelNumber");
+-- CreateIndex (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'TrackingCode_parcelNumber_key') THEN
+        CREATE UNIQUE INDEX "TrackingCode_parcelNumber_key" ON "TrackingCode"("parcelNumber");
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE constraint_name = 'Parcel_customerId_fkey') THEN
+        ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_customerId_fkey"
+        FOREIGN KEY ("customerId") REFERENCES "Customer"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE constraint_name = 'Parcel_receiverId_fkey') THEN
+        ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_receiverId_fkey"
+        FOREIGN KEY ("receiverId") REFERENCES "Customer"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_destinationId_fkey" FOREIGN KEY ("destinationId") REFERENCES "Office"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE constraint_name = 'Parcel_destinationId_fkey') THEN
+        ALTER TABLE "Parcel" ADD CONSTRAINT "Parcel_destinationId_fkey"
+        FOREIGN KEY ("destinationId") REFERENCES "Office"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "ParcelItem" ADD CONSTRAINT "ParcelItem_parcelId_fkey" FOREIGN KEY ("parcelId") REFERENCES "Parcel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE constraint_name = 'ParcelItem_parcelId_fkey') THEN
+        ALTER TABLE "ParcelItem" ADD CONSTRAINT "ParcelItem_parcelId_fkey"
+        FOREIGN KEY ("parcelId") REFERENCES "Parcel"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;

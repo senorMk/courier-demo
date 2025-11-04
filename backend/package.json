@@ -7,11 +7,13 @@
     "start": "nest start",
     "start:dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/main.ts",
     "build": "nest build",
-    "deploy": "npm install && npm run prisma:deploy && npm run start:prod",
+    "deploy": "npm install && npm run migrate:smart && npm run seed:admin && npm run start:prod",
     "start:prod": "node dist/src/main.js",
     "prisma:dev": "npx prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "npx prisma migrate deploy --schema prisma/schema.prisma",
-    "seed:admin": "ts-node -r tsconfig-paths/register prisma/seed-admin.ts",
+    "migrate:smart": "node scripts/smart-migrate.js",
+    "seed:admin": "node dist/prisma/seed-admin.js",
+    "seed:admin:dev": "ts-node -r tsconfig-paths/register prisma/seed-admin.ts",
     "test": "jest"
   },
   "dependencies": {
