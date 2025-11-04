@@ -33,6 +33,8 @@ const PARCEL_VIEW_ROLES = [
   "customer-service-agent",
   "customer-service-director",
   "dispatcher",
+  "sorter",
+  "receiver",
 ] as const;
 
 const PARCEL_RECEIPT_ROLES = [

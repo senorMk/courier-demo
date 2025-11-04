@@ -26,6 +26,8 @@ const ROUTE_READ_ROLES = [
   "dispatcher",
   "supervisor",
   "cashier",
+  "sorter",
+  "receiver",
 ] as const;
 
 @Controller("api/v1/routes")
