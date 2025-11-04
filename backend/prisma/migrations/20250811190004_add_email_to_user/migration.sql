@@ -1,8 +1,13 @@
--- CreateEnum
-CREATE TYPE "Role" AS ENUM ('MD', 'Branch', 'Finance');
+-- CreateEnum (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Role') THEN
+        CREATE TYPE "Role" AS ENUM ('MD', 'Branch', 'Finance');
+    END IF;
+END $$;
 
--- CreateTable
-CREATE TABLE "User" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "User" (
     "id" SERIAL NOT NULL,
     "username" TEXT NOT NULL,
     "password" TEXT NOT NULL,
@@ -11,8 +16,8 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "AccessLog" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "AccessLog" (
     "id" SERIAL NOT NULL,
     "username" TEXT NOT NULL,
     "action" TEXT NOT NULL,
@@ -23,8 +28,21 @@ CREATE TABLE "AccessLog" (
     CONSTRAINT "AccessLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+-- CreateIndex (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'User_username_key') THEN
+        CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "AccessLog" ADD CONSTRAINT "AccessLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                   WHERE constraint_name = 'AccessLog_userId_fkey') THEN
+        ALTER TABLE "AccessLog" ADD CONSTRAINT "AccessLog_userId_fkey"
+        FOREIGN KEY ("userId") REFERENCES "User"("id")
+        ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
