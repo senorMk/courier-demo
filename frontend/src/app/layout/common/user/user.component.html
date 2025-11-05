@@ -1,6 +1,9 @@
-<!-- User info with email -->
+<!-- User info with office name and email -->
 <div class="flex items-center gap-2">
-    <span class="text-sm font-medium text-gray-700" *ngIf="userEmail">{{ userEmail }}</span>
+    <div class="flex flex-col items-end" *ngIf="userEmail || officeName">
+        <span class="text-sm font-medium text-gray-700" *ngIf="officeName">{{ officeName }}</span>
+        <span class="text-sm text-gray-600" *ngIf="userEmail">{{ userEmail }}</span>
+    </div>
     <button mat-icon-button [matMenuTriggerFor]="userActions">
         <mat-icon [svgIcon]="'heroicons_outline:user'"></mat-icon>
     </button>

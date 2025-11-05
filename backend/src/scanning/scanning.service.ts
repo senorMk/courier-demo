@@ -91,7 +91,7 @@ export class ScanningService {
         }
         const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
         if (!trip) throw new BadRequestException("Trip not found");
-        if (trip.routeId !== routeId || trip.officeId !== officeId) {
+        if (trip.destinationRouteId !== routeId || trip.officeId !== officeId) {
           throw new BadRequestException("Trip does not match route/office");
         }
         if (trip.status === "IN_TRANSIT" || trip.status === "COMPLETED") {
@@ -111,7 +111,7 @@ export class ScanningService {
         ? trip.destinationOfficeId === officeId
         : trip.officeId === officeId;
 
-      if (trip.routeId !== routeId || !officeMatch) {
+      if (trip.destinationRouteId !== routeId || !officeMatch) {
         throw new BadRequestException("Trip does not match route/office");
       }
     }

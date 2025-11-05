@@ -2,9 +2,10 @@ import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { UserService } from "app/core/user/user.service";
 import { environment } from "../../../environments/environment";
-import { catchError, Observable, of, switchMap, throwError } from "rxjs";
+import { catchError, Observable, of, switchMap, throwError, tap } from "rxjs";
 import { UserSelectionService } from "app/services/user-selection.service";
 import { decodeJwt } from "../utils/jwt.util";
+import { OfficesSearchService } from "app/modules/secure/trips/offices-search.service";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -12,6 +13,7 @@ export class AuthService {
   private _httpClient = inject(HttpClient);
   private _userService = inject(UserService);
   private userSelectionService = inject(UserSelectionService);
+  private officesSearchService = inject(OfficesSearchService);
 
   // -----------------------------------------------------------------------------------------------------
   // @ Accessors
@@ -85,9 +87,25 @@ export class AuthService {
             firstName: response.firstName,
             lastName: response.lastName,
             authorizedBayTypes: payload.authorizedBayTypes || [],
+            officeId: payload.officeId,
+            officeName: '', // Will be fetched below
           };
 
-          this.userSelectionService.setUser(user);
+          // Fetch office name if officeId is available
+          if (payload.officeId) {
+            this.officesSearchService.getById(payload.officeId).subscribe({
+              next: (office) => {
+                user.officeName = office?.name || '';
+                this.userSelectionService.setUser(user);
+              },
+              error: () => {
+                // Set user without office name if fetch fails
+                this.userSelectionService.setUser(user);
+              }
+            });
+          } else {
+            this.userSelectionService.setUser(user);
+          }
 
           // Return a new observable with the response
           return of(response);

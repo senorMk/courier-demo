@@ -16,6 +16,8 @@ export interface UserInformation {
   firstName: string;
   lastName: string;
   authorizedBayTypes: string[];
+  officeName?: string;
+  officeId?: string;
 }
 
 const defaultUser: UserInformation = {
@@ -28,6 +30,8 @@ const defaultUser: UserInformation = {
   firstName: "",
   lastName: "",
   authorizedBayTypes: [],
+  officeName: "",
+  officeId: "",
 };
 
 @Injectable({
@@ -95,6 +99,8 @@ export class UserSelectionService {
       lastName:
         typeof userProfile?.lastName === "string" ? userProfile.lastName : "",
       authorizedBayTypes: Array.isArray(userProfile?.authorizedBayTypes) ? userProfile.authorizedBayTypes : [],
+      officeName: typeof userProfile?.officeName === "string" ? userProfile.officeName : "",
+      officeId: typeof userProfile?.officeId === "string" ? userProfile.officeId : "",
     };
 
     if (!normalized.roleKey && normalized.role) {

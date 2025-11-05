@@ -13,35 +13,35 @@
   <div class="bg-white rounded-lg shadow-md p-4">
     <div [formGroup]="form" class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <mat-form-field appearance="fill">
-        <mat-label>Route</mat-label>
-        <mat-select formControlName="routeId" placeholder="Select route"
-          [disabled]="routes().length === 0 && routesLoading()">
-          <mat-option *ngFor="let r of routes()" [value]="r.id">
-            <span class="text-sm font-medium">{{ r.name }}</span>
-          </mat-option>
-        </mat-select>
-        <mat-hint *ngIf="routesLoading()">Loading routes…</mat-hint>
-        <mat-error *ngIf="form.controls['routeId'].hasError('required')">
-          Route is required
-        </mat-error>
-      </mat-form-field>
-
-      <mat-form-field appearance="fill">
         <mat-label>Destination Office</mat-label>
         <mat-select formControlName="destinationOfficeId" placeholder="Select destination"
           [disabled]="offices().length === 0 || officesLoading()">
-          <mat-option *ngFor="let o of offices()" [value]="o.id" [disabled]="o.id === form.controls['officeId'].value">
+          <mat-option *ngFor="let o of offices()" [value]="o.id">
             <span class="text-sm font-medium">{{ o.name }}</span>
             <span class="text-xs text-gray-500 ml-2">({{ o.branchCode }})</span>
           </mat-option>
         </mat-select>
         <mat-hint *ngIf="officesLoading()">Loading offices…</mat-hint>
-        <mat-hint *ngIf="!officesLoading() && offices().length <= 1 && form.controls['routeId'].value">
-          Add another office to this route to allow dispatch.
+        <mat-hint *ngIf="!officesLoading() && offices().length === 0">
+          No destination offices available.
         </mat-hint>
         <mat-error *ngIf="form.controls['destinationOfficeId'].hasError('required')">
           Destination office is required
         </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Destination Route</mat-label>
+        <mat-select formControlName="destinationRouteId" placeholder="Select destination route (optional)"
+          [disabled]="routes().length === 0 || routesLoading()">
+          <mat-option [value]="null">
+            <span class="text-sm text-gray-500">None</span>
+          </mat-option>
+          <mat-option *ngFor="let r of routes()" [value]="r.id">
+            <span class="text-sm font-medium">{{ r.name }}</span>
+          </mat-option>
+        </mat-select>
+        <mat-hint *ngIf="routesLoading()">Loading routes…</mat-hint>
       </mat-form-field>
 
       <mat-form-field appearance="fill">
@@ -92,8 +92,12 @@
       </ng-container>
       <ng-container matColumnDef="destination">
         <th mat-header-cell *matHeaderCellDef>Destination</th>
-        <td mat-cell *matCellDef="let t">{{ t.destinationOffice?.name || '—' }}<span *ngIf="t.destinationOffice"> ({{
-            t.destinationOffice?.branchCode }})</span></td>
+        <td mat-cell *matCellDef="let t">
+          <div class="flex flex-col">
+            <span>{{ t.destinationOffice?.name || '—' }}<span *ngIf="t.destinationOffice"> ({{ t.destinationOffice?.branchCode }})</span></span>
+            <span class="text-xs text-gray-500" *ngIf="t.destinationRoute">→ {{ t.destinationRoute?.name }}</span>
+          </div>
+        </td>
       </ng-container>
       <ng-container matColumnDef="driver">
         <th mat-header-cell *matHeaderCellDef>Driver</th>
