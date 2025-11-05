@@ -167,14 +167,15 @@ model Role {
 }
 
 model Route {
-  id               String            @id @default(uuid())
-  code             String            @unique
-  name             String            @unique
-  offices          Office[]
-  scanningSessions ScanningSession[]
-  trips            Trip[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                   String            @id @default(uuid())
+  code                 String            @unique
+  name                 String            @unique
+  offices              Office[]
+  scanningSessions     ScanningSession[]
+  trips                Trip[]
+  destinationTrips     Trip[]            @relation("TripDestinationRoute")
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 }
 
 model ScannedParcel {
@@ -230,6 +231,7 @@ model Trip {
   routeId             String
   officeId            String
   destinationOfficeId String?
+  destinationRouteId  String?
   driverName          String
   truckReg            String
   status              TripStatus        @default(PLANNED)
@@ -239,6 +241,7 @@ model Trip {
   route               Route             @relation(fields: [routeId], references: [id])
   office              Office            @relation(fields: [officeId], references: [id])
   destinationOffice   Office?           @relation("TripDestination", fields: [destinationOfficeId], references: [id])
+  destinationRoute    Route?            @relation("TripDestinationRoute", fields: [destinationRouteId], references: [id])
   sessions            ScanningSession[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
