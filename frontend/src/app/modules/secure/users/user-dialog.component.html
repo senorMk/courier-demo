@@ -49,15 +49,6 @@
         </mat-option>
       </mat-select>
     </mat-form-field>
-
-    <div *ngIf="isCashierRole()" class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-gray-700">Authorized Bay Type (Optional)</label>
-      <mat-radio-group formControlName="authorizedBayTypes">
-        <mat-radio-button *ngFor="let bay of bayTypes" [value]="bay.value" class="mb-2">
-          {{ bay.label }}
-        </mat-radio-button>
-      </mat-radio-group>
-    </div>
   </form>
 </mat-dialog-content>
 
