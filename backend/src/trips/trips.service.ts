@@ -17,12 +17,12 @@ export class TripsService {
     // Validate origin office belongs to route
     const origin = await this.prisma.office.findUnique({ where: { id: officeId } });
     if (!origin) throw new BadRequestException('Origin office not found');
-    if (origin.routeId !== routeId) throw new BadRequestException('Origin office not on selected route');
+    // if (origin.routeId !== routeId) throw new BadRequestException('Origin office not on selected route');
 
     // Validate destination office belongs to route
     const destination = await this.prisma.office.findUnique({ where: { id: destinationOfficeId } });
     if (!destination) throw new BadRequestException('Destination office not found');
-    if (destination.routeId !== routeId) throw new BadRequestException('Destination office not on selected route');
+    // if (destination.routeId !== routeId) throw new BadRequestException('Destination office not on selected route');
 
     if (destinationOfficeId === officeId) {
       throw new BadRequestException('Destination office must be different from origin office');
