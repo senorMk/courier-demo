@@ -7,12 +7,12 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { decodeJwt } from 'app/core/utils/jwt.util';
-import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
 import { OfficesSearchService, OfficeItem } from './offices-search.service';
 import { TripsApiService } from './trips-api.service';
 import { DriversApiService, DriverItem } from './drivers-api.service';
 import { TrucksApiService, TruckItem } from './trucks-api.service';
 import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
+import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
 
 @Component({
   selector: 'app-trips',
@@ -29,17 +29,16 @@ import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-
 })
 export class TripsComponent {
   private fb = inject(FormBuilder);
-  private routesSearch = inject(RoutesSearchService);
   private officesSearch = inject(OfficesSearchService);
+  private routesSearch = inject(RoutesSearchService);
   private tripsApi = inject(TripsApiService);
   private driversApi = inject(DriversApiService);
   private trucksApi = inject(TrucksApiService);
   private dialog = inject(MatDialog);
 
   form = this.fb.group({
-    routeId: ['', Validators.required],
-    officeId: ['', Validators.required],
     destinationOfficeId: ['', Validators.required],
+    destinationRouteId: [''],
     driverName: ['', Validators.required],
     truckReg: ['', Validators.required],
   });
@@ -47,60 +46,33 @@ export class TripsComponent {
   displayedColumns = ['route', 'office', 'destination', 'driver', 'truck', 'status', 'actions'];
   trips: any[] = [];
 
-  routes = signal<RouteItem[]>([]);
-  routesLoading = signal<boolean>(false);
   offices = signal<OfficeItem[]>([]);
   officesLoading = signal<boolean>(false);
+  routes = signal<RouteItem[]>([]);
+  routesLoading = signal<boolean>(false);
   drivers = signal<DriverItem[]>([]);
   trucks = signal<TruckItem[]>([]);
 
   constructor() {
     this.initializeSelections();
     this.refresh();
-    this.setupRouteChangeListener();
-    this.setupOfficeChangeListener();
   }
 
-  private setupRouteChangeListener() {
-    this.form.controls.routeId.valueChanges.subscribe((routeId) => {
-      if (routeId) {
-        this.loadOfficesForRoute(routeId);
-      } else {
-        this.offices.set([]);
-        this.form.patchValue({ officeId: '', destinationOfficeId: '' });
-      }
-    });
-  }
-
-  private loadOfficesForRoute(routeId: string) {
+  private loadAllOffices() {
     this.officesLoading.set(true);
     this.officesSearch.search('').subscribe({
       next: (allOffices) => {
-        const filteredOffices = allOffices.filter(o =>
-          o.routeId === routeId || o.route?.id === routeId
-        );
-        this.offices.set(filteredOffices);
-
-        // Auto-select if only one office or if user's office is in the list
+        // Show all offices except user's own office
         const token = localStorage.getItem('accessToken') || '';
         const payload: any = token ? decodeJwt(token) : null;
         const userOfficeId = payload?.officeId;
 
-        if (filteredOffices.length === 1) {
-          this.form.patchValue({ officeId: filteredOffices[0].id });
-          if (this.form.controls['destinationOfficeId'].value === filteredOffices[0].id) {
-            this.form.patchValue({ destinationOfficeId: '' });
-          }
-        } else if (userOfficeId && filteredOffices.some(o => o.id === userOfficeId)) {
-          this.form.patchValue({ officeId: userOfficeId });
-        }
+        // Filter out user's office from destination options
+        const availableOffices = userOfficeId
+          ? allOffices.filter(o => o.id !== userOfficeId)
+          : allOffices;
 
-        // Ensure destination selection remains valid for new route
-        const currentDestination = this.form.controls['destinationOfficeId'].value;
-        if (currentDestination && !filteredOffices.some(o => o.id === currentDestination)) {
-          this.form.patchValue({ destinationOfficeId: '' });
-        }
-
+        this.offices.set(availableOffices);
         this.officesLoading.set(false);
       },
       error: () => {
@@ -110,47 +82,21 @@ export class TripsComponent {
     });
   }
 
-  private setupOfficeChangeListener() {
-    this.form.controls.officeId.valueChanges.subscribe((originId) => {
-      const destinationControl = this.form.controls.destinationOfficeId;
-      if (originId && destinationControl.value === originId) {
-        destinationControl.patchValue('');
-      }
-    });
-  }
-
   private initializeSelections() {
-    const token = localStorage.getItem('accessToken') || '';
-    const payload: any = token ? decodeJwt(token) : null;
-    const userOfficeId = payload?.officeId;
+    // Load all offices immediately
+    this.loadAllOffices();
 
-    // Load routes
+    // Load all routes
     this.routesLoading.set(true);
     this.routesSearch.listRoutes(200).subscribe({
       next: (routes) => {
         this.routes.set(routes || []);
-
-        // If user has an office, try to pre-select their route
-        if (userOfficeId) {
-          this.officesSearch.getById(userOfficeId).subscribe({
-            next: (office) => {
-              const routeId = office?.routeId || office?.route?.id;
-              if (routeId && routes.some((r) => r.id === routeId)) {
-                this.form.patchValue({ routeId });
-                // loadOfficesForRoute will be triggered by valueChanges
-              }
-            },
-            error: () => {
-              // Ignore error, user can select route manually
-            },
-          });
-        }
+        this.routesLoading.set(false);
       },
       error: () => {
         this.routes.set([]);
         this.routesLoading.set(false);
       },
-      complete: () => this.routesLoading.set(false),
     });
 
     // Load drivers
@@ -190,13 +136,51 @@ export class TripsComponent {
 
   createTrip() {
     if (this.form.invalid) return;
-    const { routeId, officeId, driverName, truckReg } = this.form.value as any;
-    const destinationOfficeId = this.form.value.destinationOfficeId as string;
-    this.tripsApi.create({ routeId, officeId, destinationOfficeId, driverName, truckReg }).subscribe({
-      next: () => {
-        this.refresh();
+    const { driverName, truckReg, destinationOfficeId, destinationRouteId } = this.form.value as any;
+
+    // Get user's office ID from token
+    const token = localStorage.getItem('accessToken') || '';
+    const payload: any = token ? decodeJwt(token) : null;
+    const officeId = payload?.officeId;
+
+    if (!officeId) {
+      alert('Unable to determine your office. Please log in again.');
+      return;
+    }
+
+    // Get routeId from the user's office
+    this.officesSearch.getById(officeId).subscribe({
+      next: (userOffice) => {
+        const routeId = userOffice?.routeId || userOffice?.route?.id;
+
+        if (!routeId) {
+          alert('Unable to determine route for your office');
+          return;
+        }
+
+        const tripData: any = {
+          routeId,
+          officeId,
+          destinationOfficeId,
+          driverName,
+          truckReg
+        };
+
+        // Only add destinationRouteId if it's selected
+        if (destinationRouteId) {
+          tripData.destinationRouteId = destinationRouteId;
+        }
+
+        this.tripsApi.create(tripData).subscribe({
+          next: () => {
+            this.refresh();
+          },
+          error: (err) => alert(err?.error?.message || 'Failed to create trip'),
+        });
       },
-      error: (err) => alert(err?.error?.message || 'Failed to create trip'),
+      error: () => {
+        alert('Unable to fetch your office information');
+      },
     });
   }
 
