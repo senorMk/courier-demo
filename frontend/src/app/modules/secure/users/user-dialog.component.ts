@@ -66,7 +66,6 @@ export class UserDialogComponent implements OnInit {
       lastName: [''],
       roleId: ['', Validators.required],
       officeId: [''],
-      authorizedBayTypes: [null],
     });
 
     if (this.data) {
@@ -77,7 +76,6 @@ export class UserDialogComponent implements OnInit {
         lastName: this.data.lastName || '',
         roleId: this.data.roleId || '',
         officeId: this.data.officeId || '',
-        authorizedBayTypes: this.data.authorizedBayTypes?.[0] || null,
       });
     }
   }
@@ -85,14 +83,6 @@ export class UserDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadRoles();
     this.loadOffices();
-
-    // Clear bay type when role changes to non-cashier
-    this.form.get('roleId')?.valueChanges.subscribe((roleId) => {
-      const selectedRole = this.roles.find(r => r.id === roleId);
-      if (selectedRole && selectedRole.name.toLowerCase() !== 'cashier') {
-        this.form.get('authorizedBayTypes')?.setValue(null);
-      }
-    });
   }
 
   loadRoles() {
@@ -141,13 +131,6 @@ export class UserDialogComponent implements OnInit {
     // Remove officeId if empty
     if (!payload.officeId) {
       payload.officeId = null;
-    }
-
-    // Convert authorizedBayTypes to array format expected by backend
-    if (payload.authorizedBayTypes) {
-      payload.authorizedBayTypes = [payload.authorizedBayTypes];
-    } else {
-      payload.authorizedBayTypes = null;
     }
 
     const req$ = this.editingId

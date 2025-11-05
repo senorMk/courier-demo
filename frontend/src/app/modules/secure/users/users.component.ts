@@ -30,7 +30,6 @@ export class UsersComponent implements OnInit {
     'lastName',
     'role',
     'office',
-    'authorizedBayTypes',
     'createdAt',
     'actions',
   ];

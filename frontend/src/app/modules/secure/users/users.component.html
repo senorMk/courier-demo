@@ -46,19 +46,6 @@
           </td>
         </ng-container>
 
-        <!-- Authorized Bay Types Column -->
-        <ng-container matColumnDef="authorizedBayTypes">
-          <th mat-header-cell *matHeaderCellDef>Authorized Bays</th>
-          <td mat-cell *matCellDef="let row">
-            <div class="flex gap-1 flex-wrap">
-              <mat-chip *ngFor="let bay of row.authorizedBayTypes" class="text-xs">
-                {{ bay }}
-              </mat-chip>
-              <span *ngIf="!row.authorizedBayTypes || row.authorizedBayTypes.length === 0">All</span>
-            </div>
-          </td>
-        </ng-container>
-
         <!-- Created At Column -->
         <ng-container matColumnDef="createdAt">
           <th mat-header-cell *matHeaderCellDef>Created</th>
