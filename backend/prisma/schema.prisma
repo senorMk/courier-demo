@@ -8,246 +8,247 @@ datasource db {
 }
 
 model AccessLog {
-  id        String   @id
+  id        String   @id @default(uuid())
+  email     String
   action    String
   success   Boolean
   timestamp DateTime @default(now())
-  userId    String?
-  email     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
   User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Bay {
-  id              String            @id
-  name            String
-  bayType         BayType
-  officeId        String
-  active          Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime
-  Office          Office            @relation(fields: [officeId], references: [id])
-  ScanningSession ScanningSession[]
+  id               String            @id @default(uuid())
+  name             String
+  bayType          BayType
+  officeId         String
+  office           Office            @relation(fields: [officeId], references: [id])
+  active           Boolean           @default(true)
+  scanningSessions ScanningSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@unique([officeId, bayType])
 }
 
 model BranchCode {
-  id        String   @id
+  id        String   @id @default(uuid())
   code      String   @unique
   name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime
   officeId  String
-  Office    Office   @relation(fields: [officeId], references: [id])
+  office    Office   @relation(fields: [officeId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Complaint {
-  id             String           @id
-  parcelId       String
-  reason         String?
-  status         ComplaintStatus  @default(OPEN)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  reporterId     String
-  Parcel         Parcel           @relation(fields: [parcelId], references: [id])
-  User           User             @relation(fields: [reporterId], references: [id])
-  ComplaintEvent ComplaintEvent[]
+  id         String           @id @default(uuid())
+  parcelId   String
+  reporterId String
+  parcel     Parcel           @relation(fields: [parcelId], references: [id])
+  reporter   User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  reason     String?
+  status     ComplaintStatus  @default(OPEN)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  events     ComplaintEvent[]
 }
 
 model ComplaintEvent {
-  id          String           @id
+  id          String           @id @default(uuid())
   complaintId String
+  complaint   Complaint        @relation(fields: [complaintId], references: [id])
   action      String
   fromStatus  ComplaintStatus?
   toStatus    ComplaintStatus?
   note        String?
   createdAt   DateTime         @default(now())
-  Complaint   Complaint        @relation(fields: [complaintId], references: [id])
 }
 
 model Customer {
-  id                                 String   @id
-  firstName                          String
-  lastName                           String
-  phoneNumber                        String   @unique
-  idNumber                           String?  @unique
-  createdAt                          DateTime @default(now())
-  updatedAt                          DateTime
-  emailAddress                       String?  @unique
-  Parcel_Parcel_customerIdToCustomer Parcel[] @relation("Parcel_customerIdToCustomer")
-  Parcel_Parcel_receiverIdToCustomer Parcel[] @relation("Parcel_receiverIdToCustomer")
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  emailAddress    String?  @unique
+  phoneNumber     String   @unique
+  idNumber        String?  @unique
+  sentParcels     Parcel[] @relation("Sender")
+  receivedParcels Parcel[] @relation("Receiver")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Driver {
-  id            String   @id
+  id            String   @id @default(uuid())
   firstName     String
   lastName      String
   phoneNumber   String?  @unique
   licenseNumber String?
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
 }
 
 model Office {
-  id                                    String            @id
-  branchCode                            String            @unique
-  name                                  String
-  createdAt                             DateTime          @default(now())
-  updatedAt                             DateTime
-  routeId                               String
-  officeTypes                           OfficeType[]
-  areaCode                              String?
-  Bay                                   Bay[]
-  BranchCode                            BranchCode[]
-  Route                                 Route             @relation(fields: [routeId], references: [id])
-  Parcel_Parcel_officeIdToOffice        Parcel[]          @relation("Parcel_officeIdToOffice")
-  Parcel_Parcel_sendingOfficeIdToOffice Parcel[]          @relation("Parcel_sendingOfficeIdToOffice")
-  ScanningSession                       ScanningSession[]
-  Trip_Trip_destinationOfficeIdToOffice Trip[]            @relation("Trip_destinationOfficeIdToOffice")
-  Trip_Trip_officeIdToOffice            Trip[]            @relation("Trip_officeIdToOffice")
-  User                                  User[]
+  id               String            @id @default(uuid())
+  branchCode       String            @unique
+  areaCode         String?
+  officeTypes      OfficeType[]
+  name             String
+  branchCodes      BranchCode[]
+  parcels          Parcel[]
+  users            User[]
+  scanningSessions ScanningSession[]
+  bays             Bay[]
+  trips            Trip[]
+  destinationTrips Trip[]            @relation("TripDestination")
+  routeId          String
+  route            Route             @relation(fields: [routeId], references: [id])
+  sentParcels      Parcel[]          @relation("SendingOffice")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Parcel {
-  id                                    String          @id
-  customerId                            String
-  receiverId                            String
-  createdAt                             DateTime        @default(now())
-  updatedAt                             DateTime
-  parcelNumber                          Int             @unique @default(autoincrement())
-  officeId                              String
-  size                                  ParcelSize      @default(MEDIUM)
-  status                                ParcelStatus    @default(PENDING)
-  sendingOfficeId                       String?
-  Complaint                             Complaint[]
-  Customer_Parcel_customerIdToCustomer  Customer        @relation("Parcel_customerIdToCustomer", fields: [customerId], references: [id])
-  Office_Parcel_officeIdToOffice        Office          @relation("Parcel_officeIdToOffice", fields: [officeId], references: [id])
-  Customer_Parcel_receiverIdToCustomer  Customer        @relation("Parcel_receiverIdToCustomer", fields: [receiverId], references: [id])
-  Office_Parcel_sendingOfficeIdToOffice Office?         @relation("Parcel_sendingOfficeIdToOffice", fields: [sendingOfficeId], references: [id])
-  ParcelItem                            ParcelItem[]
-  Payment                               Payment?
-  ScannedParcel                         ScannedParcel[]
-  TrackingCode                          TrackingCode?
+  id              String          @id @default(uuid())
+  parcelNumber    Int             @unique @default(autoincrement())
+  customerId      String
+  receiverId      String
+  officeId        String
+  sendingOfficeId String?
+  status          ParcelStatus    @default(PENDING)
+  size            ParcelSize      @default(MEDIUM)
+  items           ParcelItem[]
+  customer        Customer        @relation("Sender", fields: [customerId], references: [id])
+  receiver        Customer        @relation("Receiver", fields: [receiverId], references: [id])
+  office          Office          @relation(fields: [officeId], references: [id])
+  sendingOffice   Office?         @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  TrackingCode    TrackingCode?
+  scans           ScannedParcel[] @relation("ParcelScans")
+  payment         Payment?
+  complaints      Complaint[]
 }
 
 model ParcelItem {
-  id           String   @id
+  id           String   @id @default(uuid())
   quantity     Int
   description  String
   pricePerUnit Float
   value        Float
   amount       Float
   parcelId     String
+  parcel       Parcel   @relation(fields: [parcelId], references: [id])
   createdAt    DateTime @default(now())
-  updatedAt    DateTime
-  Parcel       Parcel   @relation(fields: [parcelId], references: [id])
+  updatedAt    DateTime @updatedAt
 }
 
 model Payment {
-  id        String        @id
+  id        String        @id @default(uuid())
   parcelId  String        @unique
+  parcel    Parcel        @relation(fields: [parcelId], references: [id])
   amount    Float
   method    PaymentMethod
   reference String?
   paidAt    DateTime      @default(now())
   createdAt DateTime      @default(now())
-  updatedAt DateTime
-  Parcel    Parcel        @relation(fields: [parcelId], references: [id])
+  updatedAt DateTime      @updatedAt
 }
 
 model Role {
-  id        String   @id
+  id        String   @id @default(uuid())
   name      String   @unique
+  users     User[]
   createdAt DateTime @default(now())
-  updatedAt DateTime
-  User      User[]
+  updatedAt DateTime @updatedAt
 }
 
 model Route {
-  id              String            @id
-  code            String            @unique
-  name            String            @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime
-  Office          Office[]
-  ScanningSession ScanningSession[]
-  Trip            Trip[]
+  id               String            @id @default(uuid())
+  code             String            @unique
+  name             String            @unique
+  offices          Office[]
+  scanningSessions ScanningSession[]
+  trips            Trip[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model ScannedParcel {
-  id                String          @id
+  id                String          @id @default(uuid())
   scanningSessionId String
   parcelId          String
   scannedAt         DateTime        @default(now())
-  scannedById       String
+  scannedById       String // User.id
+  scanningSession   ScanningSession @relation(fields: [scanningSessionId], references: [id])
+  parcel            Parcel          @relation("ParcelScans", fields: [parcelId], references: [id])
+  scannedBy         User            @relation("UserParcelScans", fields: [scannedById], references: [id])
   createdAt         DateTime        @default(now())
-  updatedAt         DateTime
-  Parcel            Parcel          @relation(fields: [parcelId], references: [id])
-  User              User            @relation(fields: [scannedById], references: [id])
-  ScanningSession   ScanningSession @relation(fields: [scanningSessionId], references: [id])
+  updatedAt         DateTime        @updatedAt
 
   @@unique([scanningSessionId, parcelId])
 }
 
 model ScanningSession {
-  id            String          @id
-  routeId       String
-  officeId      String
-  staffId       String
-  mode          String
-  mailBagCode   String?         @unique
-  startedAt     DateTime        @default(now())
-  closedAt      DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  tripId        String?
-  bayId         String?
-  ScannedParcel ScannedParcel[]
-  Bay           Bay?            @relation(fields: [bayId], references: [id])
-  Office        Office          @relation(fields: [officeId], references: [id])
-  Route         Route           @relation(fields: [routeId], references: [id])
-  User          User            @relation(fields: [staffId], references: [id])
-  Trip          Trip?           @relation(fields: [tripId], references: [id])
+  id          String          @id @default(uuid())
+  routeId     String
+  officeId    String
+  bayId       String?
+  staffId     String // references User.id
+  mode        String // 'bag' | 'individual'
+  mailBagCode String?         @unique
+  startedAt   DateTime        @default(now())
+  closedAt    DateTime?
+  tripId      String?
+  trip        Trip?           @relation(fields: [tripId], references: [id])
+  scans       ScannedParcel[]
+  user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
+  office      Office          @relation(fields: [officeId], references: [id])
+  bay         Bay?            @relation(fields: [bayId], references: [id])
+  route       Route           @relation(fields: [routeId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model TrackingCode {
-  id              String   @id
+  id              String   @id @default(uuid())
   routeCode       String
   destinationCode String
   branchCode      String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime
   parcelId        String   @unique
+  parcel          Parcel   @relation(fields: [parcelId], references: [id])
   plainTextCode   String   @unique
-  Parcel          Parcel   @relation(fields: [parcelId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Trip {
-  id                                      String            @id
-  routeId                                 String
-  officeId                                String
-  driverName                              String
-  truckReg                                String
-  status                                  TripStatus        @default(PLANNED)
-  plannedAt                               DateTime          @default(now())
-  departedAt                              DateTime?
-  completedAt                             DateTime?
-  createdAt                               DateTime          @default(now())
-  updatedAt                               DateTime
-  destinationOfficeId                     String?
-  ScanningSession                         ScanningSession[]
-  Office_Trip_destinationOfficeIdToOffice Office?           @relation("Trip_destinationOfficeIdToOffice", fields: [destinationOfficeId], references: [id])
-  Office_Trip_officeIdToOffice            Office            @relation("Trip_officeIdToOffice", fields: [officeId], references: [id])
-  Route                                   Route             @relation(fields: [routeId], references: [id])
-  TripLog                                 TripLog[]
+  id                  String            @id @default(uuid())
+  routeId             String
+  officeId            String
+  destinationOfficeId String?
+  driverName          String
+  truckReg            String
+  status              TripStatus        @default(PLANNED)
+  plannedAt           DateTime          @default(now())
+  departedAt          DateTime?
+  completedAt         DateTime?
+  route               Route             @relation(fields: [routeId], references: [id])
+  office              Office            @relation(fields: [officeId], references: [id])
+  destinationOffice   Office?           @relation("TripDestination", fields: [destinationOfficeId], references: [id])
+  sessions            ScanningSession[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  TripLog             TripLog[]
 }
 
 model TripLog {
-  id          String      @id
+  id          String      @id @default(uuid())
   tripId      String
+  Trip        Trip        @relation(fields: [tripId], references: [id])
   action      String
   fromStatus  TripStatus?
   toStatus    TripStatus?
@@ -255,38 +256,37 @@ model TripLog {
   note        String?
   timestamp   DateTime    @default(now())
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
-  Trip        Trip        @relation(fields: [tripId], references: [id])
+  updatedAt   DateTime    @updatedAt
 }
 
 model Truck {
-  id           String   @id
+  id           String   @id @default(uuid())
   registration String   @unique
   make         String?
   model        String?
   capacity     Float?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
 }
 
 model User {
-  id                 String            @id
-  password           String
+  id                 String            @id @default(uuid())
   email              String            @unique
-  roleId             String
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime
+  password           String
   firstName          String?
   lastName           String?
+  roleId             String
+  role               Role              @relation(fields: [roleId], references: [id])
+  logs               AccessLog[]
+  scanningSessions   ScanningSession[] @relation("UserScanningSessions")
+  scans              ScannedParcel[]   @relation("UserParcelScans")
   officeId           String?
+  office             Office?           @relation(fields: [officeId], references: [id])
   authorizedBayTypes BayType[]         @default([])
-  AccessLog          AccessLog[]
-  Complaint          Complaint[]
-  ScannedParcel      ScannedParcel[]
-  ScanningSession    ScanningSession[]
-  Office             Office?           @relation(fields: [officeId], references: [id])
-  Role               Role              @relation(fields: [roleId], references: [id])
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  reportedComplaints Complaint[]       @relation("ComplaintReporter")
 }
 
 enum BayType {
