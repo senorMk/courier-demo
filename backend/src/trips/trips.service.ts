@@ -11,8 +11,8 @@ export class TripsService {
     private readonly time: TimeService,
   ) {}
 
-  async createTrip(payload: { routeId: string; officeId: string; destinationOfficeId: string; driverName: string; truckReg: string; }) {
-    const { routeId, officeId, destinationOfficeId, driverName, truckReg } = payload;
+  async createTrip(payload: { routeId: string; officeId: string; destinationOfficeId: string; destinationRouteId?: string; driverName: string; truckReg: string; }) {
+    const { routeId, officeId, destinationOfficeId, destinationRouteId, driverName, truckReg } = payload;
 
     // Validate origin office belongs to route
     const origin = await this.prisma.office.findUnique({ where: { id: officeId } });
@@ -28,11 +28,18 @@ export class TripsService {
       throw new BadRequestException('Destination office must be different from origin office');
     }
 
+    // Validate destination route if provided
+    if (destinationRouteId) {
+      const destRoute = await this.prisma.route.findUnique({ where: { id: destinationRouteId } });
+      if (!destRoute) throw new BadRequestException('Destination route not found');
+    }
+
     return this.prisma.trip.create({
       data: {
         routeId,
         officeId,
         destinationOfficeId,
+        destinationRouteId: destinationRouteId || null,
         driverName,
         truckReg,
         status: 'PLANNED' as any,
@@ -157,7 +164,7 @@ export class TripsService {
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        include: { route: true, office: true, destinationOffice: true },
+        include: { route: true, office: true, destinationOffice: true, destinationRoute: true },
       }),
       this.prisma.trip.count({ where }),
     ]);
@@ -167,7 +174,11 @@ export class TripsService {
   async openTrips(routeId: string, officeId: string) {
     if (!routeId || !officeId) throw new BadRequestException('routeId and officeId are required');
     return this.prisma.trip.findMany({
-      where: { routeId, officeId, status: { in: ['PLANNED' as any, 'LOADING' as any] } },
+      where: {
+        destinationRouteId: routeId,
+        officeId,
+        status: { in: ['PLANNED' as any, 'LOADING' as any] }
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -192,7 +203,7 @@ export class TripsService {
     // Fetch in-transit trips heading to this office (for receiver validation)
     return this.prisma.trip.findMany({
       where: {
-        routeId,
+        destinationRouteId: routeId,
         destinationOfficeId,
         status: 'IN_TRANSIT' as any
       },
