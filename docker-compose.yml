@@ -35,7 +35,7 @@ services:
     # If your env file lives in ./backend/.env, point to it:
     # env_file: ./backend/.env
     # Otherwise keep the root .env:
-    env_file: .env
+    env_file: ./backend/.env
     depends_on:
       postgres:
         condition: service_healthy
