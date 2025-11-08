@@ -3,7 +3,7 @@ import { RouterModule } from "@angular/router";
 import { parcelsRoutes } from "./parcels.routing";
 import { ParcelsComponent } from "./parcels.component";
 import { ParcelDialogComponent } from "./parcel-dialog.component";
-import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
+import { ParcelDetailsDialogComponent } from "./parcel-details-dialog.component";
 import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
@@ -19,7 +19,7 @@ import { ParcelsService } from "./parcels.service";
   imports: [
     ParcelsComponent,
     ParcelDialogComponent,
-    ParcelItemDialogComponent,
+  ParcelDetailsDialogComponent,
     ParcelTrackDialogComponent,
     RouterModule.forChild(parcelsRoutes),
     CommonModule,

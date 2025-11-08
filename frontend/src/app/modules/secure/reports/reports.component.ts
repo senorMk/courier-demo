@@ -20,6 +20,7 @@ import {
   ComplaintReport,
   DriverTripReport,
   ParcelMovementReport,
+  ReportDownloadFormat,
   ReportsApiService,
   RevenueReport,
   ZictaReport,
@@ -80,6 +81,12 @@ export class ReportsComponent implements OnInit {
   loadingTrips = false;
   loadingZicta = false;
 
+  downloadingRevenue = false;
+  downloadingParcel = false;
+  downloadingComplaint = false;
+  downloadingTrips = false;
+  downloadingZicta = false;
+
   selectedReportType: ReportType | null = null;
   readonly reportDefinitions = REPORT_DEFINITIONS;
   availableReportTypes: ReportType[] = [];
@@ -113,6 +120,8 @@ export class ReportsComponent implements OnInit {
     'createdAt',
     'trackingCode',
     'parcelNumber',
+    'description',
+    'declaredValue',
     'origin',
     'destination',
     'sender',
@@ -215,6 +224,42 @@ export class ReportsComponent implements OnInit {
     this.loadRevenue();
   }
 
+  downloadRevenue(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('revenue') || this.downloadingRevenue) {
+      return;
+    }
+
+    const { start, end, granularity } = this.revenueForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    this.downloadingRevenue = true;
+    this.api
+      .downloadRevenue(
+        {
+          startDate,
+          endDate,
+          granularity,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'revenue-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingRevenue = false;
+        },
+        error: () => {
+          this.downloadingRevenue = false;
+        },
+      });
+  }
+
   loadParcel(): void {
     if (!this.isReportAvailable('parcel')) {
       return;
@@ -249,6 +294,41 @@ export class ReportsComponent implements OnInit {
       end: new Date(),
     });
     this.loadParcel();
+  }
+
+  downloadParcel(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('parcel') || this.downloadingParcel) {
+      return;
+    }
+
+    const { start, end } = this.parcelForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    this.downloadingParcel = true;
+    this.api
+      .downloadParcelMovement(
+        {
+          startDate,
+          endDate,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'parcel-movement-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingParcel = false;
+        },
+        error: () => {
+          this.downloadingParcel = false;
+        },
+      });
   }
 
   loadComplaints(): void {
@@ -287,6 +367,41 @@ export class ReportsComponent implements OnInit {
     this.loadComplaints();
   }
 
+  downloadComplaints(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('complaint') || this.downloadingComplaint) {
+      return;
+    }
+
+    const { start, end } = this.complaintForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    this.downloadingComplaint = true;
+    this.api
+      .downloadComplaints(
+        {
+          startDate,
+          endDate,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'complaints-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingComplaint = false;
+        },
+        error: () => {
+          this.downloadingComplaint = false;
+        },
+      });
+  }
+
   loadTrips(): void {
     if (!this.isReportAvailable('trip')) {
       return;
@@ -321,6 +436,41 @@ export class ReportsComponent implements OnInit {
       end: new Date(),
     });
     this.loadTrips();
+  }
+
+  downloadTrips(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('trip') || this.downloadingTrips) {
+      return;
+    }
+
+    const { start, end } = this.tripForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    this.downloadingTrips = true;
+    this.api
+      .downloadDriverTrips(
+        {
+          startDate,
+          endDate,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'driver-trips-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingTrips = false;
+        },
+        error: () => {
+          this.downloadingTrips = false;
+        },
+      });
   }
 
   loadZicta(): void {
@@ -359,6 +509,41 @@ export class ReportsComponent implements OnInit {
     this.loadZicta();
   }
 
+  downloadZicta(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('zicta') || this.downloadingZicta) {
+      return;
+    }
+
+    const { start, end } = this.zictaForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    this.downloadingZicta = true;
+    this.api
+      .downloadZicta(
+        {
+          startDate,
+          endDate,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'zicta-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingZicta = false;
+        },
+        error: () => {
+          this.downloadingZicta = false;
+        },
+      });
+  }
+
   formatDate(value: string | null | undefined): string {
     if (!value) {
       return '';
@@ -394,6 +579,26 @@ export class ReportsComponent implements OnInit {
 
   isReportAvailable(type: ReportType): boolean {
     return this.availableReportTypes.includes(type);
+  }
+
+  private saveBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  private createFileName(
+    prefix: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+    extension: string,
+  ): string {
+    const start = startDate ?? 'start';
+    const end = endDate ?? 'end';
+    return `${prefix}_${start}_${end}.${extension}`;
   }
 
   private loadReportFor(type: ReportType): void {

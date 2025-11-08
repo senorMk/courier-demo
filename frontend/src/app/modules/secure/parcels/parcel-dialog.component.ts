@@ -88,6 +88,8 @@ export class ParcelDialogComponent {
         emailAddress: [""],
         idNumber: [""],
       }),
+      description: ["", Validators.required],
+      value: [null, [Validators.required, Validators.min(0)]],
       officeId: ["", Validators.required],
       size: ["MEDIUM", Validators.required],
       payment: this._fb.group({
@@ -144,7 +146,21 @@ export class ParcelDialogComponent {
       return;
     }
     this.loading = true;
-    const payload = this.form.value as any;
+    const raw = this.form.value as any;
+    const payload = {
+      ...raw,
+      description: (raw.description || "").trim(),
+      value: raw.value !== null && raw.value !== undefined ? Number(raw.value) : raw.value,
+      payment: raw.payment
+        ? {
+            ...raw.payment,
+            amount:
+              raw.payment.amount !== null && raw.payment.amount !== undefined
+                ? Number(raw.payment.amount)
+                : raw.payment.amount,
+          }
+        : raw.payment,
+    };
     this._service.createParcel(payload).subscribe({
       next: (created) => {
         this.loading = false;

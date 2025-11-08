@@ -78,7 +78,7 @@ export class AuthService {
 
           const payload = decodeJwt(response.access_token);
 
-          let user = {
+          const baseUser = {
             role: payload.role,
             token: response.access_token,
             email: payload.email,
@@ -91,20 +91,23 @@ export class AuthService {
             officeName: '', // Will be fetched below
           };
 
+          this.userSelectionService.setUser(baseUser);
+
           // Fetch office name if officeId is available
           if (payload.officeId) {
             this.officesSearchService.getById(payload.officeId).subscribe({
               next: (office) => {
-                user.officeName = office?.name || '';
-                this.userSelectionService.setUser(user);
+                const updatedUser = {
+                  ...baseUser,
+                  officeName: office?.name || '',
+                };
+                this.userSelectionService.setUser(updatedUser);
               },
               error: () => {
-                // Set user without office name if fetch fails
-                this.userSelectionService.setUser(user);
-              }
+                // Keep base user if office lookup fails
+                this.userSelectionService.setUser(baseUser);
+              },
             });
-          } else {
-            this.userSelectionService.setUser(user);
           }
 
           // Return a new observable with the response

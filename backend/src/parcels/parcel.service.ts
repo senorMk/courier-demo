@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { Office, Parcel, ParcelItem, ParcelStatus } from "@prisma/client";
+import { Office, Parcel, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
 import { sendSms } from "../utils/sms-sender";
@@ -25,6 +25,8 @@ export class ParcelService {
         receiverId: string;
         officeId: string;
         sendingOfficeId?: string;
+        description: string;
+        value: number;
         size?: "SMALL" | "MEDIUM" | "LARGE";
         payment?: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -48,6 +50,8 @@ export class ParcelService {
           idNumber?: string;
         };
         officeId: string;
+        description: string;
+        value: number;
         sendingOfficeId?: string;
         size: "SMALL" | "MEDIUM" | "LARGE";
         payment: {
@@ -118,6 +122,16 @@ export class ParcelService {
       receiverId = receiver.id;
     }
 
+    const description = String((data as any).description ?? '').trim();
+    if (!description) {
+      throw new BadRequestException('Parcel description is required');
+    }
+
+    const declaredValueRaw = Number((data as any).value);
+    if (!Number.isFinite(declaredValueRaw) || declaredValueRaw < 0) {
+      throw new BadRequestException('Parcel value must be a non-negative number');
+    }
+
     const parcel = await this.prisma.parcel.create({
       data: {
         customerId,
@@ -125,6 +139,8 @@ export class ParcelService {
         officeId: (data as any).officeId,
         sendingOfficeId: (data as any).sendingOfficeId || (data as any).officeId,
         size: ((data as any).size as any) || "MEDIUM",
+        description,
+        value: Number(declaredValueRaw.toFixed(2)),
       },
     });
 
@@ -297,6 +313,12 @@ export class ParcelService {
               phoneNumber: true,
             },
           },
+          sendingOffice: {
+            select: {
+              name: true,
+              branchCode: true,
+            },
+          },
           office: {
             select: {
               branchCode: true,
@@ -307,6 +329,14 @@ export class ParcelService {
           TrackingCode: {
             select: {
               plainTextCode: true,
+            },
+          },
+          payment: {
+            select: {
+              amount: true,
+              method: true,
+              reference: true,
+              paidAt: true,
             },
           },
         },
@@ -320,30 +350,6 @@ export class ParcelService {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
-  }
-
-  async addParcelItem(
-    parcelId: string,
-    data: {
-      quantity: number;
-      description: string;
-      pricePerUnit: number;
-      value: number;
-      amount: number;
-    }
-  ): Promise<ParcelItem> {
-    return this.prisma.parcelItem.create({
-      data: {
-        ...data,
-        parcelId,
-      },
-    });
-  }
-
-  async getParcelItems(parcelId: string): Promise<ParcelItem[]> {
-    return this.prisma.parcelItem.findMany({
-      where: { parcelId },
-    });
   }
 
   async getParcelScanHistory(parcelId: string) {

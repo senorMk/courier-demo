@@ -2,6 +2,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ComplaintStatus, ParcelStatus, TripStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimeService } from '../common/time/time.service';
+import {
+  ReportExportFormat,
+  ReportExportResult,
+  ReportExporterService,
+} from './report-exporter.service';
 
 type DateRange = {
   start: Date;
@@ -15,6 +20,7 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly time: TimeService,
+    private readonly exporter: ReportExporterService,
   ) {}
 
   private parseDate(value: string | undefined, label: 'startDate' | 'endDate'): Date | undefined {
@@ -53,6 +59,36 @@ export class ReportsService {
       return input;
     }
     throw new BadRequestException('granularity must be either "daily" or "monthly"');
+  }
+
+  private parseFormat(input?: string | null): ReportExportFormat {
+    if (!input) {
+      return 'csv';
+    }
+
+    const normalized = input.toLowerCase();
+    if (normalized === 'csv') {
+      return 'csv';
+    }
+    if (normalized === 'excel' || normalized === 'xlsx') {
+      return 'excel';
+    }
+
+    throw new BadRequestException('format must be either "csv" or "excel"');
+  }
+
+  private toDateSegment(iso: string | null | undefined): string {
+    if (!iso) {
+      return 'unknown';
+    }
+    const segment = iso.split('T')[0]?.trim();
+    return segment || 'unknown';
+  }
+
+  private buildFileBaseName(prefix: string, startIso: string, endIso: string): string {
+    const start = this.toDateSegment(startIso);
+    const end = this.toDateSegment(endIso);
+    return `${prefix}_${start}_${end}`;
   }
 
   async getRevenueReport(params: { startDate?: string; endDate?: string; granularity?: string }) {
@@ -369,7 +405,6 @@ export class ReportsService {
         sendingOffice: true,
         payment: true,
         TrackingCode: true,
-        items: true,
       },
     });
 
@@ -377,10 +412,10 @@ export class ReportsService {
     let totalPaymentAmount = 0;
 
     const records = parcels.map((parcel) => {
-      const declaredValue = parcel.items.reduce((acc, item) => acc + (item.value ?? 0), 0);
+      const declaredValue = Number(parcel.value ?? 0);
       totalDeclaredValue += declaredValue;
       if (parcel.payment?.amount) {
-        totalPaymentAmount += parcel.payment.amount;
+        totalPaymentAmount += Number(parcel.payment.amount);
       }
 
       return {
@@ -389,6 +424,9 @@ export class ReportsService {
         trackingCode: parcel.TrackingCode?.plainTextCode ?? null,
         createdAt: parcel.createdAt.toISOString(),
         status: parcel.status,
+        description: parcel.description,
+        size: parcel.size,
+        declaredValue,
         originOffice: parcel.sendingOffice
           ? {
               name: parcel.sendingOffice.name,
@@ -425,17 +463,6 @@ export class ReportsService {
               paidAt: parcel.payment.paidAt?.toISOString() ?? null,
             }
           : null,
-        items: parcel.items.map((item) => ({
-          id: item.id,
-          description: item.description,
-          quantity: item.quantity,
-          value: item.value,
-          amount: item.amount,
-        })),
-        totals: {
-          declaredValue,
-          lineAmount: parcel.items.reduce((acc, item) => acc + (item.amount ?? 0), 0),
-        },
       };
     });
 
@@ -448,5 +475,219 @@ export class ReportsService {
       records,
       generatedAt: this.time.nowISO(),
     };
+  }
+
+  async exportRevenueReport(params: {
+    startDate?: string;
+    endDate?: string;
+    granularity?: string;
+    format?: string | null;
+  }): Promise<ReportExportResult> {
+    const { format: formatInput, ...filters } = params;
+    const format = this.parseFormat(formatInput);
+    const report = await this.getRevenueReport(filters);
+
+    return this.exporter.export({
+      format,
+      fileBaseName: this.buildFileBaseName('revenue-report', report.startDate, report.endDate),
+      sheetName: 'Revenue',
+      columns: [
+        { header: 'Period', key: 'period' },
+        { header: 'Amount (ZMW)', key: 'amount' },
+        { header: 'Payments', key: 'payments' },
+      ],
+      rows: report.data.map((row) => ({
+        period: row.period,
+        amount: row.amount,
+        payments: row.payments,
+      })),
+    });
+  }
+
+  async exportParcelMovementReport(params: {
+    startDate?: string;
+    endDate?: string;
+    format?: string | null;
+  }): Promise<ReportExportResult> {
+    const { format: formatInput, ...filters } = params;
+    const format = this.parseFormat(formatInput);
+    const report = await this.getParcelMovementReport(filters);
+
+    return this.exporter.export({
+      format,
+      fileBaseName: this.buildFileBaseName('parcel-movement-report', report.startDate, report.endDate),
+      sheetName: 'Parcel Movement',
+      columns: [
+        { header: 'Date', key: 'date' },
+        { header: 'Total', key: 'total' },
+        { header: 'Pending', key: 'pending' },
+        { header: 'Ready For Collection', key: 'readyForCollection' },
+        { header: 'Collected', key: 'collected' },
+        { header: 'Complaint Box', key: 'complaintBox' },
+        { header: 'Damaged', key: 'damaged' },
+      ],
+      rows: report.daily,
+    });
+  }
+
+  async exportComplaintReport(params: {
+    startDate?: string;
+    endDate?: string;
+    format?: string | null;
+  }): Promise<ReportExportResult> {
+    const { format: formatInput, ...filters } = params;
+    const format = this.parseFormat(formatInput);
+    const report = await this.getComplaintReport(filters);
+
+    return this.exporter.export({
+      format,
+      fileBaseName: this.buildFileBaseName('complaints-report', report.startDate, report.endDate),
+      sheetName: 'Complaints',
+      columns: [
+        { header: 'Date', key: 'date' },
+        { header: 'Logged', key: 'logged' },
+        { header: 'Closed', key: 'closed' },
+      ],
+      rows: report.daily,
+    });
+  }
+
+  async exportDriverTripReport(params: {
+    startDate?: string;
+    endDate?: string;
+    format?: string | null;
+  }): Promise<ReportExportResult> {
+    const { format: formatInput, ...filters } = params;
+    const format = this.parseFormat(formatInput);
+    const report = await this.getDriverTripReport(filters);
+
+    return this.exporter.export({
+      format,
+      fileBaseName: this.buildFileBaseName('driver-trips-report', report.startDate, report.endDate),
+      sheetName: 'Driver Trips',
+      columns: [
+        { header: 'Driver Name', key: 'driverName' },
+        { header: 'Total Trips', key: 'totalTrips' },
+        { header: 'Planned', key: 'planned' },
+        { header: 'Loading', key: 'loading' },
+        { header: 'In Transit', key: 'inTransit' },
+        { header: 'Completed', key: 'completed' },
+        { header: 'Avg Duration (mins)', key: 'averageDuration' },
+        { header: 'Trucks', key: 'trucks' },
+        { header: 'Routes', key: 'routes' },
+        { header: 'Offices', key: 'offices' },
+        { header: 'Last Trip', key: 'lastTrip' },
+        { header: 'Last Status', key: 'lastStatus' },
+      ],
+      rows: report.drivers.map((driver) => ({
+        driverName: driver.driverName,
+        totalTrips: driver.totalTrips,
+        planned: driver.statusCounts.PLANNED ?? 0,
+        loading: driver.statusCounts.LOADING ?? 0,
+        inTransit: driver.statusCounts.IN_TRANSIT ?? 0,
+        completed: driver.statusCounts.COMPLETED ?? 0,
+        averageDuration: driver.averageDurationMinutes ?? '—',
+        trucks: driver.truckRegistrations.length
+          ? driver.truckRegistrations.join(', ')
+          : '—',
+        routes: driver.routes.length ? driver.routes.join(', ') : '—',
+        offices: driver.offices.length ? driver.offices.join(', ') : '—',
+        lastTrip: driver.lastTripPlannedAt ?? '',
+        lastStatus: driver.lastStatus ?? '—',
+      })),
+    });
+  }
+
+  async exportZictaReport(params: {
+    startDate?: string;
+    endDate?: string;
+    format?: string | null;
+  }): Promise<ReportExportResult> {
+    const { format: formatInput, ...filters } = params;
+    const format = this.parseFormat(formatInput);
+    const report = await this.getZictaReport(filters);
+
+    return this.exporter.export({
+      format,
+      fileBaseName: this.buildFileBaseName('zicta-report', report.startDate, report.endDate),
+      sheetName: 'ZICTA',
+      columns: [
+        { header: 'Created At', key: 'createdAt' },
+        { header: 'Tracking Code', key: 'trackingCode' },
+        { header: 'Parcel #', key: 'parcelNumber' },
+        { header: 'Description', key: 'description' },
+        { header: 'Declared Value (ZMW)', key: 'declaredValue' },
+        { header: 'Origin', key: 'origin' },
+        { header: 'Destination', key: 'destination' },
+        { header: 'Sender', key: 'sender' },
+        { header: 'Receiver', key: 'receiver' },
+        { header: 'Payment', key: 'payment' },
+        { header: 'Status', key: 'status' },
+      ],
+      rows: report.records.map((record) => {
+        const senderName = [record.sender?.firstName, record.sender?.lastName]
+          .filter((part) => !!part)
+          .join(' ');
+        const receiverName = [record.receiver?.firstName, record.receiver?.lastName]
+          .filter((part) => !!part)
+          .join(' ');
+        const originPieces = [] as string[];
+        if (record.originOffice?.name) {
+          originPieces.push(record.originOffice.name);
+        }
+        if (record.originOffice?.branchCode) {
+          originPieces.push(`(${record.originOffice.branchCode})`);
+        }
+
+        const destinationPieces = [] as string[];
+        if (record.destinationOffice?.name) {
+          destinationPieces.push(record.destinationOffice.name);
+        }
+        if (record.destinationOffice?.branchCode) {
+          destinationPieces.push(`(${record.destinationOffice.branchCode})`);
+        }
+
+        const senderPieces = [] as string[];
+        if (senderName) {
+          senderPieces.push(senderName.trim());
+        }
+        if (record.sender?.phoneNumber) {
+          senderPieces.push(`· ${record.sender.phoneNumber}`);
+        }
+
+        const receiverPieces = [] as string[];
+        if (receiverName) {
+          receiverPieces.push(receiverName.trim());
+        }
+        if (record.receiver?.phoneNumber) {
+          receiverPieces.push(`· ${record.receiver.phoneNumber}`);
+        }
+
+        const paymentParts = [] as string[];
+        if (record.payment?.amount !== undefined && record.payment?.amount !== null) {
+          const amount = Number(record.payment.amount);
+          paymentParts.push(amount.toFixed(2) + ' ZMW');
+        }
+        if (record.payment?.method) {
+          paymentParts.push(`(${record.payment.method})`);
+        }
+
+        return {
+          createdAt: record.createdAt,
+          trackingCode: record.trackingCode ?? '—',
+          parcelNumber: record.parcelNumber,
+          description: record.description ?? '—',
+          declaredValue: record.declaredValue !== undefined && record.declaredValue !== null
+            ? Number(record.declaredValue).toFixed(2)
+            : '0.00',
+          origin: originPieces.length ? originPieces.join(' ') : '—',
+          destination: destinationPieces.length ? destinationPieces.join(' ') : '—',
+          sender: senderPieces.length ? senderPieces.join(' ').trim() : '—',
+          receiver: receiverPieces.length ? receiverPieces.join(' ').trim() : '—',
+          payment: paymentParts.length ? paymentParts.join(' ') : '—',
+          status: record.status,
+        };
+      }),
+    });
   }
 }
