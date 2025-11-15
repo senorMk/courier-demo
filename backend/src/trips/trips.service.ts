@@ -204,7 +204,7 @@ export class TripsService {
     return this.prisma.trip.findMany({
       where: {
         destinationRouteId: routeId,
-        // destinationOfficeId,
+        destinationOfficeId,
         status: 'IN_TRANSIT' as any
       },
       orderBy: { departedAt: 'desc' },
