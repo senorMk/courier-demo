@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { sendSms } from '../utils/sms-sender';
+import { sendTemplateSms } from '../utils/sms-sender';
+import { SmsTemplates } from '../config/sms-templates';
 import { normalizeZMBPhone } from '../utils/phone.util';
 import { TimeService } from "../common/time/time.service";
 
@@ -109,15 +110,29 @@ export class TripsService {
       if (!p) continue;
       const code = p.TrackingCode?.plainTextCode || p.id;
       const dest = p.office?.name ? `${p.office.name} (${p.office.branchCode})` : 'destination office';
-      const msgSender = `PCS: Your parcel ${code} has departed and is in transit to ${dest}.`; // 160-char safe
-      const msgReceiver = `PCS: Parcel ${code} for you is in transit to ${dest}.`;
+      
       try {
         const customerPhone = normalizeZMBPhone(p.customer?.phoneNumber);
-        if (customerPhone) await sendSms(customerPhone, msgSender);
+        if (customerPhone) {
+          await sendTemplateSms(
+            customerPhone,
+            SmsTemplates.TRIP.DEPARTED,
+            code,
+            dest
+          );
+        }
       } catch {}
+      
       try {
         const receiverPhone = normalizeZMBPhone(p.receiver?.phoneNumber);
-        if (receiverPhone) await sendSms(receiverPhone, msgReceiver);
+        if (receiverPhone) {
+          await sendTemplateSms(
+            receiverPhone,
+            SmsTemplates.TRIP.IN_TRANSIT,
+            code,
+            dest
+          );
+        }
       } catch {}
     }
 
