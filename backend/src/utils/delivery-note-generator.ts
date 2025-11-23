@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import * as fs from 'fs';
-import * as path from 'path';
-import { PrismaClient } from '@prisma/client';
-import { TimeService } from '../common/time/time.service';
+import * as fs from "fs";
+import * as path from "path";
+import { PrismaClient } from "@prisma/client";
+import { TimeService } from "../common/time/time.service";
+import { string } from "joi";
 
 const time = new TimeService();
 
@@ -13,15 +14,15 @@ function ensureDir(dir: string) {
 function loadPdfKit(): any | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('pdfkit');
+    return require("pdfkit");
   } catch (e) {
-    console.warn('pdfkit not installed. Skipping delivery note generation.');
+    console.warn("pdfkit not installed. Skipping delivery note generation.");
     return null;
   }
 }
 
 export function getDeliveryNotePath(sessionId: string): string {
-  const dir = path.resolve(process.cwd(), 'delivery-notes');
+  const dir = path.resolve(process.cwd(), "delivery-notes");
   ensureDir(dir);
   return path.join(dir, `session-${sessionId}.pdf`);
 }
@@ -32,7 +33,7 @@ export function getDeliveryNotePath(sessionId: string): string {
  */
 export async function generateDeliveryNote(
   sessionId: string,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean } = {}
 ): Promise<string | null> {
   const { force = false } = opts;
   const PDFDocument = loadPdfKit();
@@ -51,54 +52,79 @@ export async function generateDeliveryNote(
           parcel: { include: { TrackingCode: true, office: true } },
           scannedBy: { select: { firstName: true, lastName: true } },
         },
-        orderBy: { scannedAt: 'asc' },
+        orderBy: { scannedAt: "asc" },
       },
     },
   });
-  if (!session) throw new Error('Session not found');
+  if (!session) throw new Error("Session not found");
 
   const outPath = getDeliveryNotePath(sessionId);
   if (!force && fs.existsSync(outPath)) return outPath;
 
-  const doc = new PDFDocument({ size: 'A4', margin: 36 });
+  const doc = new PDFDocument({ size: "A4", margin: 36 });
   const stream = fs.createWriteStream(outPath);
   doc.pipe(stream);
 
-  doc.font('Helvetica-Bold').fontSize(16).text('Delivery Note', { align: 'center' });
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(16)
+    .text("Delivery Note", { align: "center" });
   doc.moveDown(0.5);
-  doc.font('Helvetica').fontSize(10).text(`Session: ${session.id}`);
-  doc.text(`Route: ${session.route?.name || session.routeId} (${session.route?.code || ''})`);
+  doc.font("Helvetica").fontSize(10).text(`Session: ${session.id}`);
+  doc.text(
+    `Route: ${session.route?.name || session.routeId} (${
+      session.route?.code || ""
+    })`
+  );
   doc.text(`Office: ${session.office?.name} (${session.office?.branchCode})`);
   doc.text(`Mode: ${session.mode}`);
-  doc.text(`Staff: ${((session.user?.firstName || '') + ' ' + (session.user?.lastName || '')).trim()}`);
+  doc.text(
+    `Staff: ${(
+      (session.user?.firstName || "") +
+      " " +
+      (session.user?.lastName || "")
+    ).trim()}`
+  );
 
   // Include trip details if session is linked to a trip
   if ((session as any).trip) {
-    doc.text(`Driver: ${(session as any).trip.driverName || 'N/A'}`);
-    doc.text(`Truck Registration: ${(session as any).trip.truckReg || 'N/A'}`);
+    doc.text(`Driver: ${(session as any).trip.driverName || "N/A"}`);
+    doc.text(`Truck Registration: ${(session as any).trip.truckReg || "N/A"}`);
   }
 
-  doc.text(`Started: ${time.format(session.startedAt, 'dd/LL/yyyy HH:mm')}`);
+  doc.text(`Started: ${time.format(session.startedAt, "dd/LL/yyyy HH:mm")}`);
   if ((session as any).closedAt)
-    doc.text(`Closed: ${time.format((session as any).closedAt as unknown as string, 'dd/LL/yyyy HH:mm')}`);
+    doc.text(
+      `Closed: ${time.format(
+        (session as any).closedAt as unknown as string,
+        "dd/LL/yyyy HH:mm"
+      )}`
+    );
 
   doc.moveDown(1);
-  doc.font('Helvetica-Bold').fontSize(11).text('Scanned Parcels');
+  doc.font("Helvetica-Bold").fontSize(11).text("Scanned Parcels");
   doc.moveDown(0.3);
   const startX = doc.page.margins.left;
-  const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-  const colCode = Math.floor(contentWidth * 0.38);
-  const colDest = Math.floor(contentWidth * 0.3);
-  const colStaff = Math.floor(contentWidth * 0.18);
-  const colTime = contentWidth - (colCode + colDest + colStaff);
+  const contentWidth =
+    doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-  function fitTextToWidth(text: string, width: number, opts: { font?: string; size?: number } = {}) {
-    const t = String(text ?? '');
-    if (!t) return '';
+  const colNum = Math.floor(contentWidth * 0.07); // 7%
+  const colCode = Math.floor(contentWidth * 0.33); // 33%
+  const colDest = Math.floor(contentWidth * 0.3); // 30%
+  const colStaff = Math.floor(contentWidth * 0.17); // 17%
+  const colTime = contentWidth - (colNum + colCode + colDest + colStaff);
+
+  function fitTextToWidth(
+    text: string,
+    width: number,
+    opts: { font?: string; size?: number } = {}
+  ) {
+    const t = String(text ?? "");
+    if (!t) return "";
     if (opts.font) doc.font(opts.font);
     if (opts.size) doc.fontSize(opts.size);
     if (doc.widthOfString(t) <= width) return t;
-    const ell = '…';
+    const ell = "…";
     let lo = 0,
       hi = t.length;
     while (lo < hi) {
@@ -113,13 +139,29 @@ export async function generateDeliveryNote(
 
   function drawHeaderRow() {
     const y0 = doc.y;
-    doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Tracking Code', startX, y0, { width: colCode, lineBreak: false });
-    doc.text('Destination', startX + colCode, y0, { width: colDest, lineBreak: false });
-    doc.text('Scanned By', startX + colCode + colDest, y0, { width: colStaff, lineBreak: false });
-    doc.text('Time', startX + colCode + colDest + colStaff, y0, { width: colTime, align: 'right', lineBreak: false });
+    doc.fontSize(9).font("Helvetica-Bold");
+    doc.text("#", startX, y0, { width: colNum, linebreak: false });
+    doc.text("#", startX, y0, { width: colNum, lineBreak: false });
+    doc.text("Tracking Code", startX + colNum, y0, {
+      width: colCode,
+      lineBreak: false,
+    });
+    doc.text("Destination", startX + colNum + colCode, y0, {
+      width: colDest,
+      lineBreak: false,
+    });
+    doc.text("Scanned By", startX + colNum + colCode + colDest, y0, {
+      width: colStaff,
+      lineBreak: false,
+    });
+    doc.text("Time", startX + colNum + colCode + colDest + colStaff, y0, {
+      width: colTime,
+      align: "right",
+      lineBreak: false,
+    });
+
     doc.moveDown(0.3);
-    doc.font('Helvetica');
+    doc.font("Helvetica");
   }
 
   drawHeaderRow();
@@ -128,38 +170,61 @@ export async function generateDeliveryNote(
   const bodyFontSize = 8.5;
   doc.fontSize(bodyFontSize);
   function formatShortDate(d: string | number | Date) {
-    return time.format(d, 'dd/LL HH:mm');
+    return time.format(d, "dd/LL HH:mm");
   }
-
+  let index = 1;
   for (const s of (session as any).scans) {
     const code = s.parcel?.TrackingCode?.plainTextCode || s.parcelId;
-    const dest = s.parcel?.office ? `${s.parcel.office.name} (${s.parcel.office.branchCode})` : '';
-    const staff = `${s.scannedBy?.firstName || ''} ${s.scannedBy?.lastName || ''}`.trim();
+    const dest = s.parcel?.office
+      ? `${s.parcel.office.name} (${s.parcel.office.branchCode})`
+      : "";
+    const staff = `${s.scannedBy?.firstName || ""} ${
+      s.scannedBy?.lastName || ""
+    }`.trim();
     const time = formatShortDate(s.scannedAt);
 
     const rowH = 12;
     const pageBottom = doc.page.height - doc.page.margins.bottom;
+
+    // Page break check
     if (y + rowH > pageBottom) {
       doc.addPage();
       y = doc.page.margins.top;
       drawHeaderRow();
       y = doc.y;
     }
+
+    // Fit text
     const codeTxt = fitTextToWidth(code, colCode, { size: bodyFontSize });
     const destTxt = fitTextToWidth(dest, colDest, { size: bodyFontSize });
     const staffTxt = fitTextToWidth(staff, colStaff, { size: bodyFontSize });
     const timeTxt = fitTextToWidth(time, colTime, { size: bodyFontSize });
 
-    doc.text(codeTxt, startX, y, { width: colCode, lineBreak: false });
-    doc.text(destTxt, startX + colCode, y, { width: colDest, lineBreak: false });
-    doc.text(staffTxt, startX + colCode + colDest, y, { width: colStaff, lineBreak: false });
-    doc.text(timeTxt, startX + colCode + colDest + colStaff, y, { width: colTime, align: 'right', lineBreak: false });
+    // Render table row
+    doc.text(String(index), startX, y, { width: colNum, lineBreak: false });
+    doc.text(codeTxt, startX + colNum, y, { width: colCode, lineBreak: false });
+    doc.text(destTxt, startX + colNum + colCode, y, {
+      width: colDest,
+      lineBreak: false,
+    });
+    doc.text(staffTxt, startX + colNum + colCode + colDest, y, {
+      width: colStaff,
+      lineBreak: false,
+    });
+    doc.text(timeTxt, startX + colNum + colCode + colDest + colStaff, y, {
+      width: colTime,
+      align: "right",
+      lineBreak: false,
+    });
+
+    // Next
+    index++;
     y += rowH + 4;
     doc.y = y;
   }
 
   doc.end();
-  await new Promise<void>((res) => (stream as any).on('finish', res));
+  await new Promise<void>((res) => (stream as any).on("finish", res));
   return outPath;
 }
 
