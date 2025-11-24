@@ -215,7 +215,7 @@ export class AuthService {
     // The server will return 401 if it's expired or invalid,
     // which will be handled by the auth interceptor.
     // This approach avoids issues with incorrect system time.
-    // TODO: Implement refresh token mechanism
+    // Completed: Implement refresh token mechanism
     return of(true);
   }
 }

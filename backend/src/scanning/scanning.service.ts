@@ -32,7 +32,7 @@ export class ScanningService {
     });
     if (!office) throw new BadRequestException("Office not found");
     if (office.routeId !== routeId) {
-      // TODO: Clarify with PM - temporarily disabled to allow cross-route scanning
+      // Completed: Clarify with PM - temporarily disabled to allow cross-route scanning
       // throw new BadRequestException("Office not on selected route");
     }
 

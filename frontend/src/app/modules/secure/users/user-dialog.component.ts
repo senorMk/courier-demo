@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
@@ -33,6 +34,7 @@ interface Office {
     MatButtonModule,
     MatSelectModule,
     MatRadioModule,
+    MatIconModule,
     ReactiveFormsModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
@@ -44,6 +46,7 @@ export class UserDialogComponent implements OnInit {
   editingId?: string;
   roles: Role[] = [];
   offices: Office[] = [];
+  passwordVisible = false;
   bayTypes = [
     { value: 'SENDING', label: 'Sending Bay' },
     { value: 'RECEIVING', label: 'Receiving Bay' },
@@ -78,6 +81,10 @@ export class UserDialogComponent implements OnInit {
         officeId: this.data.officeId || '',
       });
     }
+  }
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible = !this.passwordVisible;
   }
 
   ngOnInit(): void {
