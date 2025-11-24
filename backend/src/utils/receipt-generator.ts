@@ -4,6 +4,7 @@ import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { normalizeZMBPhone } from './phone.util';
 import { TimeService } from '../common/time/time.service';
+import { getLogoAsset, getSvgToPdfModule } from './logo.util';
 const prisma = new PrismaClient();
 const time = new TimeService();
 
@@ -107,12 +108,53 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     doc.moveDown(0.3);
   }
 
+  const logoAsset = getLogoAsset();
+  const svgToPdf = logoAsset?.type === 'svg' ? getSvgToPdfModule() : null;
+
+  const LOGO_WIDTH = 96;
+
+  function drawReceiptLogo(doc: any, typeKey: string) {
+    if (!logoAsset) {
+      return;
+    }
+    const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const targetWidth = Math.min(LOGO_WIDTH, usableWidth);
+    const x = doc.page.margins.left + (usableWidth - targetWidth) / 2;
+    const y = doc.y;
+
+    try {
+      if (logoAsset.type === 'svg') {
+        if (!svgToPdf) {
+          return;
+        }
+        svgToPdf(doc, logoAsset.svg, x, y, {
+          width: targetWidth,
+          assumePt: true,
+          preserveAspectRatio: 'xMidYMid meet',
+        });
+        doc.y = y + targetWidth + 8;
+      } else {
+        const img = doc.openImage(logoAsset.path);
+        const scale = img && img.width ? targetWidth / img.width : 1;
+        const height = img && img.height ? img.height * scale : targetWidth * 0.6;
+        doc.image(logoAsset.path, x, y, { width: targetWidth });
+        doc.y = y + height + 8;
+      }
+      doc.x = doc.page.margins.left;
+    } catch (error) {
+      console.warn('Failed to render receipt logo:', error);
+      doc.y = y;
+    }
+  }
+
   for (const t of types) {
     const page = getPageOptions(t.key);
     const doc = new PDFDocument({ size: page.size as any, margin: page.margin });
     const outPath = path.join(receiptsDir, `parcel-${parcelId}-${t.key}.pdf`);
     const stream = fs.createWriteStream(outPath);
     doc.pipe(stream);
+
+    drawReceiptLogo(doc, t.key);
 
     doc.font('Helvetica-Bold').fontSize(14).text('Platinum Courier Services', { align: 'center' });
     doc.moveDown(0.5);

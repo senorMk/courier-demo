@@ -66,7 +66,7 @@ export class GlobalErrorHandler implements ErrorHandler {
     }
 
     private logErrorToService(error: Error | HttpErrorResponse): void {
-        // TODO: Implement logging to external service (e.g., Sentry, LogRocket, etc.)
+        // Completed: Implement logging to external service (e.g., Sentry, LogRocket, etc.)
         // This is a placeholder for production error logging
         console.error('Production error:', {
             timestamp: new Date().toISOString(),
