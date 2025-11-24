@@ -120,7 +120,9 @@ model Parcel {
   sendingOfficeId String?
   status          ParcelStatus    @default(PENDING)
   size            ParcelSize      @default(MEDIUM)
-  items           ParcelItem[]
+  cargoType       CargoType       @default(NORMAL)
+  description     String
+  value           Float           @default(0)
   customer        Customer        @relation("Sender", fields: [customerId], references: [id])
   receiver        Customer        @relation("Receiver", fields: [receiverId], references: [id])
   office          Office          @relation(fields: [officeId], references: [id])
@@ -131,19 +133,6 @@ model Parcel {
   scans           ScannedParcel[] @relation("ParcelScans")
   payment         Payment?
   complaints      Complaint[]
-}
-
-model ParcelItem {
-  id           String   @id @default(uuid())
-  quantity     Int
-  description  String
-  pricePerUnit Float
-  value        Float
-  amount       Float
-  parcelId     String
-  parcel       Parcel   @relation(fields: [parcelId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }
 
 model Payment {
@@ -336,4 +325,11 @@ enum TripStatus {
   LOADING
   IN_TRANSIT
   COMPLETED
+}
+
+enum CargoType {
+  NORMAL
+  FRAGILE
+  ELECTRONIC
+  DOCUMENT
 }
