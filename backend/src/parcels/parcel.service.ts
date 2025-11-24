@@ -7,7 +7,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Office, Parcel, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
-import { sendSms } from "../utils/sms-sender";
+import { sendTemplateSms } from '../utils/sms-sender';
+import { SmsTemplates } from '../config/sms-templates';
 import { normalizeZMBPhone } from "../utils/phone.util";
 import { TimeService } from "../common/time/time.service";
 
@@ -212,18 +213,20 @@ export class ParcelService {
       if (sender?.phoneNumber && code) {
         const senderMsisdn = normalizeZMBPhone(sender.phoneNumber as any);
         if (senderMsisdn) {
-          await sendSms(
+          await sendTemplateSms(
             senderMsisdn,
-            `Parcel Created: ${code}. Thank you for using PCS.`
+            SmsTemplates.PARCEL.CREATED.SENDER,
+            code
           );
         }
       }
       if (receiver?.phoneNumber && code) {
         const receiverMsisdn = normalizeZMBPhone(receiver.phoneNumber as any);
         if (receiverMsisdn) {
-          await sendSms(
+          await sendTemplateSms(
             receiverMsisdn,
-            `Incoming Parcel: ${code}. You will be notified upon arrival.`
+            SmsTemplates.PARCEL.CREATED.RECEIVER,
+            code
           );
         }
       }
@@ -521,9 +524,12 @@ export class ParcelService {
         ? `${parcel.office.name} (${parcel.office.branchCode})`
         : "the office";
       if ((parcel as any).customer?.phoneNumber) {
-        await sendSms(
-          `260${(parcel as any).customer.phoneNumber}`,
-          `PCS: Parcel ${code} has been collected at ${dest}. Thank you.`
+        const msisdn = `260${(parcel as any).customer.phoneNumber}`;
+        await sendTemplateSms(
+          msisdn,
+          SmsTemplates.PARCEL.COLLECTED,
+          code,
+          dest
         );
       }
     } catch { }
