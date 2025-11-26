@@ -45,8 +45,13 @@ export class ReportsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('granularity') granularity?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
   ) {
-    return this.reports.getRevenueReport({ startDate, endDate, granularity });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getRevenueReport({ startDate, endDate, granularity, officeIds: parsedOfficeIds });
   }
 
   @Get('revenue/export')
@@ -56,9 +61,14 @@ export class ReportsController {
     @Query('endDate') endDate: string | undefined,
     @Query('granularity') granularity: string | undefined,
     @Query('format') format: string | undefined,
-    @Res() res: Response,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
   ) {
-    const file = await this.reports.exportRevenueReport({ startDate, endDate, granularity, format });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportRevenueReport({ startDate, endDate, granularity, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
   }
 
@@ -67,8 +77,13 @@ export class ReportsController {
   getParcelMovement(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
   ) {
-    return this.reports.getParcelMovementReport({ startDate, endDate });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getParcelMovementReport({ startDate, endDate, officeIds: parsedOfficeIds });
   }
 
   @Get('parcel-movement/export')
@@ -77,9 +92,14 @@ export class ReportsController {
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
     @Query('format') format: string | undefined,
-    @Res() res: Response,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
   ) {
-    const file = await this.reports.exportParcelMovementReport({ startDate, endDate, format });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportParcelMovementReport({ startDate, endDate, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
   }
 
@@ -88,8 +108,13 @@ export class ReportsController {
   getComplaintsReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
   ) {
-    return this.reports.getComplaintReport({ startDate, endDate });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getComplaintReport({ startDate, endDate, officeIds: parsedOfficeIds });
   }
 
   @Get('complaints/export')
@@ -98,9 +123,14 @@ export class ReportsController {
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
     @Query('format') format: string | undefined,
-    @Res() res: Response,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
   ) {
-    const file = await this.reports.exportComplaintReport({ startDate, endDate, format });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportComplaintReport({ startDate, endDate, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
   }
 
@@ -109,8 +139,13 @@ export class ReportsController {
   getDriverTripReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
   ) {
-    return this.reports.getDriverTripReport({ startDate, endDate });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getDriverTripReport({ startDate, endDate, officeIds: parsedOfficeIds });
   }
 
   @Get('driver-trips/export')
@@ -119,9 +154,14 @@ export class ReportsController {
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
     @Query('format') format: string | undefined,
-    @Res() res: Response,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
   ) {
-    const file = await this.reports.exportDriverTripReport({ startDate, endDate, format });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportDriverTripReport({ startDate, endDate, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
   }
 
@@ -130,8 +170,13 @@ export class ReportsController {
   getZictaReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
   ) {
-    return this.reports.getZictaReport({ startDate, endDate });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getZictaReport({ startDate, endDate, officeIds: parsedOfficeIds });
   }
 
   @Get('zicta/export')
@@ -140,9 +185,14 @@ export class ReportsController {
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
     @Query('format') format: string | undefined,
-    @Res() res: Response,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
   ) {
-    const file = await this.reports.exportZictaReport({ startDate, endDate, format });
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportZictaReport({ startDate, endDate, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
   }
 
