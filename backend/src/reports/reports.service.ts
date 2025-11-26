@@ -91,12 +91,26 @@ export class ReportsService {
     return `${prefix}_${start}_${end}`;
   }
 
-  async getRevenueReport(params: { startDate?: string; endDate?: string; granularity?: string }) {
+  async getRevenueReport(params: { startDate?: string; endDate?: string; granularity?: string; officeIds?: string[] }) {
     const granularity = this.parseGranularity(params?.granularity);
     const fallbackDays = granularity === 'monthly' ? 365 : 30;
     const range = this.normalizeRange(params?.startDate, params?.endDate, fallbackDays);
+    
+    // Build where clause with optional office filter
+    const where: any = { paidAt: { gte: range.start, lte: range.end } };
+    if (params.officeIds && params.officeIds.length > 0) {
+      where.parcel = {
+        OR: params.officeIds.map(officeId => ({
+          OR: [
+            { sendingOfficeId: officeId },
+            { officeId: officeId }
+          ]
+        }))
+      };
+    }
+    
     const payments = await this.prisma.payment.findMany({
-      where: { paidAt: { gte: range.start, lte: range.end } },
+      where,
       orderBy: { paidAt: 'asc' },
     });
 
@@ -138,10 +152,22 @@ export class ReportsService {
     };
   }
 
-  async getParcelMovementReport(params: { startDate?: string; endDate?: string }) {
+  async getParcelMovementReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
+    
+    // Build where clause with optional office filter
+    const where: any = { createdAt: { gte: range.start, lte: range.end } };
+    if (params.officeIds && params.officeIds.length > 0) {
+      where.OR = params.officeIds.map(officeId => ({
+        OR: [
+          { sendingOfficeId: officeId },
+          { officeId: officeId }
+        ]
+      }));
+    }
+    
     const parcels = await this.prisma.parcel.findMany({
-      where: { createdAt: { gte: range.start, lte: range.end } },
+      where,
       select: { createdAt: true, status: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -218,7 +244,7 @@ export class ReportsService {
     };
   }
 
-  async getComplaintReport(params: { startDate?: string; endDate?: string }) {
+  async getComplaintReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
     const where: any = {
       createdAt: {
@@ -226,6 +252,18 @@ export class ReportsService {
         lte: range.end,
       },
     };
+
+    // Add office filter if provided
+    if (params.officeIds && params.officeIds.length > 0) {
+      where.parcel = {
+        OR: params.officeIds.map(officeId => ({
+          OR: [
+            { sendingOfficeId: officeId },
+            { officeId: officeId }
+          ]
+        }))
+      };
+    }
 
     const [openCount, closedComplaints, total, complaints] = await this.prisma.$transaction([
       this.prisma.complaint.count({ where: { ...where, status: ComplaintStatus.OPEN } }),
@@ -277,10 +315,17 @@ export class ReportsService {
     };
   }
 
-  async getDriverTripReport(params: { startDate?: string; endDate?: string }) {
+  async getDriverTripReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 60);
+    
+    // Build where clause with optional office filter
+    const where: any = { plannedAt: { gte: range.start, lte: range.end } };
+    if (params.officeIds && params.officeIds.length > 0) {
+      where.officeId = { in: params.officeIds };
+    }
+    
     const trips = await this.prisma.trip.findMany({
-      where: { plannedAt: { gte: range.start, lte: range.end } },
+      where,
       include: {
         route: { select: { name: true, code: true } },
         office: { select: { name: true, branchCode: true } },
@@ -393,10 +438,22 @@ export class ReportsService {
     };
   }
 
-  async getZictaReport(params: { startDate?: string; endDate?: string }) {
+  async getZictaReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
+    
+    // Build where clause with optional office filter
+    const where: any = { createdAt: { gte: range.start, lte: range.end } };
+    if (params.officeIds && params.officeIds.length > 0) {
+      where.OR = params.officeIds.map(officeId => ({
+        OR: [
+          { sendingOfficeId: officeId },
+          { officeId: officeId }
+        ]
+      }));
+    }
+    
     const parcels = await this.prisma.parcel.findMany({
-      where: { createdAt: { gte: range.start, lte: range.end } },
+      where,
       orderBy: { createdAt: 'asc' },
       include: {
         customer: true,
@@ -482,6 +539,7 @@ export class ReportsService {
     endDate?: string;
     granularity?: string;
     format?: string | null;
+    officeIds?: string[];
   }): Promise<ReportExportResult> {
     const { format: formatInput, ...filters } = params;
     const format = this.parseFormat(formatInput);
@@ -508,6 +566,7 @@ export class ReportsService {
     startDate?: string;
     endDate?: string;
     format?: string | null;
+    officeIds?: string[];
   }): Promise<ReportExportResult> {
     const { format: formatInput, ...filters } = params;
     const format = this.parseFormat(formatInput);
@@ -534,6 +593,7 @@ export class ReportsService {
     startDate?: string;
     endDate?: string;
     format?: string | null;
+    officeIds?: string[];
   }): Promise<ReportExportResult> {
     const { format: formatInput, ...filters } = params;
     const format = this.parseFormat(formatInput);
@@ -556,6 +616,7 @@ export class ReportsService {
     startDate?: string;
     endDate?: string;
     format?: string | null;
+    officeIds?: string[];
   }): Promise<ReportExportResult> {
     const { format: formatInput, ...filters } = params;
     const format = this.parseFormat(formatInput);
@@ -602,6 +663,7 @@ export class ReportsService {
     startDate?: string;
     endDate?: string;
     format?: string | null;
+    officeIds?: string[];
   }): Promise<ReportExportResult> {
     const { format: formatInput, ...filters } = params;
     const format = this.parseFormat(formatInput);
