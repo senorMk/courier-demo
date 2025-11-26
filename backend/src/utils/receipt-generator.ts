@@ -147,6 +147,9 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     }
   }
 
+  // Determine if we should use the short sticker label version
+  const useStickerShortVersion = process.env.STICKER_LABEL_VERSION === 'short';
+
   for (const t of types) {
     const page = getPageOptions(t.key);
     const doc = new PDFDocument({ size: page.size as any, margin: page.margin });
@@ -154,23 +157,30 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const stream = fs.createWriteStream(outPath);
     doc.pipe(stream);
 
-    drawReceiptLogo(doc, t.key);
+    // drawReceiptLogo(doc, t.key);
 
     doc.font('Helvetica-Bold').fontSize(14).text('Platinum Courier Services', { align: 'center' });
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').fontSize(12).text(t.title, { align: 'center' });
     doc.font('Helvetica');
     doc.moveDown();
-    doc.fontSize(10).text(`Parcel #: ${parcel.parcelNumber}`);
-    if (parcel.TrackingCode?.plainTextCode) {
-      doc.text(`Tracking: ${parcel.TrackingCode.plainTextCode}`);
+
+    // For sticker labels, check if short version is requested
+    const isSticker = t.key === 'sticker';
+    const showFullDetails = !isSticker || !useStickerShortVersion;
+
+    if (showFullDetails) {
+      doc.fontSize(10).text(`Parcel #: ${parcel.parcelNumber}`);
+      if (parcel.TrackingCode?.plainTextCode) {
+        doc.text(`Tracking: ${parcel.TrackingCode.plainTextCode}`);
+      }
+      doc.text(`Size: ${parcel.size}`);
+      if (parcel.payment) {
+        doc.text(`Payment: ${parcel.payment.method} · ZMW ${parcel.payment.amount}`);
+        if ((parcel.payment as any).reference) doc.text(`Ref: ${(parcel.payment as any).reference}`);
+      }
+      doc.moveDown(0.6);
     }
-    doc.text(`Size: ${parcel.size}`);
-    if (parcel.payment) {
-      doc.text(`Payment: ${parcel.payment.method} · ZMW ${parcel.payment.amount}`);
-      if ((parcel.payment as any).reference) doc.text(`Ref: ${(parcel.payment as any).reference}`);
-    }
-    doc.moveDown(0.6);
 
     doc.font('Helvetica-Bold').text('Sender Details');
     doc.font('Helvetica');
@@ -190,7 +200,9 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
     doc.text(`Contact No: ${receiverContact}`);
 
-  drawParcelSummary(doc);
+    if (showFullDetails) {
+      drawParcelSummary(doc);
+    }
     try {
       const barcodePath = path.resolve(process.cwd(), `barcodes/parcel-${parcelId}.png`);
       if (!fs.existsSync(barcodePath)) {
