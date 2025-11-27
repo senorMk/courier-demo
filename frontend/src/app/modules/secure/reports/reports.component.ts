@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -16,10 +16,12 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RoleService } from 'app/core/auth/role.service';
 import { ReportType } from 'app/core/auth/role-permissions';
+import { OfficesSearchService, Office } from '../offices/offices-search.service';
 import {
   ComplaintReport,
   DriverTripReport,
   ParcelMovementReport,
+  ReportDownloadFormat,
   ReportsApiService,
   RevenueReport,
   ZictaReport,
@@ -80,9 +82,21 @@ export class ReportsComponent implements OnInit {
   loadingTrips = false;
   loadingZicta = false;
 
+  downloadingRevenue = false;
+  downloadingParcel = false;
+  downloadingComplaint = false;
+  downloadingTrips = false;
+  downloadingZicta = false;
+
   selectedReportType: ReportType | null = null;
   readonly reportDefinitions = REPORT_DEFINITIONS;
   availableReportTypes: ReportType[] = [];
+
+  // Office filter properties
+  officeFilterControl: FormControl<string[]> = new FormControl([]);
+  availableOffices: Office[] = [];
+  selectedOfficeIds: string[] = [];
+  loadingOffices = false;
 
   readonly revenueColumns = ['period', 'amount', 'payments'];
   readonly parcelColumns = [
@@ -113,6 +127,8 @@ export class ReportsComponent implements OnInit {
     'createdAt',
     'trackingCode',
     'parcelNumber',
+    'description',
+    'declaredValue',
     'origin',
     'destination',
     'sender',
@@ -124,7 +140,8 @@ export class ReportsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private api: ReportsApiService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private officesSearchService: OfficesSearchService
   ) {
     this.revenueForm = this.fb.group({
       start: [this.daysAgo(29)],
@@ -155,6 +172,7 @@ export class ReportsComponent implements OnInit {
 
   ngOnInit(): void {
     this.availableReportTypes = this.roleService.getPermittedReports();
+    this.loadOffices();
 
     if (this.availableReportTypes.length === 0) {
       this.selectedReportType = null;
@@ -184,11 +202,14 @@ export class ReportsComponent implements OnInit {
 
     this.loadingRevenue = true;
     const { start, end, granularity } = this.revenueForm.value;
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
       .getRevenue({
         startDate: this.toDateParam(start),
         endDate: this.toDateParam(end),
         granularity,
+        officeIds,
       })
       .subscribe({
         next: (res) => {
@@ -215,6 +236,46 @@ export class ReportsComponent implements OnInit {
     this.loadRevenue();
   }
 
+  downloadRevenue(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('revenue') || this.downloadingRevenue) {
+      return;
+    }
+
+    const { start, end, granularity } = this.revenueForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
+
+    this.downloadingRevenue = true;
+    this.api
+      .downloadRevenue(
+        {
+          startDate,
+          endDate,
+          granularity,
+          officeIds,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'revenue-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingRevenue = false;
+        },
+        error: () => {
+          this.downloadingRevenue = false;
+        },
+      });
+  }
+
   loadParcel(): void {
     if (!this.isReportAvailable('parcel')) {
       return;
@@ -222,10 +283,13 @@ export class ReportsComponent implements OnInit {
 
     this.loadingParcel = true;
     const { start, end } = this.parcelForm.value;
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
       .getParcelMovement({
         startDate: this.toDateParam(start),
         endDate: this.toDateParam(end),
+        officeIds,
       })
       .subscribe({
         next: (res) => {
@@ -251,6 +315,45 @@ export class ReportsComponent implements OnInit {
     this.loadParcel();
   }
 
+  downloadParcel(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('parcel') || this.downloadingParcel) {
+      return;
+    }
+
+    const { start, end } = this.parcelForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
+
+    this.downloadingParcel = true;
+    this.api
+      .downloadParcelMovement(
+        {
+          startDate,
+          endDate,
+          officeIds,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'parcel-movement-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingParcel = false;
+        },
+        error: () => {
+          this.downloadingParcel = false;
+        },
+      });
+  }
+
   loadComplaints(): void {
     if (!this.isReportAvailable('complaint')) {
       return;
@@ -258,10 +361,13 @@ export class ReportsComponent implements OnInit {
 
     this.loadingComplaint = true;
     const { start, end } = this.complaintForm.value;
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
       .getComplaints({
         startDate: this.toDateParam(start),
         endDate: this.toDateParam(end),
+        officeIds,
       })
       .subscribe({
         next: (res) => {
@@ -287,6 +393,45 @@ export class ReportsComponent implements OnInit {
     this.loadComplaints();
   }
 
+  downloadComplaints(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('complaint') || this.downloadingComplaint) {
+      return;
+    }
+
+    const { start, end } = this.complaintForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
+
+    this.downloadingComplaint = true;
+    this.api
+      .downloadComplaints(
+        {
+          startDate,
+          endDate,
+          officeIds,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'complaints-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingComplaint = false;
+        },
+        error: () => {
+          this.downloadingComplaint = false;
+        },
+      });
+  }
+
   loadTrips(): void {
     if (!this.isReportAvailable('trip')) {
       return;
@@ -294,10 +439,13 @@ export class ReportsComponent implements OnInit {
 
     this.loadingTrips = true;
     const { start, end } = this.tripForm.value;
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
       .getDriverTrips({
         startDate: this.toDateParam(start),
         endDate: this.toDateParam(end),
+        officeIds,
       })
       .subscribe({
         next: (res) => {
@@ -323,6 +471,45 @@ export class ReportsComponent implements OnInit {
     this.loadTrips();
   }
 
+  downloadTrips(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('trip') || this.downloadingTrips) {
+      return;
+    }
+
+    const { start, end } = this.tripForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
+
+    this.downloadingTrips = true;
+    this.api
+      .downloadDriverTrips(
+        {
+          startDate,
+          endDate,
+          officeIds,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'driver-trips-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingTrips = false;
+        },
+        error: () => {
+          this.downloadingTrips = false;
+        },
+      });
+  }
+
   loadZicta(): void {
     if (!this.isReportAvailable('zicta')) {
       return;
@@ -330,10 +517,13 @@ export class ReportsComponent implements OnInit {
 
     this.loadingZicta = true;
     const { start, end } = this.zictaForm.value;
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
       .getZicta({
         startDate: this.toDateParam(start),
         endDate: this.toDateParam(end),
+        officeIds,
       })
       .subscribe({
         next: (res) => {
@@ -357,6 +547,45 @@ export class ReportsComponent implements OnInit {
       end: new Date(),
     });
     this.loadZicta();
+  }
+
+  downloadZicta(format: ReportDownloadFormat): void {
+    if (!this.isReportAvailable('zicta') || this.downloadingZicta) {
+      return;
+    }
+
+    const { start, end } = this.zictaForm.value;
+    const startDate = this.toDateParam(start);
+    const endDate = this.toDateParam(end);
+
+    // Pass all selected office IDs for multi-office filtering
+    const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
+
+    this.downloadingZicta = true;
+    this.api
+      .downloadZicta(
+        {
+          startDate,
+          endDate,
+          officeIds,
+        },
+        format,
+      )
+      .subscribe({
+        next: (blob) => {
+          const fileName = this.createFileName(
+            'zicta-report',
+            startDate,
+            endDate,
+            format === 'excel' ? 'xlsx' : 'csv',
+          );
+          this.saveBlob(blob, fileName);
+          this.downloadingZicta = false;
+        },
+        error: () => {
+          this.downloadingZicta = false;
+        },
+      });
   }
 
   formatDate(value: string | null | undefined): string {
@@ -396,6 +625,26 @@ export class ReportsComponent implements OnInit {
     return this.availableReportTypes.includes(type);
   }
 
+  private saveBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  private createFileName(
+    prefix: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+    extension: string,
+  ): string {
+    const start = startDate ?? 'start';
+    const end = endDate ?? 'end';
+    return `${prefix}_${start}_${end}.${extension}`;
+  }
+
   private loadReportFor(type: ReportType): void {
     switch (type) {
       case 'revenue':
@@ -413,6 +662,107 @@ export class ReportsComponent implements OnInit {
       case 'zicta':
         this.loadZicta();
         break;
+    }
+  }
+
+  // Office filter methods
+  loadOffices(): void {
+    this.loadingOffices = true;
+    this.officesSearchService.searchOffices('').subscribe({
+      next: (offices) => {
+        this.availableOffices = offices.sort((a, b) => a.name.localeCompare(b.name));
+        this.loadingOffices = false;
+      },
+      error: () => {
+        this.availableOffices = [];
+        this.loadingOffices = false;
+      }
+    });
+  }
+
+  onOfficeFilterChange(): void {
+    const newSelection = this.officeFilterControl.value || [];
+    const previousSelection = this.selectedOfficeIds;
+    
+    // Only reload if there's an actual change in selection (order-independent)
+    if (this.arraysEqualIgnoreOrder(previousSelection, newSelection)) {
+      return; // No change detected, skip reload
+    }
+    
+    // Update selected office IDs
+    this.selectedOfficeIds = newSelection;
+    
+    // Clear current report data if selection becomes empty
+    if (newSelection.length === 0) {
+      this.clearCurrentReportData();
+    }
+    
+    // Reload current report with new office filter
+    if (this.selectedReportType) {
+      this.loadReportFor(this.selectedReportType);
+    }
+  }
+
+  private arraysEqualIgnoreOrder(arr1: string[], arr2: string[]): boolean {
+    // Quick length check
+    if (arr1.length !== arr2.length) return false;
+    
+    // If both arrays are empty, they're equal
+    if (arr1.length === 0) return true;
+    
+    // Sort both arrays and compare
+    const sorted1 = [...arr1].sort();
+    const sorted2 = [...arr2].sort();
+    
+    return sorted1.every((val, index) => val === sorted2[index]);
+  }
+
+  private clearCurrentReportData(): void {
+    // Clear all report data when filter is completely removed
+    this.revenueReport = null;
+    this.parcelReport = null;
+    this.complaintReport = null;
+    this.tripReport = null;
+    this.zictaReport = null;
+  }
+
+  refreshCurrentReport(): void {
+    if (!this.selectedReportType) {
+      return;
+    }
+    
+    // Reload the current report with the same filters
+    this.loadReportFor(this.selectedReportType);
+  }
+
+  isRefreshing(): boolean {
+    if (!this.selectedReportType) {
+      return false;
+    }
+    
+    // Check if any report is currently loading
+    switch (this.selectedReportType) {
+      case 'revenue':
+        return this.loadingRevenue || this.downloadingRevenue;
+      case 'parcel':
+        return this.loadingParcel || this.downloadingParcel;
+      case 'complaint':
+        return this.loadingComplaint || this.downloadingComplaint;
+      case 'trip':
+        return this.loadingTrips || this.downloadingTrips;
+      case 'zicta':
+        return this.loadingZicta || this.downloadingZicta;
+      default:
+        return false;
+    }
+  }
+
+  clearOfficeFilter(): void {
+    this.officeFilterControl.setValue([]);
+    this.selectedOfficeIds = [];
+    // Reload current report without office filter
+    if (this.selectedReportType) {
+      this.loadReportFor(this.selectedReportType);
     }
   }
 }

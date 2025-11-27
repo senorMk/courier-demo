@@ -68,6 +68,8 @@ export class ParcelController {
         customerId: string;
         receiverId: string;
         officeId: string;
+        description: string;
+        value: number;
         size?: "SMALL" | "MEDIUM" | "LARGE";
         payment?: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -91,6 +93,8 @@ export class ParcelController {
           idNumber?: string;
         };
         officeId: string;
+        description: string;
+        value: number;
         size: "SMALL" | "MEDIUM" | "LARGE";
         payment: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -130,40 +134,6 @@ export class ParcelController {
       );
     } catch (e) {
       console.error('ParcelController.getPaginated error:', e);
-      throw e;
-    }
-  }
-
-  @Post(":parcelId/items")
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", PARCEL_CREATE_ROLES)
-  async addItem(
-    @Param("parcelId") parcelId: string,
-    @Body()
-    body: {
-      quantity: number;
-      description: string;
-      pricePerUnit: number;
-      value: number;
-      amount: number;
-    }
-  ) {
-    try {
-      return await this.parcelService.addParcelItem(parcelId, body);
-    } catch (e) {
-      console.error('ParcelController.addItem error:', e);
-      throw e;
-    }
-  }
-
-  @Get(":parcelId/items")
-  @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @SetMetadata("roles", PARCEL_VIEW_ROLES)
-  async getParcelItems(@Param("parcelId") parcelId: string) {
-    try {
-      return await this.parcelService.getParcelItems(parcelId);
-    } catch (e) {
-      console.error('ParcelController.getParcelItems error:', e);
       throw e;
     }
   }

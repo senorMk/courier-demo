@@ -78,14 +78,6 @@ export interface DriverTripReport {
   generatedAt: string;
 }
 
-export interface ZictaItemRow {
-  id: string;
-  description: string;
-  quantity: number;
-  value: number;
-  amount: number;
-}
-
 export interface ZictaParty {
   firstName: string | null;
   lastName: string | null;
@@ -116,11 +108,9 @@ export interface ZictaRecord {
   sender: ZictaParty | null;
   receiver: ZictaParty | null;
   payment: ZictaPaymentInfo | null;
-  items: ZictaItemRow[];
-  totals: {
-    declaredValue: number;
-    lineAmount: number;
-  };
+  description: string;
+  size: string;
+  declaredValue: number;
 }
 
 export interface ZictaReport {
@@ -133,6 +123,8 @@ export interface ZictaReport {
   generatedAt: string;
 }
 
+export type ReportDownloadFormat = 'csv' | 'excel';
+
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
   private baseUrl = `${environment.serverURL}/v1/reports`;
@@ -143,52 +135,122 @@ export class ReportsApiService {
     return localStorage.getItem('accessToken');
   }
 
-  private getHeaders() {
-    return {
-      headers: new HttpHeaders({
-        Authorization: `Bearer ${this.getToken()}`,
-      }),
-    };
+  private createHeaders(): HttpHeaders {
+    const token = this.getToken();
+    if (!token) {
+      return new HttpHeaders();
+    }
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
 
-  getRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly' }): Observable<RevenueReport> {
-    const q = new URLSearchParams();
-    if (params.startDate) q.set('startDate', params.startDate);
-    if (params.endDate) q.set('endDate', params.endDate);
-    if (params.granularity) q.set('granularity', params.granularity);
-    const qs = q.toString();
-    return this.http.get<RevenueReport>(`${this.baseUrl}/revenue${qs ? '?' + qs : ''}`, this.getHeaders());
+  private buildUrl(path: string, params: Record<string, string | undefined | null>): string {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, value);
+      }
+    });
+    const qs = query.toString();
+    return `${this.baseUrl}${path}${qs ? `?${qs}` : ''}`;
   }
 
-  getParcelMovement(params: { startDate?: string; endDate?: string }): Observable<ParcelMovementReport> {
-    const q = new URLSearchParams();
-    if (params.startDate) q.set('startDate', params.startDate);
-    if (params.endDate) q.set('endDate', params.endDate);
-    const qs = q.toString();
-    return this.http.get<ParcelMovementReport>(`${this.baseUrl}/parcel-movement${qs ? '?' + qs : ''}`, this.getHeaders());
+  private download(path: string, params: Record<string, string | undefined | null>): Observable<Blob> {
+    const url = this.buildUrl(path, params);
+    return this.http.get(url, {
+      headers: this.createHeaders(),
+      responseType: 'blob',
+    }) as Observable<Blob>;
   }
 
-  getComplaints(params: { startDate?: string; endDate?: string }): Observable<ComplaintReport> {
-    const q = new URLSearchParams();
-    if (params.startDate) q.set('startDate', params.startDate);
-    if (params.endDate) q.set('endDate', params.endDate);
-    const qs = q.toString();
-    return this.http.get<ComplaintReport>(`${this.baseUrl}/complaints${qs ? '?' + qs : ''}`, this.getHeaders());
+  getRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[] }): Observable<RevenueReport> {
+    const url = this.buildUrl('/revenue', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      granularity: params.granularity,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<RevenueReport>(url, { headers: this.createHeaders() });
   }
 
-  getDriverTrips(params: { startDate?: string; endDate?: string }): Observable<DriverTripReport> {
-    const q = new URLSearchParams();
-    if (params.startDate) q.set('startDate', params.startDate);
-    if (params.endDate) q.set('endDate', params.endDate);
-    const qs = q.toString();
-    return this.http.get<DriverTripReport>(`${this.baseUrl}/driver-trips${qs ? '?' + qs : ''}`, this.getHeaders());
+  getParcelMovement(params: { startDate?: string; endDate?: string; officeIds?: string[] }): Observable<ParcelMovementReport> {
+    const url = this.buildUrl('/parcel-movement', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<ParcelMovementReport>(url, { headers: this.createHeaders() });
   }
 
-  getZicta(params: { startDate?: string; endDate?: string }): Observable<ZictaReport> {
-    const q = new URLSearchParams();
-    if (params.startDate) q.set('startDate', params.startDate);
-    if (params.endDate) q.set('endDate', params.endDate);
-    const qs = q.toString();
-    return this.http.get<ZictaReport>(`${this.baseUrl}/zicta${qs ? '?' + qs : ''}`, this.getHeaders());
+  getComplaints(params: { startDate?: string; endDate?: string; officeIds?: string[] }): Observable<ComplaintReport> {
+    const url = this.buildUrl('/complaints', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<ComplaintReport>(url, { headers: this.createHeaders() });
+  }
+
+  getDriverTrips(params: { startDate?: string; endDate?: string; officeIds?: string[] }): Observable<DriverTripReport> {
+    const url = this.buildUrl('/driver-trips', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<DriverTripReport>(url, { headers: this.createHeaders() });
+  }
+
+  getZicta(params: { startDate?: string; endDate?: string; officeIds?: string[] }): Observable<ZictaReport> {
+    const url = this.buildUrl('/zicta', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<ZictaReport>(url, { headers: this.createHeaders() });
+  }
+
+  downloadRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/revenue/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      granularity: params.granularity,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
+  }
+
+  downloadParcelMovement(params: { startDate?: string; endDate?: string; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/parcel-movement/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
+  }
+
+  downloadComplaints(params: { startDate?: string; endDate?: string; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/complaints/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
+  }
+
+  downloadDriverTrips(params: { startDate?: string; endDate?: string; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/driver-trips/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
+  }
+
+  downloadZicta(params: { startDate?: string; endDate?: string; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/zicta/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
   }
 }

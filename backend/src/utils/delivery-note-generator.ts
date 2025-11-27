@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import * as fs from "fs";
-import * as path from "path";
-import { PrismaClient } from "@prisma/client";
-import { TimeService } from "../common/time/time.service";
-import { string } from "joi";
+import * as fs from 'fs';
+import * as path from 'path';
+import { PrismaClient } from '@prisma/client';
+import { TimeService } from '../common/time/time.service';
+import { getLogoAsset, getSvgToPdfModule } from './logo.util';
 
 const time = new TimeService();
 
@@ -65,10 +65,47 @@ export async function generateDeliveryNote(
   const stream = fs.createWriteStream(outPath);
   doc.pipe(stream);
 
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(16)
-    .text("Delivery Note", { align: "center" });
+  const logoAsset = getLogoAsset();
+  const svgToPdf = logoAsset?.type === 'svg' ? getSvgToPdfModule() : null;
+
+  function drawCenteredLogo() {
+    if (!logoAsset) {
+      return;
+    }
+    const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const targetWidth = Math.min(30, usableWidth);
+    const x = doc.page.margins.left + (usableWidth - targetWidth) / 2;
+    const y = doc.y;
+
+    try {
+      if (logoAsset.type === 'svg') {
+        if (!svgToPdf) {
+          return;
+        }
+        svgToPdf(doc, logoAsset.svg, x, y, {
+          width: targetWidth,
+          assumePt: true,
+          preserveAspectRatio: 'xMidYMid meet',
+        });
+        doc.y = y + targetWidth + 12;
+      } else {
+        const img = doc.openImage(logoAsset.path);
+        const scale = img && img.width ? targetWidth / img.width : 1;
+        const height = img && img.height ? img.height * scale : targetWidth * 0.6;
+        doc.image(logoAsset.path, x, y, { width: targetWidth });
+        doc.y = y + height + 12;
+      }
+      doc.x = doc.page.margins.left;
+    } catch (error) {
+      console.warn('Failed to render delivery note logo:', error);
+      doc.y = y;
+    }
+  }
+
+  drawCenteredLogo();
+  doc.moveDown(0.2);
+
+  doc.font('Helvetica-Bold').fontSize(16).text('Delivery Note', { align: 'center' });
   doc.moveDown(0.5);
   doc.font("Helvetica").fontSize(10).text(`Session: ${session.id}`);
   doc.text(
@@ -196,29 +233,14 @@ export async function generateDeliveryNote(
 
     // Fit text
     const codeTxt = fitTextToWidth(code, colCode, { size: bodyFontSize });
-    const destTxt = fitTextToWidth(dest, colDest, { size: bodyFontSize });
+    const destTxt = fitTextToWidth(dest, colDest, { size: bodyFontSize, font: 'Helvetica-Bold' });
     const staffTxt = fitTextToWidth(staff, colStaff, { size: bodyFontSize });
     const timeTxt = fitTextToWidth(time, colTime, { size: bodyFontSize });
 
-    // Render table row
-    doc.text(String(index), startX, y, { width: colNum, lineBreak: false });
-    doc.text(codeTxt, startX + colNum, y, { width: colCode, lineBreak: false });
-    doc.text(destTxt, startX + colNum + colCode, y, {
-      width: colDest,
-      lineBreak: false,
-    });
-    doc.text(staffTxt, startX + colNum + colCode + colDest, y, {
-      width: colStaff,
-      lineBreak: false,
-    });
-    doc.text(timeTxt, startX + colNum + colCode + colDest + colStaff, y, {
-      width: colTime,
-      align: "right",
-      lineBreak: false,
-    });
-
-    // Next
-    index++;
+    doc.text(codeTxt, startX, y, { width: colCode, lineBreak: false });
+    doc.font('Helvetica-Bold').text(destTxt, startX + colCode, y, { width: colDest, lineBreak: false });
+    doc.font('Helvetica').text(staffTxt, startX + colCode + colDest, y, { width: colStaff, lineBreak: false });
+    doc.text(timeTxt, startX + colCode + colDest + colStaff, y, { width: colTime, align: 'right', lineBreak: false });
     y += rowH + 4;
     doc.y = y;
   }

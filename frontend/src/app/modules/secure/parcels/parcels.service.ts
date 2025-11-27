@@ -8,12 +8,35 @@ export interface Parcel {
   parcelNumber?: number;
   customerId: string;
   receiverId: string;
-  destinationId: string;
+  destinationId?: string;
+  description?: string;
+  value?: number;
+  size?: "SMALL" | "MEDIUM" | "LARGE";
+  status?: string;
   createdAt?: string;
-  office?: { name: string; branchCode: string };
-  TrackingCode?: { plainTextCode: string };
-  customer?: { firstName?: string; lastName?: string };
-  receiver?: { firstName?: string; lastName?: string };
+  office?: { name: string; branchCode: string; officeTypes?: string[] } | null;
+  sendingOffice?: { name: string; branchCode: string } | null;
+  TrackingCode?: { plainTextCode: string } | null;
+  customer?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    phoneNumber?: string | null;
+    emailAddress?: string | null;
+    idNumber?: string | null;
+  } | null;
+  receiver?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    phoneNumber?: string | null;
+    emailAddress?: string | null;
+    idNumber?: string | null;
+  } | null;
+  payment?: {
+    amount?: number | null;
+    method?: PaymentMethod | null;
+    reference?: string | null;
+    paidAt?: string | null;
+  } | null;
 }
 
 export interface CustomerPayload {
@@ -25,15 +48,6 @@ export interface CustomerPayload {
 }
 
 export type PaymentMethod = "CASH" | "MOBILE_MONEY" | "CARD";
-
-export interface ParcelItem {
-  id?: string;
-  quantity: number;
-  description: string;
-  pricePerUnit: number;
-  value: number;
-  amount: number;
-}
 
 export interface ParcelScanHistoryEntry {
   id: string;
@@ -104,7 +118,6 @@ export class ParcelsService {
     pageSize = 10,
     search?: string
   ): Observable<{ data: Parcel[]; total: number }> {
-    // Convert 0-based UI index to 1-based API page
     const page = (pageIndex ?? 0) + 1;
     const params = new URLSearchParams();
     params.set("page", String(page));
@@ -118,19 +131,14 @@ export class ParcelsService {
     );
   }
 
-  getParcelItems(parcelId: string): Observable<ParcelItem[]> {
-    return this._httpClient.get<ParcelItem[]>(
-      `${this.baseUrl}/v1/parcels/${parcelId}/items`,
-      this.getHeader()
-    );
-  }
-
   createParcel(
     data:
       | {
           customerId: string;
           receiverId: string;
           officeId: string;
+          description: string;
+          value: number;
           size?: string;
           payment?: {
             method: PaymentMethod;
@@ -142,6 +150,8 @@ export class ParcelsService {
           customer: CustomerPayload;
           receiver: CustomerPayload;
           officeId: string;
+          description: string;
+          value: number;
           size: "SMALL" | "MEDIUM" | "LARGE";
           payment: {
             method: PaymentMethod;
@@ -179,14 +189,6 @@ export class ParcelsService {
   getParcelTrackHistory(parcelId: string): Observable<ParcelScanHistoryResponse> {
     return this._httpClient.get<ParcelScanHistoryResponse>(
       `${this.baseUrl}/v1/parcels/${parcelId}/track`,
-      this.getHeader()
-    );
-  }
-
-  createParcelItem(parcelId: string, data: ParcelItem): Observable<ParcelItem> {
-    return this._httpClient.post<ParcelItem>(
-      `${this.baseUrl}/v1/parcels/${parcelId}/items`,
-      data,
       this.getHeader()
     );
   }

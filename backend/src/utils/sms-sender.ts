@@ -1,3 +1,7 @@
+import { SmsTemplate } from '../config/sms-templates';
+
+type TemplateFunction = (...args: any[]) => string;
+
 let client: any = null;
 
 function getAfricaTalking() {
@@ -19,7 +23,7 @@ function getAfricaTalking() {
  * @param msisdn E.g. 2609XXXXXXX (without +)
  * @param message Text content to send
  */
-export async function sendSms(msisdn: string, message: string): Promise<void> {
+async function sendSms(msisdn: string, message: string): Promise<void> {
   const normalized = msisdn.startsWith('+') ? msisdn : `+${msisdn}`;
   if (!client) client = getAfricaTalking();
   if (!client) {
@@ -30,5 +34,22 @@ export async function sendSms(msisdn: string, message: string): Promise<void> {
   await client.send({ to: [normalized], message, from });
 }
 
-export default { sendSms };
+/**
+ * Send an SMS using a template function
+ * @param msisdn E.g. 2609XXXXXXX (without +)
+ * @param template Template function that returns the message string
+ * @param args Arguments to pass to the template function
+ */
+async function sendTemplateSms(
+  msisdn: string,
+  template: TemplateFunction,
+  ...args: any[]
+): Promise<void> {
+  const message = template(...args);
+  return sendSms(msisdn, message);
+}
 
+// Export all functionality
+export { sendSms, sendTemplateSms };
+const smsExports = { sendSms, sendTemplateSms };
+export default smsExports;

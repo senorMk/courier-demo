@@ -4,6 +4,7 @@ import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { normalizeZMBPhone } from './phone.util';
 import { TimeService } from '../common/time/time.service';
+import { getLogoAsset, getSvgToPdfModule } from './logo.util';
 const prisma = new PrismaClient();
 const time = new TimeService();
 
@@ -98,69 +99,56 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     doc.x = doc.page.margins.left;
   }
 
-  async function drawItemsTable(doc: any) {
-    const items = await prisma.parcelItem.findMany({ where: { parcelId: (parcel as any).id } });
-    if (!items || items.length === 0) return;
+  function drawParcelSummary(doc: any) {
     doc.moveDown(0.7);
-    doc.fontSize(11).text('Items', { align: 'left' });
-    doc.moveDown(0.3);
-
-    const startX = doc.page.margins.left;
-    const maxWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colQty = 36;
-    const colDesc = 160;
-    const colPPU = 60;
-    const colVal = 52;
-    const colAmt = 56;
-    const headersY = doc.y;
-
-    const drawHeaderCell = (text: string, x: number, width: number) => {
-      doc.fontSize(9).font('Helvetica-Bold').text(text, x, headersY, { width, align: 'left' });
-    };
-    drawHeaderCell('Qty', startX, colQty);
-    drawHeaderCell('Description', startX + colQty, colDesc);
-    drawHeaderCell('Price/Unit', startX + colQty + colDesc, colPPU);
-    drawHeaderCell('Value', startX + colQty + colDesc + colPPU, colVal);
-    drawHeaderCell('Amount', startX + colQty + colDesc + colPPU + colVal, colAmt);
-
-    doc.moveDown(0.4);
+    doc.font('Helvetica-Bold').text('Parcel Details');
     doc.font('Helvetica');
+    doc.text(`Description: ${parcel.description}`);
+    doc.text(`Declared Value: ZMW ${formatAmt(parcel.value as unknown as number)}`);
+    doc.moveDown(0.3);
+  }
 
-    let y = doc.y;
-    let total = 0;
-    for (const it of items) {
-      const qty = String(it.quantity);
-      const desc = it.description || '';
-      const ppu = formatAmt(it.pricePerUnit as unknown as number);
-      const val = formatAmt(it.value as unknown as number);
-      const amt = formatAmt(it.amount as unknown as number);
-      total += (it.amount as unknown as number) || 0;
+  const logoAsset = getLogoAsset();
+  const svgToPdf = logoAsset?.type === 'svg' ? getSvgToPdfModule() : null;
 
-      const descHeight = doc.heightOfString(desc, { width: colDesc, align: 'left' });
-      const rowH = Math.max(14, descHeight);
-      const bottomY = y + rowH;
+  const LOGO_WIDTH = 96;
 
-      const pageBottom = doc.page.height - doc.page.margins.bottom;
-      if (bottomY > pageBottom - 40) {
-        doc.addPage();
-        y = doc.page.margins.top;
+  function drawReceiptLogo(doc: any, typeKey: string) {
+    if (!logoAsset) {
+      return;
+    }
+    const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const targetWidth = Math.min(LOGO_WIDTH, usableWidth);
+    const x = doc.page.margins.left + (usableWidth - targetWidth) / 2;
+    const y = doc.y;
+
+    try {
+      if (logoAsset.type === 'svg') {
+        if (!svgToPdf) {
+          return;
+        }
+        svgToPdf(doc, logoAsset.svg, x, y, {
+          width: targetWidth,
+          assumePt: true,
+          preserveAspectRatio: 'xMidYMid meet',
+        });
+        doc.y = y + targetWidth + 8;
+      } else {
+        const img = doc.openImage(logoAsset.path);
+        const scale = img && img.width ? targetWidth / img.width : 1;
+        const height = img && img.height ? img.height * scale : targetWidth * 0.6;
+        doc.image(logoAsset.path, x, y, { width: targetWidth });
+        doc.y = y + height + 8;
       }
-
-      doc.fontSize(9);
-      doc.text(qty, startX, y, { width: colQty });
-      doc.text(desc, startX + colQty, y, { width: colDesc });
-      doc.text(ppu, startX + colQty + colDesc, y, { width: colPPU });
-      doc.text(val, startX + colQty + colDesc + colPPU, y, { width: colVal });
-      doc.text(amt, startX + colQty + colDesc + colPPU + colVal, y, { width: colAmt });
-
-      y = bottomY + 4;
+      doc.x = doc.page.margins.left;
+    } catch (error) {
+      console.warn('Failed to render receipt logo:', error);
       doc.y = y;
     }
-
-    doc.moveDown(0.3);
-    doc.font('Helvetica-Bold').text(`Total: ZMW ${formatAmt(total)}`, { align: 'right' });
-    doc.font('Helvetica');
   }
+
+  // Determine if we should use the short sticker label version
+  const useStickerShortVersion = process.env.STICKER_LABEL_VERSION === 'short';
 
   for (const t of types) {
     const page = getPageOptions(t.key);
@@ -169,21 +157,30 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const stream = fs.createWriteStream(outPath);
     doc.pipe(stream);
 
+    // drawReceiptLogo(doc, t.key);
+
     doc.font('Helvetica-Bold').fontSize(14).text('Platinum Courier Services', { align: 'center' });
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').fontSize(12).text(t.title, { align: 'center' });
     doc.font('Helvetica');
     doc.moveDown();
-    doc.fontSize(10).text(`Parcel #: ${parcel.parcelNumber}`);
-    if (parcel.TrackingCode?.plainTextCode) {
-      doc.text(`Tracking: ${parcel.TrackingCode.plainTextCode}`);
+
+    // For sticker labels, check if short version is requested
+    const isSticker = t.key === 'sticker';
+    const showFullDetails = !isSticker || !useStickerShortVersion;
+
+    if (showFullDetails) {
+      doc.fontSize(10).text(`Parcel #: ${parcel.parcelNumber}`);
+      if (parcel.TrackingCode?.plainTextCode) {
+        doc.text(`Tracking: ${parcel.TrackingCode.plainTextCode}`);
+      }
+      doc.text(`Size: ${parcel.size}`);
+      if (parcel.payment) {
+        doc.text(`Payment: ${parcel.payment.method} · ZMW ${parcel.payment.amount}`);
+        if ((parcel.payment as any).reference) doc.text(`Ref: ${(parcel.payment as any).reference}`);
+      }
+      doc.moveDown(0.6);
     }
-    doc.text(`Size: ${parcel.size}`);
-    if (parcel.payment) {
-      doc.text(`Payment: ${parcel.payment.method} · ZMW ${parcel.payment.amount}`);
-      if ((parcel.payment as any).reference) doc.text(`Ref: ${(parcel.payment as any).reference}`);
-    }
-    doc.moveDown(0.6);
 
     doc.font('Helvetica-Bold').text('Sender Details');
     doc.font('Helvetica');
@@ -203,7 +200,9 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
     doc.text(`Contact No: ${receiverContact}`);
 
-    await drawItemsTable(doc);
+    if (showFullDetails) {
+      drawParcelSummary(doc);
+    }
     try {
       const barcodePath = path.resolve(process.cwd(), `barcodes/parcel-${parcelId}.png`);
       if (!fs.existsSync(barcodePath)) {
