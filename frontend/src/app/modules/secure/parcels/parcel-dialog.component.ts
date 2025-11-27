@@ -92,6 +92,7 @@ export class ParcelDialogComponent {
       value: [null, [Validators.required, Validators.min(0)]],
       officeId: ["", Validators.required],
       size: ["MEDIUM", Validators.required],
+      cargoType: ["NORMAL", Validators.required],
       payment: this._fb.group({
         method: ["CASH", Validators.required],
         amount: [null, [Validators.required, Validators.min(0)]],
@@ -109,9 +110,7 @@ export class ParcelDialogComponent {
       debounceTime(250),
       distinctUntilChanged(),
       switchMap((query) =>
-        this._officesSearch
-          .searchOffices(query)
-          .pipe(catchError(() => of([])))
+        this._officesSearch.searchOffices(query).pipe(catchError(() => of([])))
       )
     );
 
@@ -137,7 +136,9 @@ export class ParcelDialogComponent {
     if (typeof office === "string") {
       return office;
     }
-    const parts = [office.name, office.branchCode, office.route?.name].filter(Boolean);
+    const parts = [office.name, office.branchCode, office.route?.name].filter(
+      Boolean
+    );
     return parts.join(" • ");
   };
 
@@ -150,7 +151,10 @@ export class ParcelDialogComponent {
     const payload = {
       ...raw,
       description: (raw.description || "").trim(),
-      value: raw.value !== null && raw.value !== undefined ? Number(raw.value) : raw.value,
+      value:
+        raw.value !== null && raw.value !== undefined
+          ? Number(raw.value)
+          : raw.value,
       payment: raw.payment
         ? {
             ...raw.payment,
@@ -165,15 +169,15 @@ export class ParcelDialogComponent {
       next: (created) => {
         this.loading = false;
         const parcelId = (created as any)?.id;
-        const ref = this._snackBar.open('Parcel created', 'Download Receipts', {
+        const ref = this._snackBar.open("Parcel created", "Download Receipts", {
           duration: 6000,
-          verticalPosition: 'top',
+          verticalPosition: "top",
         });
         ref.onAction().subscribe(() => {
           if (!parcelId) return;
           this._service.downloadReceiptsZip(parcelId).subscribe({
             next: (blob) => {
-              const a = document.createElement('a');
+              const a = document.createElement("a");
               const url = window.URL.createObjectURL(blob);
               a.href = url;
               a.download = `parcel-${parcelId}-receipts.zip`;
@@ -196,6 +200,4 @@ export class ParcelDialogComponent {
       },
     });
   }
-
-
 }
