@@ -13,16 +13,13 @@ export class AppComponent implements OnInit, OnDestroy {
      * Constructor
      */
     constructor(private router: Router) {
-        console.log('🏗️ [APP_COMPONENT] Constructor called');
         this.setupRouterLogging();
     }
 
     ngOnInit(): void {
-        console.log('🎬 [APP_COMPONENT] ngOnInit called - App component initialized');
     }
 
     ngOnDestroy(): void {
-        console.log('🔚 [APP_COMPONENT] ngOnDestroy called - App component destroyed');
     }
 
     private setupRouterLogging(): void {
@@ -30,14 +27,12 @@ export class AppComponent implements OnInit, OnDestroy {
         this.router.events
             .pipe(filter(event => event instanceof NavigationStart))
             .subscribe((event: NavigationStart) => {
-                console.log(`🧭 [ROUTER] Navigation started to: ${event.url}`);
             });
 
         // Log navigation end
         this.router.events
             .pipe(filter(event => event instanceof NavigationEnd))
             .subscribe((event: NavigationEnd) => {
-                console.log(`✅ [ROUTER] Navigation completed to: ${event.urlAfterRedirects}`);
             });
 
         // Log navigation cancel
