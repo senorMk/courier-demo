@@ -9,7 +9,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { Throttle } from '@nestjs/throttler';
+import { Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "@nestjs/passport";
 import { RolesGuard } from "src/common/guards/roles.guard";
 import { ParcelService } from "./parcel.service";
@@ -55,8 +55,8 @@ const PARCEL_COLLECTION_ROLES = [
 export class ParcelController {
   constructor(
     private readonly parcelService: ParcelService,
-    private readonly time: TimeService,
-  ) { }
+    private readonly time: TimeService
+  ) {}
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -65,44 +65,45 @@ export class ParcelController {
     @Body()
     body:
       | {
-        customerId: string;
-        receiverId: string;
-        officeId: string;
-        description: string;
-        value: number;
-        size?: "SMALL" | "MEDIUM" | "LARGE";
-        payment?: {
-          method: "CASH" | "MOBILE_MONEY" | "CARD";
-          amount: number;
-          reference?: string;
-        };
-      }
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+          description: string;
+          value: number;
+          size?: "SMALL" | "MEDIUM" | "LARGE";
+          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE_DOCUMENT";
+          payment?: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
+        }
       | {
-        customer: {
-          firstName: string;
-          lastName: string;
-          phoneNumber: string;
-          emailAddress?: string;
-          idNumber?: string;
-        };
-        receiver: {
-          firstName: string;
-          lastName: string;
-          phoneNumber: string;
-          emailAddress?: string;
-          idNumber?: string;
-        };
-        officeId: string;
-        description: string;
-        value: number;
-        size: "SMALL" | "MEDIUM" | "LARGE";
-        payment: {
-          method: "CASH" | "MOBILE_MONEY" | "CARD";
-          amount: number;
-          reference?: string;
-        };
-      }
-    ,
+          customer: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          receiver: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          officeId: string;
+          description: string;
+          value: number;
+          size: "SMALL" | "MEDIUM" | "LARGE";
+          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE_DOCUMENT";
+          payment: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
+        },
     @Req() req: Request
   ) {
     try {
@@ -113,7 +114,7 @@ export class ParcelController {
       }
       return await this.parcelService.createParcel(enriched as any);
     } catch (e) {
-      console.error('ParcelController.create error:', e);
+      console.error("ParcelController.create error:", e);
       throw e;
     }
   }
@@ -133,7 +134,7 @@ export class ParcelController {
         search
       );
     } catch (e) {
-      console.error('ParcelController.getPaginated error:', e);
+      console.error("ParcelController.getPaginated error:", e);
       throw e;
     }
   }
@@ -145,7 +146,7 @@ export class ParcelController {
     try {
       return await this.parcelService.getParcelScanHistory(parcelId);
     } catch (e) {
-      console.error('ParcelController.getParcelTrackHistory error:', e);
+      console.error("ParcelController.getParcelTrackHistory error:", e);
       throw e;
     }
   }
@@ -171,10 +172,13 @@ export class ParcelController {
       try {
         await generateReceiptsForParcel(parcelId);
       } catch (e) {
-        console.error('ParcelController.downloadReceipts generate error:', e);
+        console.error("ParcelController.downloadReceipts generate error:", e);
       }
 
-      res.setHeader("Content-Type", "application/zip, application/octet-stream");
+      res.setHeader(
+        "Content-Type",
+        "application/zip, application/octet-stream"
+      );
       res.setHeader(
         "Content-Disposition",
         `attachment; filename=parcel-${parcelId}-receipts.zip`
@@ -191,7 +195,7 @@ export class ParcelController {
       }
       await archive.finalize();
     } catch (e) {
-      console.error('ParcelController.downloadReceipts error:', e);
+      console.error("ParcelController.downloadReceipts error:", e);
       throw e;
     }
   }
@@ -217,7 +221,7 @@ export class ParcelController {
       try {
         await generateReceiptsForParcel(parcelId);
       } catch (e) {
-        console.error('ParcelController.downloadReceipt generate error:', e);
+        console.error("ParcelController.downloadReceipt generate error:", e);
       }
 
       if (!fs.existsSync(filePath)) {
@@ -237,7 +241,7 @@ export class ParcelController {
       res.setHeader("Expires", "0");
       fs.createReadStream(filePath).pipe(res);
     } catch (e) {
-      console.error('ParcelController.downloadReceipt error:', e);
+      console.error("ParcelController.downloadReceipt error:", e);
       throw e;
     }
   }
@@ -249,7 +253,7 @@ export class ParcelController {
     try {
       return await this.parcelService.markCollected(parcelId);
     } catch (e) {
-      console.error('ParcelController.markCollected error:', e);
+      console.error("ParcelController.markCollected error:", e);
       throw e;
     }
   }
@@ -264,7 +268,7 @@ export class ParcelController {
       }
       return await this.parcelService.findByTrackingCode(code.trim());
     } catch (e) {
-      console.error('ParcelController.searchByCode error:', e);
+      console.error("ParcelController.searchByCode error:", e);
       throw e;
     }
   }
@@ -274,10 +278,11 @@ export class ParcelController {
   @SetMetadata("roles", PARCEL_COLLECTION_ROLES)
   async collectByCode(@Body() body: { code: string }) {
     try {
-      if (!body?.code) throw new BadRequestException("Tracking code is required");
+      if (!body?.code)
+        throw new BadRequestException("Tracking code is required");
       return await this.parcelService.collectByCode(body.code.trim());
     } catch (e) {
-      console.error('ParcelController.collectByCode error:', e);
+      console.error("ParcelController.collectByCode error:", e);
       throw e;
     }
   }
@@ -302,9 +307,9 @@ export class ParcelController {
       return await this.parcelService.getPublicTrackingInfo(cleanCode);
     } catch (e) {
       // Don't log sensitive information, just log that an attempt was made
-      console.error('ParcelController.trackParcel attempt:', {
+      console.error("ParcelController.trackParcel attempt:", {
         codeLength: trackingCode?.length,
-        timestamp: this.time.nowISO()
+        timestamp: this.time.nowISO(),
       });
 
       // Always return NotFoundException for security (don't reveal if parcel exists)
