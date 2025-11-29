@@ -1,5 +1,0 @@
--- CreateEnum
-CREATE TYPE "CargoType" AS ENUM ('NORMAL', 'FRAGILE', 'ELECTRONIC_SENSITIVE_DOCUMENT');
-
--- AlterTable
-ALTER TABLE "Parcel" ADD COLUMN     "cargoType" "CargoType" NOT NULL DEFAULT 'NORMAL';
