@@ -1,13 +1,5 @@
-<h1
-  mat-dialog-title
-  style="
-    font-size: 1.125rem;
-    text-align: center;
-    font-family: &quot;Inter&quot;, sans-serif;
-    margin-bottom: 10px;
-  "
->
-  Create Parcel
+<h1 mat-dialog-title
+  style="font-size: 1.125rem; text-align: center; font-family: 'Inter', sans-serif; margin-bottom: 10px;">Create Parcel
 </h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-horizontal-stepper [linear]="true" #stepper>
@@ -16,103 +8,38 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <mat-form-field appearance="fill">
             <mat-label>First Name</mat-label>
-            <input
-              matInput
-              formControlName="firstName"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('customer.firstName')?.hasError('required')"
-              >First name is required</mat-error
-            >
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.firstName')?.hasError('required')">First name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Last Name</mat-label>
-            <input
-              matInput
-              formControlName="lastName"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('customer.lastName')?.hasError('required')"
-              >Last name is required</mat-error
-            >
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.lastName')?.hasError('required')">Last name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Phone Number</mat-label>
-            <span
-              matPrefix
-              style="
-                margin-right: 4px;
-                font-size: 0.875rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-              >+260</span
-            >
-            <input
-              matInput
-              formControlName="phoneNumber"
-              maxlength="9"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('customer.phoneNumber')?.hasError('required')"
-              >Phone number is required</mat-error
-            >
-            <mat-error
-              *ngIf="form.get('customer.phoneNumber')?.hasError('pattern')"
-              >Enter 9 digits (e.g. 971234567)</mat-error
-            >
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('required')">Phone number is required</mat-error>
+            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g. 971234567)</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Email</mat-label>
-            <input
-              matInput
-              formControlName="emailAddress"
-              type="email"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>ID Number</mat-label>
-            <input
-              matInput
-              formControlName="idNumber"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
           </mat-form-field>
         </div>
       </form>
       <div class="flex justify-end gap-2 mt-2">
-        <button
-          mat-stroked-button
-          matStepperNext
-          [disabled]="form.controls['customer'].invalid"
-        >
-          Next
-        </button>
+        <button mat-stroked-button matStepperNext [disabled]="form.controls['customer'].invalid">Next</button>
       </div>
     </mat-step>
 
@@ -121,104 +48,39 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <mat-form-field appearance="fill">
             <mat-label>First Name</mat-label>
-            <input
-              matInput
-              formControlName="firstName"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('receiver.firstName')?.hasError('required')"
-              >First name is required</mat-error
-            >
+            <input matInput formControlName="firstName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">First name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Last Name</mat-label>
-            <input
-              matInput
-              formControlName="lastName"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('receiver.lastName')?.hasError('required')"
-              >Last name is required</mat-error
-            >
+            <input matInput formControlName="lastName"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.lastName')?.hasError('required')">Last name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Phone Number</mat-label>
-            <span
-              matPrefix
-              style="
-                margin-right: 4px;
-                font-size: 0.875rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-              >+260</span
-            >
-            <input
-              matInput
-              formControlName="phoneNumber"
-              maxlength="9"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
-            <mat-error
-              *ngIf="form.get('receiver.phoneNumber')?.hasError('required')"
-              >Phone number is required</mat-error
-            >
-            <mat-error
-              *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')"
-              >Enter 9 digits (e.g. 971234567)</mat-error
-            >
+            <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">+260</span>
+            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('required')">Phone number is required</mat-error>
+            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g. 971234567)</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Email</mat-label>
-            <input
-              matInput
-              formControlName="emailAddress"
-              type="email"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
+            <input matInput formControlName="emailAddress" type="email"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>ID Number</mat-label>
-            <input
-              matInput
-              formControlName="idNumber"
-              style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              "
-            />
+            <input matInput formControlName="idNumber"
+              style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
           </mat-form-field>
         </div>
       </form>
       <div class="flex justify-between gap-2 mt-2">
         <button mat-stroked-button matStepperPrevious>Back</button>
-        <button
-          mat-stroked-button
-          matStepperNext
-          [disabled]="form.controls['receiver'].invalid"
-        >
-          Next
-        </button>
+        <button mat-stroked-button matStepperNext [disabled]="form.controls['receiver'].invalid">Next</button>
       </div>
     </mat-step>
 
@@ -230,11 +92,7 @@
             matInput
             formControlName="description"
             rows="2"
-            style="
-              font-size: 0.875rem;
-              line-height: 1.23rem;
-              font-family: &quot;Inter&quot;, sans-serif;
-            "
+            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
           ></textarea>
           <mat-error *ngIf="form.controls['description'].hasError('required')">
             Description is required
@@ -243,84 +101,32 @@
 
         <mat-form-field appearance="fill">
           <mat-label>Declared Value</mat-label>
-          <span
-            matPrefix
-            style="
-              margin-right: 4px;
-              font-size: 0.875rem;
-              font-family: &quot;Inter&quot;, sans-serif;
-            "
-            >ZMW</span
-          >
+          <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">ZMW</span>
           <input
             matInput
             type="number"
             min="0"
             step="0.01"
             formControlName="value"
-            style="
-              font-size: 0.875rem;
-              line-height: 1.23rem;
-              font-family: &quot;Inter&quot;, sans-serif;
-            "
+            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
           />
-          <mat-error *ngIf="form.controls['value'].hasError('required')"
-            >Value is required</mat-error
-          >
-          <mat-error *ngIf="form.controls['value'].hasError('min')"
-            >Value must be zero or more</mat-error
-          >
+          <mat-error *ngIf="form.controls['value'].hasError('required')">Value is required</mat-error>
+          <mat-error *ngIf="form.controls['value'].hasError('min')">Value must be zero or more</mat-error>
         </mat-form-field>
 
-        <div style="display: flex; gap: 20px; align-items: flex-start">
-          <div style="flex: 1">
-            <div
-              style="
-                font-weight: 600;
-                font-family: &quot;Inter&quot;, sans-serif;
-                margin: 4px 0 6px;
-              "
-            >
-              Parcel Size
-            </div>
-            <mat-form-field appearance="fill" style="width: 100%">
-              <mat-label>Size*</mat-label>
-              <mat-select [formControl]="form.controls['size']">
-                <mat-option value="SMALL">Small</mat-option>
-                <mat-option value="MEDIUM">Medium</mat-option>
-                <mat-option value="LARGE">Large</mat-option>
-              </mat-select>
-              <mat-error *ngIf="form.controls['size'].hasError('required')"
-                >Size is required</mat-error
-              >
-            </mat-form-field>
-          </div>
-
-          <div style="flex: 1">
-            <div
-              style="
-                font-weight: 600;
-                font-family: &quot;Inter&quot;, sans-serif;
-                margin: 4px 0 6px;
-              "
-            >
-              Category Type
-            </div>
-            <mat-form-field appearance="fill" style="width: 100%">
-              <mat-label>Category Type*</mat-label>
-              <mat-select formControlName="cargoType">
-                <mat-option value="NORMAL">Normal</mat-option>
-                <mat-option value="FRAGILE">Fragile</mat-option>
-                <mat-option value="ELECTRONIC_SENSITIVE"
-                  >Electronic / Sensitive Documents</mat-option
-                >
-              </mat-select>
-              <mat-error *ngIf="form.controls['cargoType'].hasError('required')"
-                >Cargo type is required</mat-error
-              >
-            </mat-form-field>
-          </div>
+        <div>
+          <div style="font-weight: 600; font-family: 'Inter', sans-serif; margin: 4px 0 6px;">Parcel Size</div>
+          <mat-form-field appearance="fill" style="width: 240px;">
+            <mat-label>Size</mat-label>
+            <mat-select [formControl]="form.controls['size']">
+              <mat-option value="SMALL">Small</mat-option>
+              <mat-option value="MEDIUM">Medium</mat-option>
+              <mat-option value="LARGE">Large</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls['size'].hasError('required')">Size is required</mat-error>
+          </mat-form-field>
         </div>
+
         <mat-form-field appearance="fill">
           <mat-label>Destination</mat-label>
           <input
@@ -344,39 +150,21 @@
             #officeAuto="matAutocomplete"
             [displayWith]="displayOffice"
           >
-            <mat-option
-              *ngFor="let office of offices$ | async"
-              [value]="office"
-            >
+            <mat-option *ngFor="let office of offices$ | async" [value]="office">
               <div class="flex flex-col">
                 <span class="font-medium">{{ office.name }}</span>
                 <span class="text-xs text-gray-500">
-                  {{ office.branchCode
-                  }}<span *ngIf="office.officeTypes?.length">
-                    • {{ office.officeTypes.join(", ") }}</span
-                  >
-                  <span *ngIf="office.route?.name">
-                    • {{ office.route?.name }}</span
-                  >
+                  {{ office.branchCode }}<span *ngIf="office.officeTypes?.length"> • {{ office.officeTypes.join(', ') }}</span>
+                  <span *ngIf="office.route?.name"> • {{ office.route?.name }}</span>
                 </span>
               </div>
             </mat-option>
           </mat-autocomplete>
-          <mat-error *ngIf="form.controls['officeId'].hasError('required')"
-            >Destination is required</mat-error
-          >
+          <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
         </mat-form-field>
 
         <div [formGroup]="form.controls['payment']">
-          <div
-            style="
-              font-weight: 600;
-              font-family: &quot;Inter&quot;, sans-serif;
-              margin: 4px 0 6px;
-            "
-          >
-            Payment
-          </div>
+          <div style="font-weight: 600; font-family: 'Inter', sans-serif; margin: 4px 0 6px;">Payment</div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <mat-form-field appearance="fill">
               <mat-label>Method</mat-label>
@@ -385,89 +173,47 @@
                 <mat-option value="MOBILE_MONEY">Mobile Money</mat-option>
                 <mat-option value="CARD">Card</mat-option>
               </mat-select>
-              <mat-error
-                *ngIf="form.get('payment.method')?.hasError('required')"
-                >Payment method is required</mat-error
-              >
+              <mat-error *ngIf="form.get('payment.method')?.hasError('required')">Payment method is required</mat-error>
             </mat-form-field>
             <mat-form-field appearance="fill">
               <mat-label>Amount</mat-label>
-              <span
-                matPrefix
-                style="
-                  margin-right: 4px;
-                  font-size: 0.875rem;
-                  font-family: &quot;Inter&quot;, sans-serif;
-                "
-                >ZMW</span
-              >
+              <span matPrefix style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">ZMW</span>
               <input
                 matInput
                 type="number"
                 min="0"
                 formControlName="amount"
-                style="
-                  font-size: 0.875rem;
-                  line-height: 1.23rem;
-                  font-family: &quot;Inter&quot;, sans-serif;
-                "
+                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
               />
-              <mat-error
-                *ngIf="form.get('payment.amount')?.hasError('required')"
-                >Amount is required</mat-error
-              >
-              <mat-error *ngIf="form.get('payment.amount')?.hasError('min')"
-                >Amount must be positive</mat-error
-              >
+              <mat-error *ngIf="form.get('payment.amount')?.hasError('required')">Amount is required</mat-error>
+              <mat-error *ngIf="form.get('payment.amount')?.hasError('min')">Amount must be positive</mat-error>
             </mat-form-field>
             <mat-form-field appearance="fill">
               <mat-label>Reference</mat-label>
               <input
                 matInput
                 formControlName="reference"
-                style="
-                  font-size: 0.875rem;
-                  line-height: 1.23rem;
-                  font-family: &quot;Inter&quot;, sans-serif;
-                "
+                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"
               />
             </mat-form-field>
           </div>
         </div>
 
-        <div class="text-sm" style="font-family: &quot;Inter&quot;, sans-serif">
-          <div style="font-weight: 600; margin-bottom: 6px">Review</div>
+        <div class="text-sm" style="font-family: 'Inter', sans-serif;">
+          <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
           <div>Description: {{ form.value.description }}</div>
           <div>Declared Value: ZMW {{ form.value.value }}</div>
-          <div>
-            Sender: {{ form.value.customer.firstName }}
-            {{ form.value.customer.lastName }} · +260{{
-              form.value.customer.phoneNumber
-            }}
-          </div>
-          <div>
-            Receiver: {{ form.value.receiver.firstName }}
-            {{ form.value.receiver.lastName }} · +260{{
-              form.value.receiver.phoneNumber
-            }}
-          </div>
-          <div>
-            Destination:
-            {{
-              selectedOffice ? displayOffice(selectedOffice) : "Not selected"
-            }}
-          </div>
-          <div>
-            Size: {{ form.value.size }} · Amount: ZMW
-            {{ form.value.payment?.amount }} ({{ form.value.payment?.method }})
-          </div>
+          <div>Sender: {{ form.value.customer.firstName }} {{ form.value.customer.lastName }} · +260{{ form.value.customer.phoneNumber }}</div>
+          <div>Receiver: {{ form.value.receiver.firstName }} {{ form.value.receiver.lastName }} · +260{{ form.value.receiver.phoneNumber }}</div>
+          <div>Destination: {{ selectedOffice ? displayOffice(selectedOffice) : 'Not selected' }}</div>
+          <div>Size: {{ form.value.size }} · Amount: ZMW {{ form.value.payment?.amount }} ({{ form.value.payment?.method }})</div>
         </div>
       </div>
 
       <div class="flex justify-between gap-2 mt-2">
         <button mat-stroked-button matStepperPrevious>Back</button>
         <button
-          style="background-color: #1d4ed8; color: white"
+          style="background-color: #1D4ED8; color: white;"
           mat-flat-button
           (click)="save()"
           class="custom-primary-btn"
@@ -479,15 +225,6 @@
     </mat-step>
   </mat-horizontal-stepper>
 </div>
-<div
-  mat-dialog-actions
-  style="display: flex; justify-content: center; align-items: center; gap: 12px"
->
-  <button
-    mat-flat-button
-    [mat-dialog-close]="false"
-    style="border: 1.5px solid #888; background: transparent"
-  >
-    Cancel
-  </button>
+<div mat-dialog-actions style="display: flex; justify-content: center; align-items: center; gap: 12px;">
+  <button mat-flat-button [mat-dialog-close]="false" style="border: 1.5px solid #888; background: transparent;">Cancel</button>
 </div>

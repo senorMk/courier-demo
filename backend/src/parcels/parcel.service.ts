@@ -7,8 +7,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Office, Parcel, ParcelStatus } from "@prisma/client";
 import { generateBarcodeForId } from "../utils/barcode-generator";
 import { generateReceiptsForParcel } from "../utils/receipt-generator";
-import { sendTemplateSms } from "../utils/sms-sender";
-import { SmsTemplates } from "../config/sms-templates";
+import { sendTemplateSms } from '../utils/sms-sender';
+import { SmsTemplates } from '../config/sms-templates';
 import { normalizeZMBPhone } from "../utils/phone.util";
 import { TimeService } from "../common/time/time.service";
 
@@ -16,53 +16,51 @@ import { TimeService } from "../common/time/time.service";
 export class ParcelService {
   constructor(
     private prisma: PrismaService,
-    private readonly time: TimeService
-  ) {}
+    private readonly time: TimeService,
+  ) { }
 
   async createParcel(
     data:
       | {
-          customerId: string;
-          receiverId: string;
-          officeId: string;
-          sendingOfficeId?: string;
-          description: string;
-          value: number;
-          size?: "SMALL" | "MEDIUM" | "LARGE";
-          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE_DOCUMENT";
-          payment?: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customerId: string;
+        receiverId: string;
+        officeId: string;
+        sendingOfficeId?: string;
+        description: string;
+        value: number;
+        size?: "SMALL" | "MEDIUM" | "LARGE";
+        payment?: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
       | {
-          customer: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          receiver: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          officeId: string;
-          description: string;
-          value: number;
-          sendingOfficeId?: string;
-          size: "SMALL" | "MEDIUM" | "LARGE";
-          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE_DOCUMENT";
-          payment: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customer: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        receiver: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        officeId: string;
+        description: string;
+        value: number;
+        sendingOfficeId?: string;
+        size: "SMALL" | "MEDIUM" | "LARGE";
+        payment: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
   ): Promise<Parcel> {
     const office: Office = await this.prisma.office.findUnique({
       where: { id: data.officeId },
@@ -83,9 +81,7 @@ export class ParcelService {
       const customerPhone = normalizeZMBPhone(payload.customer.phoneNumber);
       const receiverPhone = normalizeZMBPhone(payload.receiver.phoneNumber);
       if (!customerPhone || !receiverPhone) {
-        throw new BadRequestException(
-          "Invalid phone number supplied for sender or receiver"
-        );
+        throw new BadRequestException('Invalid phone number supplied for sender or receiver');
       }
       const [customer, receiver] = await Promise.all([
         this.prisma.customer.upsert({
@@ -127,16 +123,14 @@ export class ParcelService {
       receiverId = receiver.id;
     }
 
-    const description = String((data as any).description ?? "").trim();
+    const description = String((data as any).description ?? '').trim();
     if (!description) {
-      throw new BadRequestException("Parcel description is required");
+      throw new BadRequestException('Parcel description is required');
     }
 
     const declaredValueRaw = Number((data as any).value);
     if (!Number.isFinite(declaredValueRaw) || declaredValueRaw < 0) {
-      throw new BadRequestException(
-        "Parcel value must be a non-negative number"
-      );
+      throw new BadRequestException('Parcel value must be a non-negative number');
     }
 
     const parcel = await this.prisma.parcel.create({
@@ -144,10 +138,8 @@ export class ParcelService {
         customerId,
         receiverId,
         officeId: (data as any).officeId,
-        sendingOfficeId:
-          (data as any).sendingOfficeId || (data as any).officeId,
+        sendingOfficeId: (data as any).sendingOfficeId || (data as any).officeId,
         size: ((data as any).size as any) || "MEDIUM",
-        cargoType: ((data as any).cargoType as any) || "NORMAL",
         description,
         value: Number(declaredValueRaw.toFixed(2)),
       },
@@ -162,7 +154,7 @@ export class ParcelService {
     }
 
     const routeCode = route.code;
-    const destinationCode = (office as any).areaCode ?? office.branchCode;
+  const destinationCode = (office as any).areaCode ?? office.branchCode;
     const branchCode = office.branchCode;
     const parcelNumber = parcel.parcelNumber;
     const plainTextCode = `${routeCode}-${destinationCode}-${branchCode}-${parcelNumber}`;
@@ -245,11 +237,7 @@ export class ParcelService {
     return parcel;
   }
 
-  async getParcelsPaginated(
-    page: number = 1,
-    pageSize: number = 10,
-    search?: string
-  ) {
+  async getParcelsPaginated(page: number = 1, pageSize: number = 10, search?: string) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const where: any = {};
@@ -262,7 +250,7 @@ export class ParcelService {
             is: {
               plainTextCode: {
                 contains: term,
-                mode: "insensitive",
+                mode: 'insensitive',
               },
             },
           },
@@ -271,9 +259,9 @@ export class ParcelService {
           customer: {
             is: {
               OR: [
-                { firstName: { contains: term, mode: "insensitive" } },
-                { lastName: { contains: term, mode: "insensitive" } },
-                { phoneNumber: { contains: term, mode: "insensitive" } },
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
               ],
             },
           },
@@ -282,9 +270,9 @@ export class ParcelService {
           receiver: {
             is: {
               OR: [
-                { firstName: { contains: term, mode: "insensitive" } },
-                { lastName: { contains: term, mode: "insensitive" } },
-                { phoneNumber: { contains: term, mode: "insensitive" } },
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
               ],
             },
           },
@@ -310,7 +298,7 @@ export class ParcelService {
         skip,
         take: pageSize,
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         include: {
           customer: {
             select: {
@@ -381,7 +369,7 @@ export class ParcelService {
 
     const scans = await this.prisma.scannedParcel.findMany({
       where: { parcelId },
-      orderBy: { scannedAt: "asc" },
+      orderBy: { scannedAt: 'asc' },
       include: {
         scannedBy: {
           select: {
@@ -544,7 +532,7 @@ export class ParcelService {
           dest
         );
       }
-    } catch {}
+    } catch { }
     return updated;
   }
 
@@ -652,28 +640,24 @@ export class ParcelService {
 
     // Helper function to mask phone numbers
     const maskPhoneNumber = (phone: string): string => {
-      if (!phone || phone.length < 4) return "***";
-      return phone.substring(0, 4) + "*".repeat(phone.length - 4);
+      if (!phone || phone.length < 4) return '***';
+      return phone.substring(0, 4) + '*'.repeat(phone.length - 4);
     };
 
     // Helper function to mask names
     const maskName = (name: string): string => {
-      if (!name || name.length < 2) return "***";
-      return name.charAt(0) + "*".repeat(name.length - 1);
+      if (!name || name.length < 2) return '***';
+      return name.charAt(0) + '*'.repeat(name.length - 1);
     };
 
     return {
       id: parcel.id,
       parcelNumber: tracking.plainTextCode,
-      status:
-        parcel.status === "COLLECTED"
-          ? "DELIVERED"
-          : parcel.status || "PENDING",
+      status: parcel.status === "COLLECTED" ? "DELIVERED" : parcel.status || "PENDING",
       createdAt: this.time.toISO(parcel.createdAt),
-      deliveredAt:
-        parcel.status === "COLLECTED"
-          ? this.time.toISO(this.time.addHours(parcel.createdAt, 48))
-          : undefined,
+      deliveredAt: parcel.status === "COLLECTED"
+        ? this.time.toISO(this.time.addHours(parcel.createdAt, 48))
+        : undefined,
       sender: {
         firstName: maskName(parcel.customer.firstName),
         lastName: maskName(parcel.customer.lastName),
@@ -687,13 +671,10 @@ export class ParcelService {
       destination: {
         name: parcel.office.name,
       },
-      currentLocation:
-        trackingHistory.length > 0
-          ? {
-              name: trackingHistory[trackingHistory.length - 1].location,
-              timestamp: trackingHistory[trackingHistory.length - 1].timestamp,
-            }
-          : null,
+      currentLocation: trackingHistory.length > 0 ? {
+        name: trackingHistory[trackingHistory.length - 1].location,
+        timestamp: trackingHistory[trackingHistory.length - 1].timestamp,
+      } : null,
       trackingHistory,
     };
   }
