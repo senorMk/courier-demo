@@ -120,6 +120,7 @@ model Parcel {
   sendingOfficeId String?
   status          ParcelStatus    @default(PENDING)
   size            ParcelSize      @default(MEDIUM)
+  cargoType       CargoType?      @default(NORMAL)
   description     String
   value           Float           @default(0)
   customer        Customer        @relation("Sender", fields: [customerId], references: [id])
@@ -324,4 +325,11 @@ enum TripStatus {
   LOADING
   IN_TRANSIT
   COMPLETED
+}
+
+enum CargoType {
+  NORMAL
+  FRAGILE
+  ELECTRONIC
+  DOCUMENT
 }
