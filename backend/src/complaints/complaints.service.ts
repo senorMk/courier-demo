@@ -5,7 +5,8 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ComplaintStatus, ParcelStatus } from "@prisma/client";
-import { sendSms } from "../utils/sms-sender";
+import { sendTemplateSms } from "../utils/sms-sender";
+import { SmsTemplates } from "../config/sms-templates";
 import { TimeService } from "../common/time/time.service";
 
 @Injectable()
@@ -77,9 +78,28 @@ export class ComplaintsService {
         this.prisma.customer.findUnique({ where: { id: parcel.customerId } }),
         this.prisma.customer.findUnique({ where: { id: parcel.receiverId } }),
       ]);
-      const msg = `PCS: Complaint received for parcel ${code} (Damaged). We will investigate and update you.`;
-      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
-      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+      if (sender?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(sender.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code,
+            'Damaged'
+          );
+        }
+      }
+      if (receiver?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(receiver.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code,
+            'Damaged'
+          );
+        }
+      }
     } catch (e) {
       // Non-blocking
       console.error("Failed to send complaint filed SMS (damaged)", e);
@@ -121,9 +141,26 @@ export class ComplaintsService {
         this.prisma.customer.findUnique({ where: { id: parcel.customerId } }),
         this.prisma.customer.findUnique({ where: { id: parcel.receiverId } }),
       ]);
-      const msg = `PCS: Complaint received for parcel ${code}. We will investigate and update you.`;
-      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
-      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+      if (sender?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(sender.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code
+          );
+        }
+      }
+      if (receiver?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(receiver.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code
+          );
+        }
+      }
     } catch (e) {
       console.error("Failed to send complaint filed SMS (from collected)", e);
     }
@@ -187,11 +224,32 @@ export class ComplaintsService {
     try {
       const code = complaint.parcel?.TrackingCode?.plainTextCode;
       const dest = complaint.parcel?.office?.name || "our office";
-      const msg = `PCS: Complaint for parcel ${code} has been resolved at ${dest}.`;
       const senderMsisdn = complaint.parcel?.customer?.phoneNumber;
       const receiverMsisdn = complaint.parcel?.receiver?.phoneNumber as any;
-      if (senderMsisdn) await sendSms(this.normalizeZMBPhone(senderMsisdn as any), msg);
-      if (receiverMsisdn) await sendSms(this.normalizeZMBPhone(receiverMsisdn as any), msg);
+      
+      if (senderMsisdn) {
+        const msisdn = this.normalizeZMBPhone(senderMsisdn as any);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RESOLVED,
+            code,
+            dest
+          );
+        }
+      }
+      
+      if (receiverMsisdn) {
+        const msisdn = this.normalizeZMBPhone(receiverMsisdn as any);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RESOLVED,
+            code,
+            dest
+          );
+        }
+      }
     } catch (e) {
       console.error("Failed to send complaint resolved SMS", e);
     }
@@ -242,9 +300,26 @@ export class ComplaintsService {
         this.prisma.trackingCode.findUnique({ where: { parcelId: parcel.id } }),
       ]);
       const code = payload.code || tracking?.plainTextCode || "";
-      const msg = `PCS: Complaint received for parcel ${code}. We will investigate and update you.`;
-      if (sender?.phoneNumber) await sendSms(this.normalizeZMBPhone(sender.phoneNumber), msg);
-      if (receiver?.phoneNumber) await sendSms(this.normalizeZMBPhone(receiver.phoneNumber), msg);
+      if (sender?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(sender.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code
+          );
+        }
+      }
+      if (receiver?.phoneNumber) {
+        const msisdn = this.normalizeZMBPhone(receiver.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.COMPLAINT.RECEIVED,
+            code
+          );
+        }
+      }
     } catch (e) {
       console.error("Failed to send complaint filed SMS (generic)", e);
     }

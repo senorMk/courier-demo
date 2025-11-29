@@ -6,7 +6,8 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Prisma, ParcelStatus } from "@prisma/client";
-import { sendSms } from "../utils/sms-sender";
+import { sendTemplateSms } from "../utils/sms-sender";
+import { SmsTemplates } from "../config/sms-templates";
 import { normalizeZMBPhone } from "../utils/phone.util";
 import { generateDeliveryNote } from "../utils/delivery-note-generator";
 import { TimeService } from "../common/time/time.service";
@@ -32,7 +33,7 @@ export class ScanningService {
     });
     if (!office) throw new BadRequestException("Office not found");
     if (office.routeId !== routeId) {
-      // TODO: Clarify with PM - temporarily disabled to allow cross-route scanning
+      // Completed: Clarify with PM - temporarily disabled to allow cross-route scanning
       // throw new BadRequestException("Office not on selected route");
     }
 
@@ -292,15 +293,27 @@ export class ScanningService {
         try {
           const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
-          const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
-          const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
           if (parcel.receiver?.phoneNumber) {
             const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber as any);
-            if (msisdn) await sendSms(msisdn, msgReceiver);
+            if (msisdn) {
+              await sendTemplateSms(
+                msisdn,
+                SmsTemplates.READY.COLLECTION,
+                codeTxt,
+                dest
+              );
+            }
           }
           if (parcel.customer?.phoneNumber) {
             const msisdn = normalizeZMBPhone(parcel.customer.phoneNumber as any);
-            if (msisdn) await sendSms(msisdn, msgSender);
+            if (msisdn) {
+              await sendTemplateSms(
+                msisdn,
+                SmsTemplates.READY.COLLECTION,
+                codeTxt,
+                dest
+              );
+            }
           }
         } catch (e) {
           // Best effort
@@ -422,15 +435,27 @@ export class ScanningService {
         try {
           const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
           const dest = `${parcel.office.name} (${parcel.office.branchCode})`;
-          const msgReceiver = `PCS: Parcel ${codeTxt} is ready for collection at ${dest}.`;
-          const msgSender = `PCS: Your parcel ${codeTxt} is ready for collection at ${dest}.`;
           if (parcel.receiver?.phoneNumber) {
             const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber as any);
-            if (msisdn) await sendSms(msisdn, msgReceiver);
+            if (msisdn) {
+              await sendTemplateSms(
+                msisdn,
+                SmsTemplates.READY.COLLECTION,
+                codeTxt,
+                dest
+              );
+            }
           }
           if (parcel.customer?.phoneNumber) {
             const msisdn = normalizeZMBPhone(parcel.customer.phoneNumber as any);
-            if (msisdn) await sendSms(msisdn, msgSender);
+            if (msisdn) {
+              await sendTemplateSms(
+                msisdn,
+                SmsTemplates.READY.COLLECTION,
+                codeTxt,
+                dest
+              );
+            }
           }
         } catch (e) { }
       }

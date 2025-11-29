@@ -11,7 +11,22 @@
 
     <mat-form-field appearance="outline">
       <mat-label>Password{{ editingId ? ' (leave blank to keep current)' : '' }}</mat-label>
-      <input matInput formControlName="password" type="password" [required]="!editingId" />
+      <input
+        matInput
+        formControlName="password"
+        [type]="passwordVisible ? 'text' : 'password'"
+        [required]="!editingId"
+      />
+      <button
+        mat-icon-button
+        matSuffix
+        type="button"
+        (click)="togglePasswordVisibility()"
+        [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
+        [attr.aria-pressed]="passwordVisible"
+      >
+        <mat-icon>{{ passwordVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
       <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
       <mat-error *ngIf="form.get('password')?.hasError('minlength')">
         Password must be at least 8 characters

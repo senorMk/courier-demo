@@ -65,45 +65,44 @@ export class ParcelController {
     @Body()
     body:
       | {
-          customerId: string;
-          receiverId: string;
-          officeId: string;
-          description: string;
-          value: number;
-          size?: "SMALL" | "MEDIUM" | "LARGE";
-          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE";
-          payment?: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        }
+        customerId: string;
+        receiverId: string;
+        officeId: string;
+        description: string;
+        value: number;
+        size?: "SMALL" | "MEDIUM" | "LARGE";
+        payment?: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
       | {
-          customer: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          receiver: {
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
-          };
-          officeId: string;
-          description: string;
-          value: number;
-          size: "SMALL" | "MEDIUM" | "LARGE";
-          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC_SENSITIVE";
-          payment: {
-            method: "CASH" | "MOBILE_MONEY" | "CARD";
-            amount: number;
-            reference?: string;
-          };
-        },
+        customer: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        receiver: {
+          firstName: string;
+          lastName: string;
+          phoneNumber: string;
+          emailAddress?: string;
+          idNumber?: string;
+        };
+        officeId: string;
+        description: string;
+        value: number;
+        size: "SMALL" | "MEDIUM" | "LARGE";
+        payment: {
+          method: "CASH" | "MOBILE_MONEY" | "CARD";
+          amount: number;
+          reference?: string;
+        };
+      }
+    ,
     @Req() req: Request
   ) {
     try {
@@ -134,7 +133,7 @@ export class ParcelController {
         search
       );
     } catch (e) {
-      console.error("ParcelController.getPaginated error:", e);
+      console.error('ParcelController.getPaginated error:', e);
       throw e;
     }
   }

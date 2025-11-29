@@ -151,10 +151,7 @@ export class ParcelDialogComponent {
     const payload = {
       ...raw,
       description: (raw.description || "").trim(),
-      value:
-        raw.value !== null && raw.value !== undefined
-          ? Number(raw.value)
-          : raw.value,
+      value: raw.value !== null && raw.value !== undefined ? Number(raw.value) : raw.value,
       payment: raw.payment
         ? {
             ...raw.payment,

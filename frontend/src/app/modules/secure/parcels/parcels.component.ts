@@ -16,8 +16,7 @@ import {
 import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
-import { ParcelItemDialogComponent } from "./parcel-item-dialog.component";
-import { ParcelItemsViewDialogComponent } from "./parcel-items-view-dialog.component";
+import { ParcelDetailsDialogComponent } from "./parcel-details-dialog.component";
 import { ComplaintsApiService } from "../complaints/complaints-api.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
@@ -54,6 +53,7 @@ export class ParcelsComponent implements OnInit {
     "select",
     "trackingCode",
     "parcelNumber",
+    "description",
     "customerId",
     "receiverId",
     "destinationId",
@@ -106,6 +106,8 @@ export class ParcelsComponent implements OnInit {
       this.total = Number(data.total || 0);
       this.pageSize = pageSize;
       this.currentPageIndex = pageIndex;
+      this.selection.clear();
+      this.selectedParcel = null;
     });
   }
 
@@ -136,31 +138,13 @@ export class ParcelsComponent implements OnInit {
     }
   }
 
-  openAddItemDialog(): void {
-    const parcel = this.selectedParcel;
-    if (!parcel || !parcel.id) {
+  openDetailsDialog(): void {
+    if (!this.selectedParcel) {
       return;
     }
-    const dialogRef = this._dialog.open(ParcelItemDialogComponent, {
-      width: "400px",
-      data: { parcelId: parcel.id },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        // Optionally reload or handle after item addition
-      }
-    });
-  }
-
-  openViewItemsDialog(): void {
-    const parcel = this.selectedParcel;
-    if (!parcel || !parcel.id) {
-      return;
-    }
-    // You can replace ParcelItemDialogComponent with a dedicated view dialog if needed
-    this._dialog.open(ParcelItemsViewDialogComponent, {
-      width: "600px",
-      data: { parcelId: parcel.id, viewOnly: true },
+    this._dialog.open(ParcelDetailsDialogComponent, {
+      width: "520px",
+      data: { parcel: this.selectedParcel },
     });
   }
 
