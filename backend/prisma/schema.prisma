@@ -133,6 +133,7 @@ model Parcel {
   scans           ScannedParcel[] @relation("ParcelScans")
   payment         Payment?
   complaints      Complaint[]
+  queries         ParcelQuery[]
 }
 
 model Payment {
@@ -145,6 +146,32 @@ model Payment {
   paidAt    DateTime      @default(now())
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+}
+
+model ParcelQuery {
+  id          String            @id @default(uuid())
+  parcelId    String
+  parcel      Parcel            @relation(fields: [parcelId], references: [id])
+  queryType   ParcelQueryType
+  description String?
+  status      ParcelQueryStatus @default(OPEN)
+  createdBy   String
+  creator     User              @relation("ParcelQueryCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  events      ParcelQueryEvent[]
+}
+
+model ParcelQueryEvent {
+  id          String             @id @default(uuid())
+  queryId     String
+  query       ParcelQuery        @relation(fields: [queryId], references: [id])
+  action      String
+  fromStatus  ParcelQueryStatus?
+  toStatus    ParcelQueryStatus?
+  note        String?
+  performedBy String?
+  createdAt   DateTime           @default(now())
 }
 
 model Role {
@@ -279,6 +306,7 @@ model User {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   reportedComplaints Complaint[]       @relation("ComplaintReporter")
+  createdQueries     ParcelQuery[]     @relation("ParcelQueryCreator")
 }
 
 enum BayType {
@@ -332,4 +360,22 @@ enum CargoType {
   FRAGILE
   ELECTRONIC
   DOCUMENT
+}
+
+enum ParcelQueryType {
+  GENERAL
+  DAMAGE
+  ROUTING_ISSUE
+  DELAY
+  MISSING
+  DELIVERY_STATUS
+  PAYMENT
+  OTHER
+}
+
+enum ParcelQueryStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

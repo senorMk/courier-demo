@@ -20,6 +20,7 @@ import { ParcelDetailsDialogComponent } from "./parcel-details-dialog.component"
 import { ComplaintsApiService } from "../complaints/complaints-api.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
+import { MatDividerModule } from "@angular/material/divider";
 import { ParcelComplaintDialogComponent } from "./parcel-complaint-dialog.component";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
@@ -27,6 +28,9 @@ import { debounceTime, distinctUntilChanged } from "rxjs/operators";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BayAuthorizationService } from "app/services/bay-authorization.service";
 import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
+import { ParcelQueriesService } from "./parcel-queries.service";
+import { ParcelQueryDialogComponent } from "./parcel-query-dialog.component";
+import { ParcelQueriesListDialogComponent } from "./parcel-queries-list-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -44,6 +48,7 @@ import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
     MatSnackBarModule,
     MatTooltipModule,
     MatMenuModule,
+    MatDividerModule,
     ReactiveFormsModule,
     MatInputModule,
   ],
@@ -81,7 +86,8 @@ export class ParcelsComponent implements OnInit {
     private _service: ParcelsService,
     private _dialog: MatDialog,
     private _snackBar: MatSnackBar,
-    private _complaints: ComplaintsApiService
+    private _complaints: ComplaintsApiService,
+    private _queriesService: ParcelQueriesService
   ) {
     this.searchControl.valueChanges
       .pipe(
@@ -231,5 +237,58 @@ export class ParcelsComponent implements OnInit {
     if (this.searchControl.value) {
       this.searchControl.setValue('');
     }
+  }
+
+  addQuery(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) {
+      this._snackBar.open('Parcel identifier missing', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    const dialogRef = this._dialog.open(ParcelQueryDialogComponent, {
+      width: '500px',
+      data: {
+        parcelId: id,
+        trackingCode: (row as any)?.TrackingCode?.plainTextCode,
+        parcelNumber: row.parcelNumber,
+        sender: (row as any)?.customer,
+        receiver: (row as any)?.receiver,
+        office: row.office,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+
+      this._queriesService.createQuery(result).subscribe({
+        next: () => {
+          this._snackBar.open('Query added successfully', 'Close', { duration: 2500, verticalPosition: 'top' });
+        },
+        error: (err) => {
+          const msg = err?.error?.message || 'Failed to add query';
+          this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+        },
+      });
+    });
+  }
+
+  viewQueries(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) {
+      this._snackBar.open('Parcel identifier missing', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    this._dialog.open(ParcelQueriesListDialogComponent, {
+      width: '700px',
+      data: {
+        parcelId: id,
+        trackingCode: (row as any)?.TrackingCode?.plainTextCode,
+        parcelNumber: row.parcelNumber,
+      },
+    });
   }
 }

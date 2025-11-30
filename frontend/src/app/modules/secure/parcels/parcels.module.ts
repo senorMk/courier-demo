@@ -14,6 +14,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ReactiveFormsModule } from "@angular/forms";
 import { ParcelsService } from "./parcels.service";
+import { ParcelQueriesService } from "./parcel-queries.service";
 
 @NgModule({
   imports: [
@@ -31,6 +32,6 @@ import { ParcelsService } from "./parcels.service";
     MatInputModule,
     ReactiveFormsModule,
   ],
-  providers: [ParcelsService],
+  providers: [ParcelsService, ParcelQueriesService],
 })
 export class ParcelsModule {}

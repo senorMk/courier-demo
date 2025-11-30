@@ -8,6 +8,7 @@ import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
 import { TrucksModule } from './trucks/trucks.module';
 import { ComplaintsModule } from './complaints/complaints.module';
+import { ParcelQueriesModule } from './parcel-queries/parcel-queries.module';
 import { UsersModule } from './users/users.module';
 import { LogsModule } from './logs/logs.module';
 import { AppController } from './app.controller';
@@ -43,6 +44,7 @@ import { BaysModule } from './bays/bays.module';
     DriversModule,
     TrucksModule,
     ComplaintsModule,
+    ParcelQueriesModule,
     UsersModule,
     LogsModule,
     CustomerModule,
