@@ -55,7 +55,7 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   ];
 
   const createdAt = time.toDate(parcel.createdAt as unknown as string);
-  const formattedDate = time.format(createdAt, 'dd LLL yyyy');
+  const formattedDate = time.format(createdAt, 'dd LLL, yyyy');
 
   const formatAmt = (n?: number) => (n || 0).toFixed(2);
 
@@ -161,13 +161,21 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     // drawReceiptLogo(doc, t.key);
 
     doc.font('Helvetica-Bold').fontSize(14).text('Platinum Courier Services', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(10).text(`Date: ${formattedDate}`, { align: 'center' });
     doc.moveDown(0.5);
-    doc.font('Helvetica-Bold').fontSize(12).text(t.title, { align: 'center' });
-    doc.font('Helvetica');
-    doc.moveDown();
 
     // For sticker labels, check if short version is requested
     const isSticker = t.key === 'sticker';
+    const isStickerShort = isSticker && useStickerShortVersion;
+
+    // Don't show title for short sticker version
+    if (!isStickerShort) {
+      doc.font('Helvetica-Bold').fontSize(12).text(t.title, { align: 'center' });
+    }
+    doc.font('Helvetica');
+    doc.moveDown();
+
     const showFullDetails = !isSticker || !useStickerShortVersion;
 
     if (showFullDetails) {
@@ -183,23 +191,41 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
       doc.moveDown(0.6);
     }
 
-    doc.font('Helvetica-Bold').text('Sender Details');
-    doc.font('Helvetica');
-    doc.text(`Sender Name: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
-    const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
-    const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
-    doc.text(`Office: ${originName} (${originCode})`);
-    doc.text(`Date: ${formattedDate}`);
-    const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
-    doc.text(`Contact No: ${senderContact}`);
-    doc.moveDown(0.5);
-    doc.font('Helvetica-Bold').text("Receiver's Details");
-    doc.font('Helvetica');
-    doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
-    doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
-    doc.text(`Date: ${formattedDate}`);
-    const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
-    doc.text(`Contact No: ${receiverContact}`);
+    if (isStickerShort) {
+      // Short version: condensed format
+      doc.font('Helvetica-Bold').text(`Sender: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
+      doc.font('Helvetica');
+      const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
+      const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
+      doc.text(`Office: ${originName} (${originCode})`);
+      const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
+      doc.text(`Contact No: ${senderContact}`);
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').text(`Receiver: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
+      doc.font('Helvetica');
+      doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
+      const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
+      doc.text(`Contact No: ${receiverContact}`);
+    } else {
+      // Full version
+      doc.font('Helvetica-Bold').text('Sender Details');
+      doc.font('Helvetica');
+      doc.text(`Sender Name: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
+      const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
+      const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
+      doc.text(`Office: ${originName} (${originCode})`);
+      doc.text(`Date: ${formattedDate}`);
+      const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
+      doc.text(`Contact No: ${senderContact}`);
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').text("Receiver's Details");
+      doc.font('Helvetica');
+      doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
+      doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
+      doc.text(`Date: ${formattedDate}`);
+      const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
+      doc.text(`Contact No: ${receiverContact}`);
+    }
 
     if (showFullDetails) {
       drawParcelSummary(doc);
@@ -216,13 +242,16 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
       }
     } catch {}
 
-    doc.moveDown(0.8);
-    doc.font('Helvetica').fontSize(8);
-    drawCenteredText(
-      doc,
-      'DISCLAIMER: Platinum Courier Services Shall Only Be Liable For Loss Or Damage Based on The Value Declared',
-      { font: 'Helvetica', fontSize: 8 },
-    );
+    // Only show disclaimer if not short sticker version
+    if (!isStickerShort) {
+      doc.moveDown(0.8);
+      doc.font('Helvetica').fontSize(8);
+      drawCenteredText(
+        doc,
+        'DISCLAIMER: Platinum Courier Services Shall Only Be Liable For Loss Or Damage Based on The Value Declared',
+        { font: 'Helvetica', fontSize: 8 },
+      );
+    }
 
     doc.end();
     await new Promise<void>((res) => (stream as any).on('finish', res));
