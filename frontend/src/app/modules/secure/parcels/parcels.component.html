@@ -99,9 +99,13 @@
             <mat-icon>download</mat-icon>
           </button>
           <mat-menu #downloadMenu="matMenu">
-            <button mat-menu-item (click)="downloadReceipt(element, 'sender')">
-              <mat-icon>person</mat-icon>
-              <span>Sender Copy</span>
+            <button mat-menu-item (click)="downloadReceipt(element, 'original')">
+              <mat-icon>description</mat-icon>
+              <span>Original Copy</span>
+            </button>
+            <button mat-menu-item (click)="downloadReceipt(element, 'copy-of-original')">
+              <mat-icon>content_copy</mat-icon>
+              <span>Copy of Original</span>
             </button>
             <button mat-menu-item (click)="downloadReceipt(element, 'sticker')">
               <mat-icon>local_printshop</mat-icon>
