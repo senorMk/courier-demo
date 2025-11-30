@@ -33,10 +33,13 @@ export class TripsController {
   @Put(':id/assign')
   @SetMetadata('roles', TRIP_MANAGE_ROLES)
   assign(
+    @Req() req: Request,
     @Param('id') id: string,
     @Body() body: { driverName?: string; truckReg?: string }
   ) {
-    return this.service.assignTrip(id, body);
+    const user: any = (req as any).user || {};
+    const performedBy = user?.email || user?.username || user?.id;
+    return this.service.assignTrip(id, body, performedBy);
   }
 
   @Put(':id/link-session/:sessionId')
