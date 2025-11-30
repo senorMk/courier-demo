@@ -177,7 +177,7 @@ export class ParcelsService {
 
   downloadReceipt(
     parcelId: string,
-    type: "sender" | "sticker" | "accounts"
+    type: "original" | "copy-of-original" | "sticker" | "accounts"
   ): Observable<Blob> {
     const url = `${this.baseUrl}/v1/parcels/${parcelId}/receipts/${type}`;
     return this._httpClient.get(url, {

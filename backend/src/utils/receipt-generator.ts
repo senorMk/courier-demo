@@ -24,7 +24,7 @@ function loadPdfKit(): any | null {
 }
 
 /**
- * Generate three PDF receipts for a parcel: sender, sticker, accounts
+ * Generate four PDF receipts for a parcel: original, copy-of-original, sticker, accounts
  * Files are written under ./receipts/parcel-<id>-<type>.pdf
  */
 export async function generateReceiptsForParcel(parcelId: string): Promise<void> {
@@ -48,7 +48,8 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   if (!parcel) return;
 
   const types = [
-    { key: 'sender', title: 'Sender Copy' },
+    { key: 'original', title: 'Original Copy' },
+    { key: 'copy-of-original', title: 'Copy of Original' },
     { key: 'sticker', title: 'Parcel Label' },
     { key: 'accounts', title: 'Accounts Copy' },
   ];
@@ -68,9 +69,9 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     let opts: PageOpts = { size: 'A5', margin: 28 };
 
     // Requirements:
-    // - Sender copy receipt & Accounts copy receipt: 72mm width (thermal)
+    // - Original copy receipt, Copy of Original receipt & Accounts copy receipt: 72mm width (thermal)
     // - Shipping label (sticker/parcel label): 4" x 6"
-    if (typeKey === 'sender' || typeKey === 'accounts') {
+    if (typeKey === 'original' || typeKey === 'copy-of-original' || typeKey === 'accounts') {
       const width = mmToPt(72); // ~204 pt
       const height = inToPt(8.5); // reasonable roll height; add pages if needed
       opts = { size: [width, height], margin: 10 };

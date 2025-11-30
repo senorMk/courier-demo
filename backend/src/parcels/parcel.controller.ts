@@ -163,7 +163,8 @@ export class ParcelController {
         fs.mkdirSync(receiptsDir, { recursive: true });
       }
       const files = [
-        path.join(receiptsDir, `parcel-${parcelId}-sender.pdf`),
+        path.join(receiptsDir, `parcel-${parcelId}-original.pdf`),
+        path.join(receiptsDir, `parcel-${parcelId}-copy-of-original.pdf`),
         path.join(receiptsDir, `parcel-${parcelId}-sticker.pdf`),
         path.join(receiptsDir, `parcel-${parcelId}-accounts.pdf`),
       ];
@@ -208,7 +209,7 @@ export class ParcelController {
     @Res() res: Response
   ) {
     try {
-      const valid = ["sender", "sticker", "accounts"];
+      const valid = ["original", "copy-of-original", "sticker", "accounts"];
       if (!valid.includes(type)) {
         throw new BadRequestException("Invalid receipt type");
       }

@@ -168,7 +168,7 @@ export class ParcelsComponent implements OnInit {
     });
   }
 
-  downloadReceipt(row: Parcel, type: 'sender' | 'sticker' | 'accounts'): void {
+  downloadReceipt(row: Parcel, type: 'original' | 'copy-of-original' | 'sticker' | 'accounts'): void {
     const id = (row as any)?.id;
     if (!id) return;
     this._service.downloadReceipt(id, type).subscribe({
