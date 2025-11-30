@@ -48,14 +48,44 @@ export class TripsService {
     });
   }
 
-  async assignTrip(id: string, payload: { driverName?: string; truckReg?: string; }) {
+  async assignTrip(id: string, payload: { driverName?: string; truckReg?: string; }, performedBy?: string) {
     const trip = await this.prisma.trip.findUnique({ where: { id } });
     if (!trip) throw new NotFoundException('Trip not found');
-    // Guard reassignment: allow only before IN_TRANSIT (i.e., PLANNED or LOADING)
-    if (trip.status === 'IN_TRANSIT' || trip.status === 'COMPLETED') {
-      throw new BadRequestException('Reassignment allowed only before departure');
+
+    // Prevent updates to completed trips only
+    if (trip.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot reassign completed trips');
     }
-    return this.prisma.trip.update({ where: { id }, data: { ...payload } });
+
+    // Track what changed for audit trail
+    const changes: string[] = [];
+    if (payload.driverName && payload.driverName !== trip.driverName) {
+      changes.push(`Driver: ${trip.driverName} → ${payload.driverName}`);
+    }
+    if (payload.truckReg && payload.truckReg !== trip.truckReg) {
+      changes.push(`Truck: ${trip.truckReg} → ${payload.truckReg}`);
+    }
+
+    // Update the trip
+    const updated = await this.prisma.trip.update({ where: { id }, data: { ...payload } });
+
+    // Create audit trail if there were changes
+    if (changes.length > 0) {
+      const isActiveTripUpdate = trip.status === 'IN_TRANSIT';
+      await this.prisma.tripLog.create({
+        data: {
+          tripId: id,
+          action: isActiveTripUpdate ? 'ACTIVE_TRIP_REASSIGNMENT' : 'REASSIGNMENT',
+          fromStatus: trip.status as any,
+          toStatus: trip.status as any,
+          performedBy: performedBy || 'system',
+          note: changes.join('; '),
+          timestamp: this.time.now(),
+        },
+      });
+    }
+
+    return updated;
   }
 
   async linkSession(tripId: string, sessionId: string) {

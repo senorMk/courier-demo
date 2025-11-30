@@ -13,6 +13,7 @@ import { DriversApiService, DriverItem } from './drivers-api.service';
 import { TrucksApiService, TruckItem } from './trucks-api.service';
 import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
+import { AssignTripDialogComponent } from './assign-trip-dialog/assign-trip-dialog.component';
 
 @Component({
   selector: 'app-trips',
@@ -185,13 +186,32 @@ export class TripsComponent {
   }
 
   promptAssign(t: any) {
-    const driverName = prompt('Driver name', t.driverName || '');
-    if (driverName === null) return;
-    const truckReg = prompt('Truck registration', t.truckReg || '');
-    if (truckReg === null) return;
-    this.tripsApi
-      .assign(t.id, { driverName, truckReg })
-      .subscribe({ next: () => this.refresh(), error: (e) => alert(e?.error?.message || 'Failed to assign') });
+    const isActiveTrip = t.status === 'IN_TRANSIT';
+    const dialogRef = this.dialog.open(AssignTripDialogComponent, {
+      data: {
+        tripId: t.id,
+        currentDriverName: t.driverName || '',
+        currentTruckReg: t.truckReg || '',
+        isActiveTrip: isActiveTrip,
+      },
+      width: '500px',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) return;
+      const { driverName, truckReg } = result;
+      this.tripsApi
+        .assign(t.id, { driverName, truckReg })
+        .subscribe({
+          next: () => {
+            this.refresh();
+            if (isActiveTrip) {
+              alert('Active trip updated successfully. Changes have been logged.');
+            }
+          },
+          error: (e) => alert(e?.error?.message || 'Failed to assign'),
+        });
+    });
   }
 
   start(t: any) {
