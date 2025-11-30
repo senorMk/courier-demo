@@ -1,0 +1,50 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <h1 mat-dialog-title class="text-center font-bold text-xl">Add Parcel Query</h1>
+  <div mat-dialog-content>
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">
+        <span *ngIf="data.trackingCode">Tracking code: <strong>{{ data.trackingCode }}</strong></span>
+        <span *ngIf="data.parcelNumber"> | Parcel #{{ data.parcelNumber }}</span>
+      </p>
+      <p class="text-sm text-gray-600" *ngIf="data.office">
+        Office: {{ data.office.name }} ({{ data.office.branchCode }})
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 mb-4 md:grid-cols-2">
+      <div class="rounded-md border border-gray-200 p-3">
+        <div class="text-xs font-semibold uppercase text-gray-500">Sender</div>
+        <div class="text-sm font-medium">{{ sender.name }}</div>
+        <div class="text-xs text-gray-500" *ngIf="sender.phone">{{ sender.phone }}</div>
+        <div class="text-xs text-gray-500" *ngIf="sender.email">{{ sender.email }}</div>
+      </div>
+      <div class="rounded-md border border-gray-200 p-3">
+        <div class="text-xs font-semibold uppercase text-gray-500">Receiver</div>
+        <div class="text-sm font-medium">{{ receiver.name }}</div>
+        <div class="text-xs text-gray-500" *ngIf="receiver.phone">{{ receiver.phone }}</div>
+        <div class="text-xs text-gray-500" *ngIf="receiver.email">{{ receiver.email }}</div>
+      </div>
+    </div>
+
+    <mat-form-field appearance="fill" class="w-full mb-4">
+      <mat-label>Query Type</mat-label>
+      <mat-select formControlName="queryType" placeholder="Select query type">
+        <mat-option *ngFor="let type of queryTypes" [value]="type.value">
+          {{ type.label }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="form.controls.queryType.hasError('required')">
+        Query type is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="w-full">
+      <mat-label>Description (Optional)</mat-label>
+      <textarea matInput rows="4" placeholder="Describe the query or issue" formControlName="description"></textarea>
+    </mat-form-field>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Submit Query</button>
+  </div>
+</form>
