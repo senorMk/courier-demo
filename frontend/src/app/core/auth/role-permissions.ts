@@ -28,6 +28,7 @@ export type FeatureKey =
   | "destinations"
   | "trips"
   | "drivers"
+  | "siders"
   | "trucks"
   | "complaints"
   | "live-tracking";
@@ -103,6 +104,7 @@ const ALL_FEATURES: FeatureKey[] = [
   "destinations",
   "trips",
   "drivers",
+  "siders",
   "trucks",
   "complaints",
   "live-tracking",
@@ -145,6 +147,7 @@ const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
     "destinations",
     "trips",
     "drivers",
+    "siders",
     "trucks",
     "live-tracking",
   ],
@@ -173,6 +176,7 @@ const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
     "parcels",
     "trips",
     "drivers",
+    "siders",
     "trucks",
   ],
   // Sorter scans and sorts parcels at sending office for dispatch
@@ -207,6 +211,7 @@ export const NAV_ITEM_FEATURE: Record<string, FeatureKey> = {
   destinations: "destinations",
   trips: "trips",
   drivers: "drivers",
+  siders: "siders",
   trucks: "trucks",
   complaints: "complaints",
 };
