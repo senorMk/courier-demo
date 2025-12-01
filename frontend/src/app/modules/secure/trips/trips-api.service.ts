@@ -29,11 +29,27 @@ export class TripsApiService {
     return this.http.get(`${this.baseUrl}/v1/trips?${q.toString()}`, this.getHeader());
   }
 
-  create(payload: { routeId: string; officeId: string; destinationOfficeId: string; driverName: string; truckReg: string; }): Observable<any> {
+  create(payload: {
+    routeId: string;
+    officeId: string;
+    destinationOfficeId: string;
+    destinationRouteId?: string;
+    driverName: string;
+    mainDriverId: string;
+    secondaryDriverId?: string;
+    siderId?: string;
+    truckReg: string;
+  }): Observable<any> {
     return this.http.post(`${this.baseUrl}/v1/trips`, payload, this.getHeader());
   }
 
-  assign(id: string, payload: { driverName?: string; truckReg?: string; }): Observable<any> {
+  assign(id: string, payload: {
+    driverName?: string;
+    mainDriverId?: string;
+    secondaryDriverId?: string;
+    siderId?: string;
+    truckReg?: string;
+  }): Observable<any> {
     return this.http.put(`${this.baseUrl}/v1/trips/${id}/assign`, payload, this.getHeader());
   }
 
