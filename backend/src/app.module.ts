@@ -6,6 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
+import { SidersModule } from './siders/siders.module';
 import { TrucksModule } from './trucks/trucks.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { ParcelQueriesModule } from './parcel-queries/parcel-queries.module';
@@ -42,6 +43,7 @@ import { BaysModule } from './bays/bays.module';
     AuthModule,
     TripsModule,
     DriversModule,
+    SidersModule,
     TrucksModule,
     ComplaintsModule,
     ParcelQueriesModule,
