@@ -12,8 +12,18 @@ export class TripsService {
     private readonly time: TimeService,
   ) {}
 
-  async createTrip(payload: { routeId: string; officeId: string; destinationOfficeId: string; destinationRouteId?: string; driverName: string; truckReg: string; }) {
-    const { routeId, officeId, destinationOfficeId, destinationRouteId, driverName, truckReg } = payload;
+  async createTrip(payload: {
+    routeId: string;
+    officeId: string;
+    destinationOfficeId: string;
+    destinationRouteId?: string;
+    driverName: string;
+    mainDriverId: string;
+    secondaryDriverId?: string;
+    siderId?: string;
+    truckReg: string;
+  }) {
+    const { routeId, officeId, destinationOfficeId, destinationRouteId, driverName, mainDriverId, secondaryDriverId, siderId, truckReg } = payload;
 
     // Validate origin office belongs to route
     const origin = await this.prisma.office.findUnique({ where: { id: officeId } });
@@ -35,6 +45,22 @@ export class TripsService {
       if (!destRoute) throw new BadRequestException('Destination route not found');
     }
 
+    // Validate main driver exists
+    const mainDriver = await this.prisma.driver.findUnique({ where: { id: mainDriverId } });
+    if (!mainDriver) throw new BadRequestException('Main driver not found');
+
+    // Validate secondary driver if provided
+    if (secondaryDriverId) {
+      const secondaryDriver = await this.prisma.driver.findUnique({ where: { id: secondaryDriverId } });
+      if (!secondaryDriver) throw new BadRequestException('Secondary driver not found');
+    }
+
+    // Validate sider if provided
+    if (siderId) {
+      const sider = await this.prisma.sider.findUnique({ where: { id: siderId } });
+      if (!sider) throw new BadRequestException('Sider not found');
+    }
+
     return this.prisma.trip.create({
       data: {
         routeId,
@@ -42,14 +68,39 @@ export class TripsService {
         destinationOfficeId,
         destinationRouteId: destinationRouteId || null,
         driverName,
+        mainDriverId,
+        secondaryDriverId: secondaryDriverId || null,
+        siderId: siderId || null,
         truckReg,
         status: 'PLANNED' as any,
+      },
+      include: {
+        mainDriver: true,
+        secondaryDriver: true,
+        sider: true,
+        route: true,
+        office: true,
+        destinationOffice: true,
+        destinationRoute: true,
       },
     });
   }
 
-  async assignTrip(id: string, payload: { driverName?: string; truckReg?: string; }, performedBy?: string) {
-    const trip = await this.prisma.trip.findUnique({ where: { id } });
+  async assignTrip(id: string, payload: {
+    driverName?: string;
+    mainDriverId?: string;
+    secondaryDriverId?: string;
+    siderId?: string;
+    truckReg?: string;
+  }, performedBy?: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id },
+      include: {
+        mainDriver: true,
+        secondaryDriver: true,
+        sider: true,
+      },
+    });
     if (!trip) throw new NotFoundException('Trip not found');
 
     // Prevent updates to completed trips only
@@ -57,17 +108,67 @@ export class TripsService {
       throw new BadRequestException('Cannot reassign completed trips');
     }
 
+    // Validate main driver if being updated
+    if (payload.mainDriverId) {
+      const mainDriver = await this.prisma.driver.findUnique({ where: { id: payload.mainDriverId } });
+      if (!mainDriver) throw new BadRequestException('Main driver not found');
+    }
+
+    // Validate secondary driver if being updated
+    if (payload.secondaryDriverId) {
+      const secondaryDriver = await this.prisma.driver.findUnique({ where: { id: payload.secondaryDriverId } });
+      if (!secondaryDriver) throw new BadRequestException('Secondary driver not found');
+    }
+
+    // Validate sider if being updated
+    if (payload.siderId) {
+      const sider = await this.prisma.sider.findUnique({ where: { id: payload.siderId } });
+      if (!sider) throw new BadRequestException('Sider not found');
+    }
+
     // Track what changed for audit trail
     const changes: string[] = [];
     if (payload.driverName && payload.driverName !== trip.driverName) {
       changes.push(`Driver: ${trip.driverName} → ${payload.driverName}`);
     }
+    if (payload.mainDriverId && payload.mainDriverId !== trip.mainDriverId) {
+      const oldDriver = trip.mainDriver ? `${trip.mainDriver.firstName} ${trip.mainDriver.lastName}` : 'None';
+      changes.push(`Main Driver: ${oldDriver} → (updated)`);
+    }
+    if (payload.secondaryDriverId !== undefined && payload.secondaryDriverId !== trip.secondaryDriverId) {
+      const oldDriver = trip.secondaryDriver ? `${trip.secondaryDriver.firstName} ${trip.secondaryDriver.lastName}` : 'None';
+      changes.push(`Secondary Driver: ${oldDriver} → (updated)`);
+    }
+    if (payload.siderId !== undefined && payload.siderId !== trip.siderId) {
+      const oldSider = trip.sider ? `${trip.sider.firstName} ${trip.sider.lastName}` : 'None';
+      changes.push(`Sider: ${oldSider} → (updated)`);
+    }
     if (payload.truckReg && payload.truckReg !== trip.truckReg) {
       changes.push(`Truck: ${trip.truckReg} → ${payload.truckReg}`);
     }
 
+    // Prepare update data
+    const updateData: any = {};
+    if (payload.driverName !== undefined) updateData.driverName = payload.driverName;
+    if (payload.mainDriverId !== undefined) updateData.mainDriverId = payload.mainDriverId;
+    if (payload.secondaryDriverId !== undefined) updateData.secondaryDriverId = payload.secondaryDriverId || null;
+    if (payload.siderId !== undefined) updateData.siderId = payload.siderId || null;
+    if (payload.truckReg !== undefined) updateData.truckReg = payload.truckReg;
+
     // Update the trip
-    const updated = await this.prisma.trip.update({ where: { id }, data: { ...payload } });
+    const updated = await this.prisma.trip.update({
+      where: { id },
+      data: updateData,
+      include: {
+        mainDriver: true,
+        secondaryDriver: true,
+        sider: true,
+        route: true,
+        office: true,
+        destinationOffice: true,
+        destinationRoute: true,
+      },
+    });
 
     // Create audit trail if there were changes
     if (changes.length > 0) {
@@ -209,7 +310,15 @@ export class TripsService {
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        include: { route: true, office: true, destinationOffice: true, destinationRoute: true },
+        include: {
+          route: true,
+          office: true,
+          destinationOffice: true,
+          destinationRoute: true,
+          mainDriver: true,
+          secondaryDriver: true,
+          sider: true,
+        },
       }),
       this.prisma.trip.count({ where }),
     ]);
