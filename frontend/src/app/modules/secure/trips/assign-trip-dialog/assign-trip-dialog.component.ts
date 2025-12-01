@@ -6,11 +6,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DriversApiService, DriverItem } from '../drivers-api.service';
+import { SidersApiService, SiderItem } from '../siders-api.service';
 import { TrucksApiService, TruckItem } from '../trucks-api.service';
 
 export interface AssignTripDialogData {
   tripId: string;
   currentDriverName: string;
+  currentMainDriverId?: string;
+  currentSecondaryDriverId?: string;
+  currentSiderId?: string;
   currentTruckReg: string;
   isActiveTrip: boolean;
 }
@@ -33,13 +37,17 @@ export class AssignTripDialogComponent {
   readonly data = inject(MAT_DIALOG_DATA) as AssignTripDialogData;
   private fb = inject(FormBuilder);
   private driversApi = inject(DriversApiService);
+  private sidersApi = inject(SidersApiService);
   private trucksApi = inject(TrucksApiService);
 
   drivers = signal<DriverItem[]>([]);
+  siders = signal<SiderItem[]>([]);
   trucks = signal<TruckItem[]>([]);
 
   form = this.fb.group({
-    driverName: [this.data.currentDriverName, Validators.required],
+    mainDriverId: [this.data.currentMainDriverId || ''],
+    secondaryDriverId: [this.data.currentSecondaryDriverId || ''],
+    siderId: [this.data.currentSiderId || ''],
     truckReg: [this.data.currentTruckReg, Validators.required],
   });
 
@@ -52,6 +60,12 @@ export class AssignTripDialogComponent {
     this.driversApi.list(200).subscribe({
       next: (drivers) => this.drivers.set(drivers || []),
       error: () => this.drivers.set([]),
+    });
+
+    // Load siders
+    this.sidersApi.list(200).subscribe({
+      next: (siders) => this.siders.set(siders || []),
+      error: () => this.siders.set([]),
     });
 
     // Load trucks
@@ -82,6 +96,20 @@ export class AssignTripDialogComponent {
 
   save(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.value);
+    const formValue = this.form.value;
+
+    // Derive driverName from main driver for legacy field
+    let driverName = this.data.currentDriverName;
+    if (formValue.mainDriverId) {
+      const mainDriver = this.drivers().find(d => d.id === formValue.mainDriverId);
+      if (mainDriver) {
+        driverName = `${mainDriver.firstName} ${mainDriver.lastName}`;
+      }
+    }
+
+    this.dialogRef.close({
+      ...formValue,
+      driverName
+    });
   }
 }

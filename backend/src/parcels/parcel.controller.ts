@@ -41,6 +41,8 @@ const PARCEL_RECEIPT_ROLES = [
   "managing-director",
   "operations-officer",
   "supervisor",
+  "dispatcher",
+  "sorter",
   "cashier",
 ] as const;
 

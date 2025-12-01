@@ -83,6 +83,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
     meta: metaFor("drivers"),
   },
   {
+    id: "siders",
+    title: "Siders",
+    type: "basic",
+    icon: "heroicons_outline:users",
+    link: "/secure/siders",
+    meta: metaFor("siders"),
+  },
+  {
     id: "trucks",
     title: "Trucks",
     type: "basic",
@@ -183,6 +191,14 @@ export const compactNavigation: FuseNavigationItem[] = [
     meta: metaFor("drivers"),
   },
   {
+    id: "siders",
+    title: "Siders",
+    type: "basic",
+    icon: "heroicons_outline:users",
+    link: "/secure/siders",
+    meta: metaFor("siders"),
+  },
+  {
     id: "trucks",
     title: "Trucks",
     type: "basic",
@@ -271,6 +287,14 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     icon: "heroicons_outline:identification",
     link: "/secure/drivers",
     meta: metaFor("drivers"),
+  },
+  {
+    id: "siders",
+    title: "Siders",
+    type: "basic",
+    icon: "heroicons_outline:users",
+    link: "/secure/siders",
+    meta: metaFor("siders"),
   },
   {
     id: "trucks",

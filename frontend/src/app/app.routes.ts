@@ -203,6 +203,16 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: "siders",
+        data: {
+          allowedRoles: getRolesWithFeature("siders"),
+        },
+        loadComponent: () =>
+          import("app/modules/secure/siders/siders.component").then(
+            (m) => m.SidersComponent
+          ),
+      },
+      {
         path: "trucks",
         data: {
           allowedRoles: getRolesWithFeature("trucks"),

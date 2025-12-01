@@ -20,9 +20,12 @@
 
   <div [formGroup]="form" class="flex flex-col gap-4" style="min-width: 400px; padding-top: 8px;">
     <mat-form-field appearance="fill">
-      <mat-label>Driver</mat-label>
-      <mat-select formControlName="driverName" placeholder="Select driver">
-        <mat-option *ngFor="let d of drivers()" [value]="formatDriverName(d)">
+      <mat-label>Main Driver</mat-label>
+      <mat-select formControlName="mainDriverId" placeholder="Select main driver (optional)">
+        <mat-option [value]="''">
+          <span class="text-sm text-gray-500">None</span>
+        </mat-option>
+        <mat-option *ngFor="let d of drivers()" [value]="d.id">
           <div class="flex flex-col leading-tight">
             <span class="text-sm font-medium">{{ d.firstName }} {{ d.lastName }}</span>
             <span class="text-[11px] text-gray-500" *ngIf="d.phoneNumber || d.licenseNumber">
@@ -31,9 +34,40 @@
           </div>
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="form.controls['driverName'].hasError('required')">
-        Driver is required
-      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Secondary Driver</mat-label>
+      <mat-select formControlName="secondaryDriverId" placeholder="Select secondary driver (optional)">
+        <mat-option [value]="''">
+          <span class="text-sm text-gray-500">None</span>
+        </mat-option>
+        <mat-option *ngFor="let d of drivers()" [value]="d.id">
+          <div class="flex flex-col leading-tight">
+            <span class="text-sm font-medium">{{ d.firstName }} {{ d.lastName }}</span>
+            <span class="text-[11px] text-gray-500" *ngIf="d.phoneNumber || d.licenseNumber">
+              {{ d.phoneNumber || d.licenseNumber }}
+            </span>
+          </div>
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Sider</mat-label>
+      <mat-select formControlName="siderId" placeholder="Select sider (optional)">
+        <mat-option [value]="''">
+          <span class="text-sm text-gray-500">None</span>
+        </mat-option>
+        <mat-option *ngFor="let s of siders()" [value]="s.id">
+          <div class="flex flex-col leading-tight">
+            <span class="text-sm font-medium">{{ s.firstName }} {{ s.lastName }}</span>
+            <span class="text-[11px] text-gray-500" *ngIf="s.phoneNumber">
+              {{ s.phoneNumber }}
+            </span>
+          </div>
+        </mat-option>
+      </mat-select>
     </mat-form-field>
 
     <mat-form-field appearance="fill">

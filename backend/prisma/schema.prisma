@@ -81,14 +81,27 @@ model Customer {
 }
 
 model Driver {
-  id            String   @id @default(uuid())
-  firstName     String
-  lastName      String
-  phoneNumber   String?  @unique
-  licenseNumber String?
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  firstName            String
+  lastName             String
+  phoneNumber          String?  @unique
+  licenseNumber        String?
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  tripsAsMainDriver    Trip[]   @relation("TripMainDriver")
+  tripsAsSecondaryDriver Trip[] @relation("TripSecondaryDriver")
+}
+
+model Sider {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  phoneNumber String?  @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trips       Trip[]   @relation("TripSider")
 }
 
 model Office {
@@ -249,6 +262,9 @@ model Trip {
   destinationOfficeId String?
   destinationRouteId  String?
   driverName          String
+  mainDriverId        String
+  secondaryDriverId   String?
+  siderId             String?
   truckReg            String
   status              TripStatus        @default(PLANNED)
   plannedAt           DateTime          @default(now())
@@ -258,6 +274,9 @@ model Trip {
   office              Office            @relation(fields: [officeId], references: [id])
   destinationOffice   Office?           @relation("TripDestination", fields: [destinationOfficeId], references: [id])
   destinationRoute    Route?            @relation("TripDestinationRoute", fields: [destinationRouteId], references: [id])
+  mainDriver          Driver            @relation("TripMainDriver", fields: [mainDriverId], references: [id])
+  secondaryDriver     Driver?           @relation("TripSecondaryDriver", fields: [secondaryDriverId], references: [id])
+  sider               Sider?            @relation("TripSider", fields: [siderId], references: [id])
   sessions            ScanningSession[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt

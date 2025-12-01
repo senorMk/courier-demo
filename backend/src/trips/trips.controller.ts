@@ -26,7 +26,17 @@ export class TripsController {
 
   @Post()
   @SetMetadata('roles', TRIP_MANAGE_ROLES)
-  create(@Body() body: { routeId: string; officeId: string; destinationOfficeId: string; destinationRouteId?: string; driverName: string; truckReg: string; }) {
+  create(@Body() body: {
+    routeId: string;
+    officeId: string;
+    destinationOfficeId: string;
+    destinationRouteId?: string;
+    driverName: string;
+    mainDriverId: string;
+    secondaryDriverId?: string;
+    siderId?: string;
+    truckReg: string;
+  }) {
     return this.service.createTrip(body);
   }
 
@@ -35,7 +45,13 @@ export class TripsController {
   assign(
     @Req() req: Request,
     @Param('id') id: string,
-    @Body() body: { driverName?: string; truckReg?: string }
+    @Body() body: {
+      driverName?: string;
+      mainDriverId?: string;
+      secondaryDriverId?: string;
+      siderId?: string;
+      truckReg?: string;
+    }
   ) {
     const user: any = (req as any).user || {};
     const performedBy = user?.email || user?.username || user?.id;

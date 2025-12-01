@@ -10,6 +10,7 @@ import { decodeJwt } from 'app/core/utils/jwt.util';
 import { OfficesSearchService, OfficeItem } from './offices-search.service';
 import { TripsApiService } from './trips-api.service';
 import { DriversApiService, DriverItem } from './drivers-api.service';
+import { SidersApiService, SiderItem } from './siders-api.service';
 import { TrucksApiService, TruckItem } from './trucks-api.service';
 import { ConfirmationDialogComponent } from 'app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { RoutesSearchService, RouteItem } from '../routes/routes-search.service';
@@ -34,13 +35,16 @@ export class TripsComponent {
   private routesSearch = inject(RoutesSearchService);
   private tripsApi = inject(TripsApiService);
   private driversApi = inject(DriversApiService);
+  private sidersApi = inject(SidersApiService);
   private trucksApi = inject(TrucksApiService);
   private dialog = inject(MatDialog);
 
   form = this.fb.group({
     destinationOfficeId: ['', Validators.required],
     destinationRouteId: [''],
-    driverName: ['', Validators.required],
+    mainDriverId: ['', Validators.required],
+    secondaryDriverId: [''],
+    siderId: [''],
     truckReg: ['', Validators.required],
   });
 
@@ -52,6 +56,7 @@ export class TripsComponent {
   routes = signal<RouteItem[]>([]);
   routesLoading = signal<boolean>(false);
   drivers = signal<DriverItem[]>([]);
+  siders = signal<SiderItem[]>([]);
   trucks = signal<TruckItem[]>([]);
 
   constructor() {
@@ -106,6 +111,12 @@ export class TripsComponent {
       error: () => this.drivers.set([]),
     });
 
+    // Load siders
+    this.sidersApi.list(200).subscribe({
+      next: (siders) => this.siders.set(siders || []),
+      error: () => this.siders.set([]),
+    });
+
     // Load trucks
     this.trucksApi.list(200).subscribe({
       next: (trucks) => this.trucks.set(trucks || []),
@@ -137,7 +148,7 @@ export class TripsComponent {
 
   createTrip() {
     if (this.form.invalid) return;
-    const { driverName, truckReg, destinationOfficeId, destinationRouteId } = this.form.value as any;
+    const { mainDriverId, secondaryDriverId, siderId, truckReg, destinationOfficeId, destinationRouteId } = this.form.value as any;
 
     // Get user's office ID from token
     const token = localStorage.getItem('accessToken') || '';
@@ -159,21 +170,33 @@ export class TripsComponent {
           return;
         }
 
+        // Get main driver name for legacy field
+        const mainDriver = this.drivers().find(d => d.id === mainDriverId);
+        const driverName = mainDriver ? `${mainDriver.firstName} ${mainDriver.lastName}` : '';
+
         const tripData: any = {
           routeId,
           officeId,
           destinationOfficeId,
           driverName,
+          mainDriverId,
           truckReg
         };
 
-        // Only add destinationRouteId if it's selected
+        // Only add optional fields if they're selected
         if (destinationRouteId) {
           tripData.destinationRouteId = destinationRouteId;
+        }
+        if (secondaryDriverId) {
+          tripData.secondaryDriverId = secondaryDriverId;
+        }
+        if (siderId) {
+          tripData.siderId = siderId;
         }
 
         this.tripsApi.create(tripData).subscribe({
           next: () => {
+            this.form.reset();
             this.refresh();
           },
           error: (err) => alert(err?.error?.message || 'Failed to create trip'),
@@ -191,6 +214,9 @@ export class TripsComponent {
       data: {
         tripId: t.id,
         currentDriverName: t.driverName || '',
+        currentMainDriverId: t.mainDriverId || '',
+        currentSecondaryDriverId: t.secondaryDriverId || '',
+        currentSiderId: t.siderId || '',
         currentTruckReg: t.truckReg || '',
         isActiveTrip: isActiveTrip,
       },
@@ -199,9 +225,24 @@ export class TripsComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (!result) return;
-      const { driverName, truckReg } = result;
+      const { driverName, mainDriverId, secondaryDriverId, siderId, truckReg } = result;
+
+      const assignData: any = {
+        driverName,
+        mainDriverId,
+        truckReg
+      };
+
+      // Only include optional fields if they have values
+      if (secondaryDriverId) {
+        assignData.secondaryDriverId = secondaryDriverId;
+      }
+      if (siderId) {
+        assignData.siderId = siderId;
+      }
+
       this.tripsApi
-        .assign(t.id, { driverName, truckReg })
+        .assign(t.id, assignData)
         .subscribe({
           next: () => {
             this.refresh();

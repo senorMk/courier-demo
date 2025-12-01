@@ -70,15 +70,16 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
 
     // Requirements:
     // - Original copy receipt, Copy of Original receipt & Accounts copy receipt: 72mm width (thermal)
-    // - Shipping label (sticker/parcel label): 4" x 6"
+    // - Shipping label (sticker/parcel label): 4" x 6" (full) or 4" x 3.5" (short)
     if (typeKey === 'original' || typeKey === 'copy-of-original' || typeKey === 'accounts') {
       const width = mmToPt(72); // ~204 pt
       const height = inToPt(8.5); // reasonable roll height; add pages if needed
       opts = { size: [width, height], margin: 10 };
     } else if (typeKey === 'sticker') {
-      // 4x6 inch label in portrait (4" wide x 6" tall)
+      // 4" wide, height depends on version
       const width = inToPt(4);
-      const height = inToPt(6);
+      // Short version uses 3.5" height to eliminate white space below barcode
+      const height = useStickerShortVersion ? inToPt(3.3) : inToPt(6);
       opts = { size: [width, height], margin: 14 };
     }
     return opts;
