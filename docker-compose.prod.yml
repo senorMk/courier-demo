@@ -67,12 +67,12 @@ services:
       - "443:443"
     depends_on:
       app:
-        condition: service_started
+        condition: service_healthy
       frontend:
         condition: service_started
     volumes:
       - ./nginx/conf.d-prod:/etc/nginx/conf.d:ro
-      - ./nginx/certs:/etc/ssl/platinumcourier:ro
+      - /etc/ssl/platinumcourier:/etc/ssl/platinumcourier:ro
       - ./nginx/certs/.well-known:/acme-webroot/.well-known:rw
     restart: always
 
