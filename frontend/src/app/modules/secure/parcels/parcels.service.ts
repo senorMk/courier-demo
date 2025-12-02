@@ -14,6 +14,9 @@ export interface Parcel {
   size?: "SMALL" | "MEDIUM" | "LARGE";
   status?: string;
   createdAt?: string;
+  arrivedAt?: string | null;
+  isOverdue?: boolean;
+  daysSinceArrival?: number | null;
   office?: { name: string; branchCode: string; officeTypes?: string[] } | null;
   sendingOffice?: { name: string; branchCode: string } | null;
   TrackingCode?: { plainTextCode: string } | null;
@@ -37,6 +40,13 @@ export interface Parcel {
     reference?: string | null;
     paidAt?: string | null;
   } | null;
+  reminderLogs?: Array<{
+    sentAt: string;
+    user: {
+      firstName?: string | null;
+      lastName?: string | null;
+    };
+  }>;
 }
 
 export interface CustomerPayload {
@@ -197,6 +207,30 @@ export class ParcelsService {
     return this._httpClient.post(
       `${this.baseUrl}/v1/parcels/${parcelId}/collect`,
       {},
+      this.getHeader()
+    );
+  }
+
+  markParcelArrived(parcelId: string): Observable<Parcel> {
+    return this._httpClient.post<Parcel>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/mark-arrived`,
+      {},
+      this.getHeader()
+    );
+  }
+
+  sendReminder(parcelId: string): Observable<{ success: boolean; message: string }> {
+    return this._httpClient.post<{ success: boolean; message: string }>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/send-reminder`,
+      {},
+      this.getHeader()
+    );
+  }
+
+  getOverdueParcels(officeId?: string): Observable<Parcel[]> {
+    const params = officeId ? `?officeId=${officeId}` : '';
+    return this._httpClient.get<Parcel[]>(
+      `${this.baseUrl}/v1/parcels/overdue${params}`,
       this.getHeader()
     );
   }

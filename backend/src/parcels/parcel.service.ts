@@ -11,12 +11,14 @@ import { sendTemplateSms } from '../utils/sms-sender';
 import { SmsTemplates } from '../config/sms-templates';
 import { normalizeZMBPhone } from "../utils/phone.util";
 import { TimeService } from "../common/time/time.service";
+import { SystemSettingsService } from "../system-settings/system-settings.service";
 
 @Injectable()
 export class ParcelService {
   constructor(
     private prisma: PrismaService,
     private readonly time: TimeService,
+    private readonly systemSettings: SystemSettingsService,
   ) { }
 
   async createParcel(
@@ -293,7 +295,7 @@ export class ParcelService {
       where.OR = or;
     }
 
-    const [data, total] = await Promise.all([
+    const [data, total, thresholdDays] = await Promise.all([
       this.prisma.parcel.findMany({
         skip,
         take: pageSize,
@@ -342,12 +344,44 @@ export class ParcelService {
               paidAt: true,
             },
           },
+          reminderLogs: {
+            orderBy: { sentAt: 'desc' },
+            take: 1,
+            select: {
+              sentAt: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.parcel.count({ where }),
+      this.systemSettings.getUncollectedThresholdDays(),
     ]);
+
+    // Add isOverdue flag to each parcel
+    const enrichedData = data.map((parcel) => {
+      let isOverdue = false;
+      if (parcel.arrivedAt && parcel.status !== ParcelStatus.COLLECTED) {
+        const daysSinceArrival = this.time.diffInDays(parcel.arrivedAt, this.time.now());
+        isOverdue = daysSinceArrival > thresholdDays;
+      }
+
+      return {
+        ...parcel,
+        isOverdue,
+        daysSinceArrival: parcel.arrivedAt
+          ? Math.floor(this.time.diffInDays(parcel.arrivedAt, this.time.now()))
+          : null,
+      };
+    });
+
     return {
-      data,
+      data: enrichedData,
       total,
       page,
       pageSize,
@@ -677,5 +711,196 @@ export class ParcelService {
       } : null,
       trackingHistory,
     };
+  }
+
+  /**
+   * Mark a parcel as arrived at the receiving office
+   */
+  async markParcelArrived(parcelId: string): Promise<Parcel> {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      include: {
+        receiver: true,
+        office: true,
+        TrackingCode: true,
+      },
+    });
+
+    if (!parcel) {
+      throw new NotFoundException('Parcel not found');
+    }
+
+    if (parcel.arrivedAt) {
+      throw new BadRequestException('Parcel already marked as arrived');
+    }
+
+    const updated = await this.prisma.parcel.update({
+      where: { id: parcelId },
+      data: {
+        arrivedAt: this.time.now(),
+        status: ParcelStatus.READY_FOR_COLLECTION,
+      },
+    });
+
+    // Send SMS to receiver
+    try {
+      const code = parcel.TrackingCode?.plainTextCode || parcel.id;
+      const destination = parcel.office
+        ? `${parcel.office.name} (${parcel.office.branchCode})`
+        : 'the office';
+
+      if (parcel.receiver?.phoneNumber) {
+        const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber);
+        if (msisdn) {
+          await sendTemplateSms(
+            msisdn,
+            SmsTemplates.READY.COLLECTION,
+            code,
+            destination
+          );
+        }
+      }
+    } catch (e) {
+      console.error('Failed to send arrival SMS', e);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Check if a parcel is overdue for collection
+   */
+  async isParcelOverdue(parcel: {
+    arrivedAt: Date | null;
+    status: ParcelStatus;
+  }): Promise<boolean> {
+    if (!parcel.arrivedAt || parcel.status === ParcelStatus.COLLECTED) {
+      return false;
+    }
+
+    const thresholdDays = await this.systemSettings.getUncollectedThresholdDays();
+    const now = this.time.now();
+    const daysSinceArrival = this.time.diffInDays(parcel.arrivedAt, now);
+
+    return daysSinceArrival > thresholdDays;
+  }
+
+  /**
+   * Send SMS reminder for uncollected parcel
+   */
+  async sendParcelReminder(parcelId: string, userId: string): Promise<void> {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      include: {
+        receiver: true,
+        office: true,
+        TrackingCode: true,
+      },
+    });
+
+    if (!parcel) {
+      throw new NotFoundException('Parcel not found');
+    }
+
+    if (!parcel.arrivedAt) {
+      throw new BadRequestException('Parcel has not arrived at receiving office yet');
+    }
+
+    if (parcel.status === ParcelStatus.COLLECTED) {
+      throw new BadRequestException('Parcel has already been collected');
+    }
+
+    const isOverdue = await this.isParcelOverdue(parcel);
+    if (!isOverdue) {
+      throw new BadRequestException('Parcel is not yet overdue');
+    }
+
+    const code = parcel.TrackingCode?.plainTextCode || parcel.id;
+    const destination = parcel.office
+      ? `${parcel.office.name} (${parcel.office.branchCode})`
+      : 'the office';
+
+    const message = SmsTemplates.PARCEL.UNCOLLECTED_REMINDER(code, destination);
+
+    if (!parcel.receiver?.phoneNumber) {
+      throw new BadRequestException('Receiver phone number not found');
+    }
+
+    const msisdn = normalizeZMBPhone(parcel.receiver.phoneNumber);
+    if (!msisdn) {
+      throw new BadRequestException('Invalid receiver phone number');
+    }
+
+    // Send SMS
+    await sendTemplateSms(msisdn, () => message);
+
+    // Log the reminder
+    await this.prisma.parcelReminderLog.create({
+      data: {
+        parcelId,
+        sentBy: userId,
+        message,
+      },
+    });
+  }
+
+  /**
+   * Get overdue parcels for a specific office
+   */
+  async getOverdueParcels(officeId?: string) {
+    const thresholdDays = await this.systemSettings.getUncollectedThresholdDays();
+    const cutoffDate = this.time.addDays(this.time.now(), -thresholdDays);
+
+    const where: any = {
+      arrivedAt: {
+        lte: cutoffDate,
+        not: null,
+      },
+      status: {
+        in: [ParcelStatus.READY_FOR_COLLECTION, ParcelStatus.PENDING],
+      },
+    };
+
+    if (officeId) {
+      where.officeId = officeId;
+    }
+
+    return this.prisma.parcel.findMany({
+      where,
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        receiver: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        office: {
+          select: {
+            name: true,
+            branchCode: true,
+          },
+        },
+        TrackingCode: {
+          select: {
+            plainTextCode: true,
+          },
+        },
+        reminderLogs: {
+          orderBy: { sentAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: {
+        arrivedAt: 'asc',
+      },
+    });
   }
 }

@@ -53,6 +53,13 @@ const PARCEL_COLLECTION_ROLES = [
   "cashier",
 ] as const;
 
+const PARCEL_RECEIVER_ROLES = [
+  "managing-director",
+  "operations-officer",
+  "supervisor",
+  "receiver",
+] as const;
+
 @Controller("api/v1/parcels")
 export class ParcelController {
   constructor(
@@ -319,6 +326,65 @@ export class ParcelController {
         throw e;
       }
       throw new NotFoundException("Parcel not found");
+    }
+  }
+
+  @Post(":parcelId/mark-arrived")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_RECEIVER_ROLES)
+  async markParcelArrived(@Param("parcelId") parcelId: string) {
+    try {
+      return await this.parcelService.markParcelArrived(parcelId);
+    } catch (e) {
+      console.error("ParcelController.markParcelArrived error:", e);
+      throw e;
+    }
+  }
+
+  @Post(":parcelId/send-reminder")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_RECEIVER_ROLES)
+  async sendReminder(
+    @Param("parcelId") parcelId: string,
+    @Req() req: Request
+  ) {
+    try {
+      const user: any = (req as any)?.user || {};
+      const userId = user?.userId || user?.id;
+
+      if (!userId) {
+        throw new BadRequestException("User ID not found");
+      }
+
+      await this.parcelService.sendParcelReminder(parcelId, userId);
+      return {
+        success: true,
+        message: "Reminder sent successfully",
+      };
+    } catch (e) {
+      console.error("ParcelController.sendReminder error:", e);
+      throw e;
+    }
+  }
+
+  @Get("overdue")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_RECEIVER_ROLES)
+  async getOverdueParcels(
+    @Query("officeId") officeId?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const user: any = (req as any)?.user || {};
+      const userOfficeId = user?.officeId;
+
+      // If user has an office, filter by their office unless they explicitly request another
+      const effectiveOfficeId = officeId || userOfficeId;
+
+      return await this.parcelService.getOverdueParcels(effectiveOfficeId);
+    } catch (e) {
+      console.error("ParcelController.getOverdueParcels error:", e);
+      throw e;
     }
   }
 }

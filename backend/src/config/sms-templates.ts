@@ -15,13 +15,15 @@ Thank you for using Platinum Courier Services`;
 export const SmsTemplates = {
   PARCEL: {
     CREATED: {
-      SENDER: (code: string): string => 
+      SENDER: (code: string): string =>
         `Parcel Created: ${code}.${CUSTOMER_CARE_FOOTER}`,
-      RECEIVER: (code: string): string => 
+      RECEIVER: (code: string): string =>
         `Incoming Parcel: ${code}. You will be notified upon arrival.${CUSTOMER_CARE_FOOTER}`,
     },
     COLLECTED: (code: string, destination: string): string =>
       `PCS: Parcel ${code} has been collected at ${destination}.${CUSTOMER_CARE_FOOTER}`,
+    UNCOLLECTED_REMINDER: (code: string, destination: string): string =>
+      `PCS: REMINDER - Your parcel ${code} is awaiting collection at ${destination}. Please collect it as soon as possible to avoid storage fees.${CUSTOMER_CARE_FOOTER}`,
   },
   TRIP: {
     DEPARTED: (code: string, destination: string): string =>

@@ -125,28 +125,30 @@ model Office {
 }
 
 model Parcel {
-  id              String          @id @default(uuid())
-  parcelNumber    Int             @unique @default(autoincrement())
+  id              String               @id @default(uuid())
+  parcelNumber    Int                  @unique @default(autoincrement())
   customerId      String
   receiverId      String
   officeId        String
   sendingOfficeId String?
-  status          ParcelStatus    @default(PENDING)
-  size            ParcelSize      @default(MEDIUM)
-  cargoType       CargoType?      @default(NORMAL)
+  status          ParcelStatus         @default(PENDING)
+  size            ParcelSize           @default(MEDIUM)
+  cargoType       CargoType?           @default(NORMAL)
   description     String
-  value           Float           @default(0)
-  customer        Customer        @relation("Sender", fields: [customerId], references: [id])
-  receiver        Customer        @relation("Receiver", fields: [receiverId], references: [id])
-  office          Office          @relation(fields: [officeId], references: [id])
-  sendingOffice   Office?         @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  value           Float                @default(0)
+  arrivedAt       DateTime?            // Timestamp when parcel arrived at receiving office
+  customer        Customer             @relation("Sender", fields: [customerId], references: [id])
+  receiver        Customer             @relation("Receiver", fields: [receiverId], references: [id])
+  office          Office               @relation(fields: [officeId], references: [id])
+  sendingOffice   Office?              @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   TrackingCode    TrackingCode?
-  scans           ScannedParcel[] @relation("ParcelScans")
+  scans           ScannedParcel[]      @relation("ParcelScans")
   payment         Payment?
   complaints      Complaint[]
   queries         ParcelQuery[]
+  reminderLogs    ParcelReminderLog[]
 }
 
 model Payment {
@@ -309,23 +311,45 @@ model Truck {
 }
 
 model User {
-  id                 String            @id @default(uuid())
-  email              String            @unique
+  id                 String              @id @default(uuid())
+  email              String              @unique
   password           String
   firstName          String?
   lastName           String?
   roleId             String
-  role               Role              @relation(fields: [roleId], references: [id])
+  role               Role                @relation(fields: [roleId], references: [id])
   logs               AccessLog[]
-  scanningSessions   ScanningSession[] @relation("UserScanningSessions")
-  scans              ScannedParcel[]   @relation("UserParcelScans")
+  scanningSessions   ScanningSession[]   @relation("UserScanningSessions")
+  scans              ScannedParcel[]     @relation("UserParcelScans")
   officeId           String?
-  office             Office?           @relation(fields: [officeId], references: [id])
-  authorizedBayTypes BayType[]         @default([])
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  reportedComplaints Complaint[]       @relation("ComplaintReporter")
-  createdQueries     ParcelQuery[]     @relation("ParcelQueryCreator")
+  office             Office?             @relation(fields: [officeId], references: [id])
+  authorizedBayTypes BayType[]           @default([])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  reportedComplaints Complaint[]         @relation("ComplaintReporter")
+  createdQueries     ParcelQuery[]       @relation("ParcelQueryCreator")
+  sentReminders      ParcelReminderLog[]
+}
+
+model SystemSettings {
+  id                        String   @id @default(uuid())
+  key                       String   @unique
+  value                     String
+  description               String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+model ParcelReminderLog {
+  id         String   @id @default(uuid())
+  parcelId   String
+  parcel     Parcel   @relation(fields: [parcelId], references: [id])
+  sentBy     String
+  user       User     @relation(fields: [sentBy], references: [id])
+  sentAt     DateTime @default(now())
+  message    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 enum BayType {
