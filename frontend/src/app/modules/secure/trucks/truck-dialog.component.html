@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>{{ editingId ? 'Edit Truck' : 'Create Truck' }}</h2>
+<div mat-dialog-content class="dialog-content">
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Registration</mat-label>
+      <input matInput formControlName="registration" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Make</mat-label>
+      <input matInput formControlName="make" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Model</mat-label>
+      <input matInput formControlName="model" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Capacity</mat-label>
+      <input matInput formControlName="capacity" type="number" />
+    </mat-form-field>
+    <div class="actions">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-flat-button color="primary" (click)="save()" [disabled]="loading">Save</button>
+    </div>
+  </form>
+</div>

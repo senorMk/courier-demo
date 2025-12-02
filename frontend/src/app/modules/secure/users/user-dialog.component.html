@@ -1,0 +1,76 @@
+<h2 mat-dialog-title>{{ editingId ? 'Edit User' : 'Create User' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="flex flex-col gap-4 py-4">
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" type="email" required />
+      <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+      <mat-error *ngIf="form.get('email')?.hasError('email')">Invalid email format</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Password{{ editingId ? ' (leave blank to keep current)' : '' }}</mat-label>
+      <input
+        matInput
+        formControlName="password"
+        [type]="passwordVisible ? 'text' : 'password'"
+        [required]="!editingId"
+      />
+      <button
+        mat-icon-button
+        matSuffix
+        type="button"
+        (click)="togglePasswordVisibility()"
+        [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
+        [attr.aria-pressed]="passwordVisible"
+      >
+        <mat-icon>{{ passwordVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+      <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
+      <mat-error *ngIf="form.get('password')?.hasError('minlength')">
+        Password must be at least 8 characters
+      </mat-error>
+    </mat-form-field>
+
+    <div class="flex gap-4">
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>First Name</mat-label>
+        <input matInput formControlName="firstName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>Last Name</mat-label>
+        <input matInput formControlName="lastName" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Role</mat-label>
+      <mat-select formControlName="roleId" required>
+        <mat-option *ngFor="let role of roles" [value]="role.id">
+          {{ role.name }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="form.get('roleId')?.hasError('required')">Role is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Office</mat-label>
+      <mat-select formControlName="officeId">
+        <mat-option [value]="null">None</mat-option>
+        <mat-option *ngFor="let office of offices" [value]="office.id">
+          {{ office.name }} ({{ office.branchCode }})
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close [disabled]="loading">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="loading || form.invalid">
+    <mat-spinner *ngIf="loading" diameter="20" class="mr-2"></mat-spinner>
+    {{ editingId ? 'Update' : 'Create' }}
+  </button>
+</mat-dialog-actions>

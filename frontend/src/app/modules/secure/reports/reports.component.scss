@@ -1,0 +1,135 @@
+// Custom button styles for report type selection
+.mat-flat-button.mat-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.mat-flat-button:not(.mat-primary) {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.mat-flat-button:not(.mat-primary):hover {
+  background-color: #e5e7eb;
+}
+
+// Refresh button specific styling
+.refresh-button {
+  background-color: #10b981 !important;
+  color: white !important;
+  
+  &:hover:not(:disabled) {
+    background-color: #059669 !important;
+  }
+  
+  &:disabled {
+    background-color: #d1d5db !important;
+    color: #9ca3af !important;
+  }
+}
+
+// Form button alignment - match Material form field height
+form .mat-stroked-button,
+form .mat-button {
+  height: 56px; // Match Material form field height
+  min-height: 56px;
+}
+
+// Reset button outline style
+.reset-button-outline {
+  border: 1px solid #d1d5db !important;
+  box-sizing: border-box !important;
+}
+
+// Form field and button spacing
+form .div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+// Office Filter Enhancements
+.office-filter-panel {
+  .mat-mdc-option {
+    min-height: 48px !important;
+    padding: 8px 16px !important;
+    
+    &:hover {
+      background-color: #f3f4f6 !important;
+    }
+    
+    &.mdc-list-item--selected {
+      background-color: #dbeafe !important;
+      color: #1e40af !important;
+    }
+  }
+  
+  .mat-mdc-option-text {
+    width: 100% !important;
+  }
+}
+
+// Office filter container styling
+.bg-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 3px solid #000000;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: #000000;
+  }
+}
+
+// Enhanced form field styling
+.mat-mdc-form-field {
+  .mat-mdc-form-field-focus-overlay {
+    background-color: transparent !important;
+  }
+  
+  .mat-mdc-text-field-wrapper {
+    border-radius: 8px !important;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      border-color: #9ca3af !important;
+    }
+    
+    &.mdc-text-field--focused {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+    }
+  }
+}
+
+// Filter active badge animation
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .w-52 {
+    width: 100%;
+  }
+  
+  .w-96 {
+    width: 100%;
+  }
+  
+  .bg-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

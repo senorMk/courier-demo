@@ -1,0 +1,105 @@
+<div>
+  <h1 mat-dialog-title class="text-center font-bold text-xl">Parcel Queries</h1>
+  <div mat-dialog-content>
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">
+        <span *ngIf="data.trackingCode">Tracking code: <strong>{{ data.trackingCode }}</strong></span>
+        <span *ngIf="data.parcelNumber"> | Parcel #{{ data.parcelNumber }}</span>
+      </p>
+    </div>
+
+    <div *ngIf="loading" class="flex justify-center items-center py-8">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <div *ngIf="error" class="text-center text-red-600 py-4">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !error && queries.length === 0" class="text-center text-gray-500 py-8">
+      <mat-icon class="text-gray-400 text-5xl mb-2">help_outline</mat-icon>
+      <p>No queries found for this parcel</p>
+    </div>
+
+    <div *ngIf="!loading && !error && queries.length > 0" class="space-y-3">
+      <div
+        *ngFor="let query of queries"
+        class="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+      >
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="font-semibold text-sm">{{ getQueryTypeLabel(query.queryType) }}</span>
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="getStatusColor(query.status)"
+              >
+                {{ query.status.replace('_', ' ') }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2" *ngIf="query.description">
+              {{ query.description }}
+            </p>
+            <div class="flex items-center gap-4 text-xs text-gray-500">
+              <span *ngIf="query.creator">
+                By: {{ query.creator.firstName }} {{ query.creator.lastName }}
+              </span>
+              <span>{{ query.createdAt | date: 'short' }}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              mat-icon-button
+              (click)="toggleExpand(query.id)"
+              [attr.aria-label]="expandedQueryId === query.id ? 'Collapse' : 'Expand'"
+            >
+              <mat-icon>{{ expandedQueryId === query.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="expandedQueryId === query.id" class="mt-4 border-t pt-4">
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-gray-700 mb-2">Update Status</label>
+            <div class="flex gap-2">
+              <button
+                *ngFor="let status of getStatusOptions(query.status)"
+                mat-stroked-button
+                color="primary"
+                class="text-xs"
+                [disabled]="updatingStatus[query.id]"
+                (click)="updateStatus(query.id, status)"
+              >
+                {{ status.replace('_', ' ') }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="query.events && query.events.length > 0">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">Event History</h3>
+            <div class="space-y-2">
+              <div
+                *ngFor="let event of query.events"
+                class="bg-gray-50 rounded p-3 text-xs"
+              >
+                <div class="flex justify-between items-start mb-1">
+                  <span class="font-semibold">{{ event.action.replace('_', ' ') }}</span>
+                  <span class="text-gray-500">{{ event.createdAt | date: 'short' }}</span>
+                </div>
+                <div *ngIf="event.fromStatus || event.toStatus" class="text-gray-600 mb-1">
+                  <span *ngIf="event.fromStatus">{{ event.fromStatus }}</span>
+                  <span *ngIf="event.fromStatus && event.toStatus"> → </span>
+                  <span *ngIf="event.toStatus">{{ event.toStatus }}</span>
+                </div>
+                <p *ngIf="event.note" class="text-gray-700">{{ event.note }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Close</button>
+  </div>
+</div>

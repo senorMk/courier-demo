@@ -1,0 +1,2 @@
+-- AddForeignKey
+ALTER TABLE "Office" ADD CONSTRAINT "Office_routeId_fkey" FOREIGN KEY ("routeId") REFERENCES "Route"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

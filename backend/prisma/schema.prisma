@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AccessLog {
+  id        String   @id @default(uuid())
+  email     String
+  action    String
+  success   Boolean
+  timestamp DateTime @default(now())
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bay {
+  id               String            @id @default(uuid())
+  name             String
+  bayType          BayType
+  officeId         String
+  office           Office            @relation(fields: [officeId], references: [id])
+  active           Boolean           @default(true)
+  scanningSessions ScanningSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([officeId, bayType])
+}
+
+model BranchCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String   @unique
+  officeId  String
+  office    Office   @relation(fields: [officeId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Complaint {
+  id         String           @id @default(uuid())
+  parcelId   String
+  reporterId String
+  parcel     Parcel           @relation(fields: [parcelId], references: [id])
+  reporter   User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  reason     String?
+  status     ComplaintStatus  @default(OPEN)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  events     ComplaintEvent[]
+}
+
+model ComplaintEvent {
+  id          String           @id @default(uuid())
+  complaintId String
+  complaint   Complaint        @relation(fields: [complaintId], references: [id])
+  action      String
+  fromStatus  ComplaintStatus?
+  toStatus    ComplaintStatus?
+  note        String?
+  createdAt   DateTime         @default(now())
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  emailAddress    String?  @unique
+  phoneNumber     String   @unique
+  idNumber        String?  @unique
+  sentParcels     Parcel[] @relation("Sender")
+  receivedParcels Parcel[] @relation("Receiver")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Driver {
+  id                   String   @id @default(uuid())
+  firstName            String
+  lastName             String
+  phoneNumber          String?  @unique
+  licenseNumber        String?
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  tripsAsMainDriver    Trip[]   @relation("TripMainDriver")
+  tripsAsSecondaryDriver Trip[] @relation("TripSecondaryDriver")
+}
+
+model Sider {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  phoneNumber String?  @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trips       Trip[]   @relation("TripSider")
+}
+
+model Office {
+  id               String            @id @default(uuid())
+  branchCode       String            @unique
+  areaCode         String?
+  officeTypes      OfficeType[]
+  name             String
+  branchCodes      BranchCode[]
+  parcels          Parcel[]
+  users            User[]
+  scanningSessions ScanningSession[]
+  bays             Bay[]
+  trips            Trip[]
+  destinationTrips Trip[]            @relation("TripDestination")
+  routeId          String
+  route            Route             @relation(fields: [routeId], references: [id])
+  sentParcels      Parcel[]          @relation("SendingOffice")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Parcel {
+  id              String          @id @default(uuid())
+  parcelNumber    Int             @unique @default(autoincrement())
+  customerId      String
+  receiverId      String
+  officeId        String
+  sendingOfficeId String?
+  status          ParcelStatus    @default(PENDING)
+  size            ParcelSize      @default(MEDIUM)
+  cargoType       CargoType?      @default(NORMAL)
+  description     String
+  value           Float           @default(0)
+  customer        Customer        @relation("Sender", fields: [customerId], references: [id])
+  receiver        Customer        @relation("Receiver", fields: [receiverId], references: [id])
+  office          Office          @relation(fields: [officeId], references: [id])
+  sendingOffice   Office?         @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  TrackingCode    TrackingCode?
+  scans           ScannedParcel[] @relation("ParcelScans")
+  payment         Payment?
+  complaints      Complaint[]
+  queries         ParcelQuery[]
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  parcelId  String        @unique
+  parcel    Parcel        @relation(fields: [parcelId], references: [id])
+  amount    Float
+  method    PaymentMethod
+  reference String?
+  paidAt    DateTime      @default(now())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ParcelQuery {
+  id          String            @id @default(uuid())
+  parcelId    String
+  parcel      Parcel            @relation(fields: [parcelId], references: [id])
+  queryType   ParcelQueryType
+  description String?
+  status      ParcelQueryStatus @default(OPEN)
+  createdBy   String
+  creator     User              @relation("ParcelQueryCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  events      ParcelQueryEvent[]
+}
+
+model ParcelQueryEvent {
+  id          String             @id @default(uuid())
+  queryId     String
+  query       ParcelQuery        @relation(fields: [queryId], references: [id])
+  action      String
+  fromStatus  ParcelQueryStatus?
+  toStatus    ParcelQueryStatus?
+  note        String?
+  performedBy String?
+  createdAt   DateTime           @default(now())
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Route {
+  id                   String            @id @default(uuid())
+  code                 String            @unique
+  name                 String            @unique
+  offices              Office[]
+  scanningSessions     ScanningSession[]
+  trips                Trip[]
+  destinationTrips     Trip[]            @relation("TripDestinationRoute")
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+}
+
+model ScannedParcel {
+  id                String          @id @default(uuid())
+  scanningSessionId String
+  parcelId          String
+  scannedAt         DateTime        @default(now())
+  scannedById       String // User.id
+  scanningSession   ScanningSession @relation(fields: [scanningSessionId], references: [id])
+  parcel            Parcel          @relation("ParcelScans", fields: [parcelId], references: [id])
+  scannedBy         User            @relation("UserParcelScans", fields: [scannedById], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([scanningSessionId, parcelId])
+}
+
+model ScanningSession {
+  id          String          @id @default(uuid())
+  routeId     String
+  officeId    String
+  bayId       String?
+  staffId     String // references User.id
+  mode        String // 'bag' | 'individual'
+  mailBagCode String?         @unique
+  startedAt   DateTime        @default(now())
+  closedAt    DateTime?
+  tripId      String?
+  trip        Trip?           @relation(fields: [tripId], references: [id])
+  scans       ScannedParcel[]
+  user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
+  office      Office          @relation(fields: [officeId], references: [id])
+  bay         Bay?            @relation(fields: [bayId], references: [id])
+  route       Route           @relation(fields: [routeId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model TrackingCode {
+  id              String   @id @default(uuid())
+  routeCode       String
+  destinationCode String
+  branchCode      String
+  parcelId        String   @unique
+  parcel          Parcel   @relation(fields: [parcelId], references: [id])
+  plainTextCode   String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Trip {
+  id                  String            @id @default(uuid())
+  routeId             String
+  officeId            String
+  destinationOfficeId String?
+  destinationRouteId  String?
+  driverName          String
+  mainDriverId        String
+  secondaryDriverId   String?
+  siderId             String?
+  truckReg            String
+  status              TripStatus        @default(PLANNED)
+  plannedAt           DateTime          @default(now())
+  departedAt          DateTime?
+  completedAt         DateTime?
+  route               Route             @relation(fields: [routeId], references: [id])
+  office              Office            @relation(fields: [officeId], references: [id])
+  destinationOffice   Office?           @relation("TripDestination", fields: [destinationOfficeId], references: [id])
+  destinationRoute    Route?            @relation("TripDestinationRoute", fields: [destinationRouteId], references: [id])
+  mainDriver          Driver            @relation("TripMainDriver", fields: [mainDriverId], references: [id])
+  secondaryDriver     Driver?           @relation("TripSecondaryDriver", fields: [secondaryDriverId], references: [id])
+  sider               Sider?            @relation("TripSider", fields: [siderId], references: [id])
+  sessions            ScanningSession[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  TripLog             TripLog[]
+}
+
+model TripLog {
+  id          String      @id @default(uuid())
+  tripId      String
+  Trip        Trip        @relation(fields: [tripId], references: [id])
+  action      String
+  fromStatus  TripStatus?
+  toStatus    TripStatus?
+  performedBy String?
+  note        String?
+  timestamp   DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Truck {
+  id           String   @id @default(uuid())
+  registration String   @unique
+  make         String?
+  model        String?
+  capacity     Float?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model User {
+  id                 String            @id @default(uuid())
+  email              String            @unique
+  password           String
+  firstName          String?
+  lastName           String?
+  roleId             String
+  role               Role              @relation(fields: [roleId], references: [id])
+  logs               AccessLog[]
+  scanningSessions   ScanningSession[] @relation("UserScanningSessions")
+  scans              ScannedParcel[]   @relation("UserParcelScans")
+  officeId           String?
+  office             Office?           @relation(fields: [officeId], references: [id])
+  authorizedBayTypes BayType[]         @default([])
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  reportedComplaints Complaint[]       @relation("ComplaintReporter")
+  createdQueries     ParcelQuery[]     @relation("ParcelQueryCreator")
+}
+
+enum BayType {
+  SENDING
+  RECEIVING
+  DISPATCH
+  SORTING
+}
+
+enum ComplaintStatus {
+  OPEN
+  CLOSED
+}
+
+enum OfficeType {
+  SENDING
+  RECEIVING
+  DISPATCH
+  TRANSIT
+}
+
+enum ParcelSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum ParcelStatus {
+  PENDING
+  READY_FOR_COLLECTION
+  COLLECTED
+  DAMAGED
+  COMPLAINT_BOX
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+enum TripStatus {
+  PLANNED
+  LOADING
+  IN_TRANSIT
+  COMPLETED
+}
+
+enum CargoType {
+  NORMAL
+  FRAGILE
+  ELECTRONIC
+  DOCUMENT
+}
+
+enum ParcelQueryType {
+  GENERAL
+  DAMAGE
+  ROUTING_ISSUE
+  DELAY
+  MISSING
+  DELIVERY_STATUS
+  PAYMENT
+  OTHER
+}
+
+enum ParcelQueryStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}

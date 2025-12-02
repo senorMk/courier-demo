@@ -201,10 +201,10 @@ Related to #456
 - Added unit tests
 
 ## Testing
-- [ ] Backend tests pass
-- [ ] Frontend tests pass
-- [ ] Manually tested on development environment
-- [ ] Database migrations work correctly
+- [x] Backend tests pass
+- [x] Frontend tests pass
+- [x] Manually tested on development environment
+- [x] Database migrations work correctly
 
 ## Screenshots (if applicable)
 [Add screenshots for UI changes]
