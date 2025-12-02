@@ -56,6 +56,12 @@ export class TimeService {
     return this.ensureValid(this.toDateTime(value), value).endOf("day").toUTC().toJSDate();
   }
 
+  diffInDays(start: TimeInput, end: TimeInput): number {
+    const startDT = this.ensureValid(this.toDateTime(start), start);
+    const endDT = this.ensureValid(this.toDateTime(end), end);
+    return endDT.diff(startDT, "days").days;
+  }
+
   private currentDateTime(): DateTime {
     return DateTime.now().setZone(this.zone);
   }

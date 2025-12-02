@@ -25,6 +25,7 @@ import { ScanningModule } from './scanning/scanning.module';
 import { ReportsModule } from './reports/reports.module';
 import { TimeModule } from "./common/time/time.module";
 import { BaysModule } from './bays/bays.module';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 
 
 @Module({
@@ -56,6 +57,7 @@ import { BaysModule } from './bays/bays.module';
     BaysModule,
     ReportsModule,
     TimeModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
