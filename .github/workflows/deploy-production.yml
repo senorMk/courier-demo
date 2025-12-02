@@ -65,7 +65,7 @@ jobs:
             set -Eeuo pipefail
             cd ~/projects/pcs-zambia
 
-            COMPOSE_FILE=docker-compose.yml
+            COMPOSE_FILE=docker-compose.prod.yml
             export COMPOSE_PROJECT_NAME=pcs-zambia
 
             # Login to GHCR for this session (private packages)
