@@ -291,4 +291,54 @@ export class ParcelsComponent implements OnInit {
       },
     });
   }
+
+  markParcelArrived(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) {
+      this._snackBar.open('Parcel identifier missing', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    this._service.markParcelArrived(id).subscribe({
+      next: () => {
+        this._snackBar.open('Parcel marked as arrived', 'Close', { duration: 2500, verticalPosition: 'top' });
+        this.loadData(this.currentPageIndex, this.pageSize);
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to mark parcel as arrived';
+        this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+      },
+    });
+  }
+
+  sendReminder(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id) {
+      this._snackBar.open('Parcel identifier missing', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    if (!row.isOverdue) {
+      this._snackBar.open('Parcel is not overdue yet', 'Close', { duration: 3000, verticalPosition: 'top' });
+      return;
+    }
+
+    this._service.sendReminder(id).subscribe({
+      next: () => {
+        this._snackBar.open('Reminder sent successfully', 'Close', { duration: 2500, verticalPosition: 'top' });
+        this.loadData(this.currentPageIndex, this.pageSize);
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to send reminder';
+        this._snackBar.open(msg, 'Close', { duration: 3500, verticalPosition: 'top' });
+      },
+    });
+  }
+
+  getRowClass(row: Parcel): string {
+    if (row.isOverdue) {
+      return 'overdue-parcel';
+    }
+    return '';
+  }
 }
