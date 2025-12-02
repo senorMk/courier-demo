@@ -1,0 +1,91 @@
+name: Build & Deploy (GHCR) - Production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GHCR_BACKEND: ghcr.io/platinumproject2025/pcs-zambia-backend
+  GHCR_FRONTEND: ghcr.io/platinumproject2025/pcs-zambia-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- Backend ----
+      - name: Build & push BACKEND (prod + prod-SHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.GHCR_BACKEND }}:prod
+            ${{ env.GHCR_BACKEND }}:prod-${{ github.sha }}
+
+      # ---- Frontend ----
+      - name: Build & push FRONTEND (prod + prod-SHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.GHCR_FRONTEND }}:prod
+            ${{ env.GHCR_FRONTEND }}:prod-${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH to PRODUCTION_VPS and pull+restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST_PRODUCTION_VPS }}
+          username: ${{ secrets.SSH_USER_PRODUCTION_VPS }}
+          password: ${{ secrets.SSH_PASSWORD_PRODUCTION_VPS }}
+          port: ${{ secrets.SSH_PORT_PRODUCTION_VPS }}
+          script: |
+            set -Eeuo pipefail
+            cd ~/projects/pcs-zambia
+
+            COMPOSE_FILE=docker-compose.yml
+            export COMPOSE_PROJECT_NAME=pcs-zambia
+
+            # Login to GHCR for this session (private packages)
+            echo "${{ secrets.GHCR_READ_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
+
+            # Stop any old stack (either with our project name or leftovers with fixed names)
+            sudo docker compose -f ${COMPOSE_FILE} down --remove-orphans || true
+
+            # (safety) remove legacy fixed-name containers if they still exist
+            sudo docker rm -f platinum-db redis_testqueues platinum-app platinum-nginx 2>/dev/null || true
+
+            # Ensure external volume exists (no-op if it already exists)
+            sudo docker volume create postgres_data >/dev/null
+
+            # Pull and (re)start
+            sudo docker compose -f ${COMPOSE_FILE} pull
+            sudo docker compose -f ${COMPOSE_FILE} up -d
+
+            # Housekeeping
+            sudo docker image prune -f
+
+            # Status
+            sudo docker compose -f ${COMPOSE_FILE} ps
