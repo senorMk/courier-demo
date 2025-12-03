@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   hmr: false,
-  serverURL: "https://api.pcs-zambia.com/api",
+  serverURL: "https://api.platinumcourier.co.zm/api",
   headers: {
     "Content-Type": "application/json",
   },
