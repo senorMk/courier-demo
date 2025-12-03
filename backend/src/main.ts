@@ -62,6 +62,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       "http://localhost:4200",
+      "https://platinumcourier.co.zm",
+      "https://www.platinumcourier.co.zm",
+      /^https?:\/\/([a-z0-9-]+\.)?platinumcourier\.co\.zm$/i, // allow any subdomain
       "https://pcs-zambia.com",
       "https://www.pcs-zambia.com",
       /^https?:\/\/([a-z0-9-]+\.)?pcs-zambia\.com$/i, // allow any subdomain
