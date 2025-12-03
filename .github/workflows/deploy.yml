@@ -47,6 +47,8 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            BUILD_CONFIGURATION=qa
           tags: |
             ${{ env.GHCR_FRONTEND }}:dev
             ${{ env.GHCR_FRONTEND }}:dev-${{ github.sha }}
