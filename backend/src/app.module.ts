@@ -38,7 +38,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60 * 1000, // 1 minute
-      limit: 10, // 10 requests per minute per IP
+      limit: 100, // 100 requests per minute per IP
     }]),
     PrismaModule,
     AuthModule,
