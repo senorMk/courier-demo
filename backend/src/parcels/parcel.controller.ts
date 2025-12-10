@@ -116,9 +116,13 @@ export class ParcelController {
   ) {
     try {
       const user: any = (req as any)?.user || {};
+      const userId = user?.userId || user?.sub;
       const enriched = { ...(body as any) };
       if (!enriched.sendingOfficeId && user?.officeId) {
         enriched.sendingOfficeId = user.officeId;
+      }
+      if (!enriched.createdById && userId) {
+        enriched.createdById = userId;
       }
       return await this.parcelService.createParcel(enriched as any);
     } catch (e) {
@@ -133,13 +137,20 @@ export class ParcelController {
   async getPaginated(
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10,
-    @Query("search") search?: string
+    @Query("search") search?: string,
+    @Req() req?: Request
   ) {
     try {
+      const user: any = (req as any)?.user || {};
+      const userId = user?.userId || user?.sub;
+      const userRole = user?.role;
+
       return await this.parcelService.getParcelsPaginated(
         Number(page),
         Number(pageSize),
-        search
+        search,
+        userId,
+        userRole
       );
     } catch (e) {
       console.error('ParcelController.getPaginated error:', e);

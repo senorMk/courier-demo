@@ -201,14 +201,23 @@ export class ScanningController {
 
   @Get("paginated")
   async getPaginated(
+    @Req() req: Request,
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10,
     @Query("officeId") officeId?: string
   ) {
+    const user = req.user as JwtUser;
+    const userId = user.sub || (user as any).userId;
+
+    // Dispatchers and sorters should only see their own sessions
+    const restrictedRoles = ["dispatcher", "sorter"];
+    const shouldFilterByUser = restrictedRoles.includes(user.role?.toLowerCase());
+
     return this.service.getPaginatedSessions(
       Number(page),
       Number(pageSize),
-      officeId
+      officeId,
+      shouldFilterByUser ? userId : undefined
     );
   }
 

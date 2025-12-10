@@ -28,6 +28,7 @@ export class ParcelService {
         receiverId: string;
         officeId: string;
         sendingOfficeId?: string;
+        createdById?: string;
         description: string;
         value: number;
         size?: "SMALL" | "MEDIUM" | "LARGE";
@@ -56,6 +57,7 @@ export class ParcelService {
         description: string;
         value: number;
         sendingOfficeId?: string;
+        createdById?: string;
         size: "SMALL" | "MEDIUM" | "LARGE";
         payment: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
@@ -141,6 +143,7 @@ export class ParcelService {
         receiverId,
         officeId: (data as any).officeId,
         sendingOfficeId: (data as any).sendingOfficeId || (data as any).officeId,
+        createdById: (data as any).createdById || null,
         size: ((data as any).size as any) || "MEDIUM",
         description,
         value: Number(declaredValueRaw.toFixed(2)),
@@ -239,11 +242,23 @@ export class ParcelService {
     return parcel;
   }
 
-  async getParcelsPaginated(page: number = 1, pageSize: number = 10, search?: string) {
+  async getParcelsPaginated(
+    page: number = 1,
+    pageSize: number = 10,
+    search?: string,
+    userId?: string,
+    userRole?: string
+  ) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const where: any = {};
     const term = search?.trim();
+
+    // Filter parcels based on user role
+    // Cashiers can only see parcels they created
+    if (userRole === 'cashier' && userId) {
+      where.createdById = userId;
+    }
 
     if (term) {
       const or: any[] = [
