@@ -68,20 +68,6 @@ export class ScanningService {
         );
       }
 
-      // Check if bay can start a new session (max 2 active sessions)
-      const activeSessionsCount = await this.prisma.scanningSession.count({
-        where: {
-          bayId,
-          closedAt: null,
-        },
-      });
-
-      if (activeSessionsCount >= 2) {
-        throw new BadRequestException(
-          "Bay already has 2 active sessions. Please close one before starting a new session."
-        );
-      }
-
       // Dispatch bay scanner: require a trip and ensure it is loadable
       // Only require trip if scanning from a DISPATCH bay, not for SENDING bay (which is just recording parcels)
       if (bay.bayType === "DISPATCH") {
