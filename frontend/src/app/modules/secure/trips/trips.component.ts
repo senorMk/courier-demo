@@ -48,7 +48,7 @@ export class TripsComponent {
     truckReg: ['', Validators.required],
   });
 
-  displayedColumns = ['route', 'office', 'destination', 'driver', 'truck', 'status', 'actions'];
+  displayedColumns = ['route', 'office', 'destination', 'driver', 'truck', 'status', 'createdAt', 'actions'];
   trips: any[] = [];
 
   offices = signal<OfficeItem[]>([]);
