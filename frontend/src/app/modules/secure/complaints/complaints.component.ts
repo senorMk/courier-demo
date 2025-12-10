@@ -68,7 +68,7 @@ import { ComplaintDetailsDialogComponent } from './complaint-details-dialog.comp
           </ng-container>
           <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef>Created</th>
-            <td mat-cell *matCellDef="let r">{{ r.createdAt | date: 'dd/MM/yyyy' }}</td>
+            <td mat-cell *matCellDef="let r">{{ r.createdAt | date: 'short' }}</td>
           </ng-container>
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
