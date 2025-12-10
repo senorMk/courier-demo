@@ -535,12 +535,14 @@ export class ScanningService {
   async getPaginatedSessions(
     page: number = 1,
     pageSize: number = 10,
-    officeId?: string
+    officeId?: string,
+    userId?: string
   ) {
     try {
       const skip = (page - 1) * pageSize;
       const where: any = {};
       if (officeId) where.officeId = officeId;
+      if (userId) where.staffId = userId;
 
       const [sessions, total] = await this.prisma.$transaction([
         this.prisma.scanningSession.findMany({
