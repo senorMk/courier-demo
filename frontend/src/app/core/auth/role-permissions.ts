@@ -203,14 +203,14 @@ export const NAV_ITEM_FEATURE: Record<string, FeatureKey> = {
 const ROLE_DEFAULT_ROUTE: Record<RoleKey, string> = {
   customer: "/home",
   cashier: "/secure/parcels",
-  supervisor: "/secure/dashboard",
+  supervisor: "/secure/scanning",
   driver: "/secure/trips",
   "assistant-driver": "/secure/trips",
-  "operations-officer": "/secure/dashboard",
+  "operations-officer": "/secure/live-tracking",
   "managing-director": "/secure/dashboard",
   "customer-service-agent": "/secure/complaints",
   "customer-service-director": "/secure/complaints",
-  dispatcher: "/secure/dashboard",
+  dispatcher: "/secure/trips",
   sorter: "/secure/scanning",
   receiver: "/secure/scanning",
 };
