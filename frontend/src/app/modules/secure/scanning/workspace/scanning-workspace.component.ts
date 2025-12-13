@@ -7,7 +7,6 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { ScanningSessionsService } from "../scanning-sessions-api.service";
 import { BayAuthorizationService } from "app/services/bay-authorization.service";
-import { MailbagSummaryComponent } from "./mailbag-summary.component";
 
 @Component({
   selector: "scanning-workspace",
@@ -18,7 +17,6 @@ import { MailbagSummaryComponent } from "./mailbag-summary.component";
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    MailbagSummaryComponent,
   ],
   templateUrl: "./scanning-workspace.component.html",
 })

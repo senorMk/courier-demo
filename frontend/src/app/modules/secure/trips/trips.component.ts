@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
+import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { decodeJwt } from 'app/core/utils/jwt.util';
 import { OfficesSearchService, OfficeItem } from './offices-search.service';
 import { TripsApiService } from './trips-api.service';
@@ -26,6 +27,7 @@ import { AssignTripDialogComponent } from './assign-trip-dialog/assign-trip-dial
     MatSelectModule,
     MatButtonModule,
     MatTableModule,
+    MatPaginatorModule,
   ],
   templateUrl: './trips.component.html',
 })
@@ -50,6 +52,10 @@ export class TripsComponent {
 
   displayedColumns = ['route', 'office', 'destination', 'driver', 'truck', 'status', 'createdAt', 'actions'];
   trips: any[] = [];
+  total = 0;
+  pageSize = 10;
+  currentPageIndex = 0;
+  @ViewChild(MatPaginator) paginator?: MatPaginator;
 
   offices = signal<OfficeItem[]>([]);
   officesLoading = signal<boolean>(false);
@@ -140,10 +146,26 @@ export class TripsComponent {
   }
 
   refresh() {
-    this.tripsApi.list(1, 10).subscribe({
-      next: (res: any) => (this.trips = res.data || []),
-      error: () => (this.trips = []),
+    this.loadData(this.currentPageIndex, this.pageSize);
+  }
+
+  private loadData(pageIndex: number, pageSize: number) {
+    const page = pageIndex + 1; // API uses 1-based pagination
+    this.tripsApi.list(page, pageSize).subscribe({
+      next: (res: any) => {
+        this.trips = res.data || [];
+        this.total = res.total || 0;
+        this.currentPageIndex = pageIndex;
+      },
+      error: () => {
+        this.trips = [];
+        this.total = 0;
+      },
     });
+  }
+
+  onPage(event: PageEvent) {
+    this.loadData(event.pageIndex, event.pageSize);
   }
 
   createTrip() {

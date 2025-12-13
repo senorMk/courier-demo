@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,14 +10,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
+import { MatSelectModule, MatSelect } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RoleService } from 'app/core/auth/role.service';
 import { ReportType } from 'app/core/auth/role-permissions';
 import { OfficesSearchService, Office } from '../offices/offices-search.service';
+import { UsersService, User } from '../users/users.service';
 import {
+  CashierRevenueReport,
   ComplaintReport,
   DriverTripReport,
   ParcelMovementReport,
@@ -64,6 +66,7 @@ const REPORT_DEFINITIONS: ReportDefinition[] = [
   styleUrls: ['./reports.component.scss'],
 })
 export class ReportsComponent implements OnInit {
+  @ViewChild('officeSelect') officeSelect?: MatSelect;
   revenueForm: FormGroup;
   parcelForm: FormGroup;
   complaintForm: FormGroup;
@@ -97,6 +100,11 @@ export class ReportsComponent implements OnInit {
   availableOffices: Office[] = [];
   selectedOfficeIds: string[] = [];
   loadingOffices = false;
+  readonly allOfficesOptionValue = '__ALL_OFFICES__';
+
+  // Cashier filter properties
+  availableCashiers: User[] = [];
+  loadingCashiers = false;
 
   readonly revenueColumns = ['period', 'amount', 'payments'];
   readonly parcelColumns = [
@@ -107,6 +115,7 @@ export class ReportsComponent implements OnInit {
     'collected',
     'complaintBox',
     'damaged',
+    'cancelled',
   ];
   readonly complaintColumns = ['date', 'logged', 'closed'];
   readonly tripColumns = [
@@ -136,17 +145,20 @@ export class ReportsComponent implements OnInit {
     'payment',
     'status',
   ];
+  Math = Math;
 
   constructor(
     private fb: FormBuilder,
     private api: ReportsApiService,
     private roleService: RoleService,
-    private officesSearchService: OfficesSearchService
+    private officesSearchService: OfficesSearchService,
+    private usersService: UsersService
   ) {
     this.revenueForm = this.fb.group({
       start: [this.daysAgo(29)],
       end: [new Date()],
       granularity: ['daily'],
+      cashierId: [null],
     });
 
     this.parcelForm = this.fb.group({
@@ -201,7 +213,7 @@ export class ReportsComponent implements OnInit {
     }
 
     this.loadingRevenue = true;
-    const { start, end, granularity } = this.revenueForm.value;
+    const { start, end, granularity, cashierId } = this.revenueForm.value;
     // Pass all selected office IDs for multi-office filtering
     const officeIds = this.selectedOfficeIds.length > 0 ? this.selectedOfficeIds : undefined;
     this.api
@@ -210,6 +222,7 @@ export class ReportsComponent implements OnInit {
         endDate: this.toDateParam(end),
         granularity,
         officeIds,
+        cashierId: cashierId || undefined,
       })
       .subscribe({
         next: (res) => {
@@ -232,6 +245,7 @@ export class ReportsComponent implements OnInit {
       start: this.daysAgo(29),
       end: new Date(),
       granularity: 'daily',
+      cashierId: null,
     });
     this.loadRevenue();
   }
@@ -241,7 +255,7 @@ export class ReportsComponent implements OnInit {
       return;
     }
 
-    const { start, end, granularity } = this.revenueForm.value;
+    const { start, end, granularity, cashierId } = this.revenueForm.value;
     const startDate = this.toDateParam(start);
     const endDate = this.toDateParam(end);
 
@@ -256,6 +270,7 @@ export class ReportsComponent implements OnInit {
           endDate,
           granularity,
           officeIds,
+          cashierId: cashierId || undefined,
         },
         format,
       )
@@ -265,7 +280,7 @@ export class ReportsComponent implements OnInit {
             'revenue-report',
             startDate,
             endDate,
-            format === 'excel' ? 'xlsx' : 'csv',
+            format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'csv',
           );
           this.saveBlob(blob, fileName);
           this.downloadingRevenue = false;
@@ -343,7 +358,7 @@ export class ReportsComponent implements OnInit {
             'parcel-movement-report',
             startDate,
             endDate,
-            format === 'excel' ? 'xlsx' : 'csv',
+            format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'csv',
           );
           this.saveBlob(blob, fileName);
           this.downloadingParcel = false;
@@ -421,7 +436,7 @@ export class ReportsComponent implements OnInit {
             'complaints-report',
             startDate,
             endDate,
-            format === 'excel' ? 'xlsx' : 'csv',
+            format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'csv',
           );
           this.saveBlob(blob, fileName);
           this.downloadingComplaint = false;
@@ -499,7 +514,7 @@ export class ReportsComponent implements OnInit {
             'driver-trips-report',
             startDate,
             endDate,
-            format === 'excel' ? 'xlsx' : 'csv',
+            format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'csv',
           );
           this.saveBlob(blob, fileName);
           this.downloadingTrips = false;
@@ -577,7 +592,7 @@ export class ReportsComponent implements OnInit {
             'zicta-report',
             startDate,
             endDate,
-            format === 'excel' ? 'xlsx' : 'csv',
+            format === 'excel' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'csv',
           );
           this.saveBlob(blob, fileName);
           this.downloadingZicta = false;
@@ -680,23 +695,72 @@ export class ReportsComponent implements OnInit {
     });
   }
 
+  // Cashier filter methods
+  loadCashiers(): void {
+    this.loadingCashiers = true;
+    // If no offices selected, load all cashiers. Otherwise, load cashiers for selected offices
+    const officeId = this.selectedOfficeIds.length === 1 ? this.selectedOfficeIds[0] : undefined;
+
+    this.usersService.getCashiers(officeId).subscribe({
+      next: (cashiers) => {
+        // If multiple offices are selected, filter cashiers client-side
+        if (this.selectedOfficeIds.length > 1) {
+          this.availableCashiers = cashiers.filter(cashier =>
+            cashier.officeId && this.selectedOfficeIds.includes(cashier.officeId)
+          ).sort((a, b) => {
+            const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+            const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+            return nameA.localeCompare(nameB);
+          });
+        } else {
+          this.availableCashiers = cashiers.sort((a, b) => {
+            const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+            const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+            return nameA.localeCompare(nameB);
+          });
+        }
+        this.loadingCashiers = false;
+      },
+      error: () => {
+        this.availableCashiers = [];
+        this.loadingCashiers = false;
+      }
+    });
+  }
+
   onOfficeFilterChange(): void {
-    const newSelection = this.officeFilterControl.value || [];
+    const rawSelection = this.officeFilterControl.value || [];
+    const hasAllOfficesOption = rawSelection.includes(this.allOfficesOptionValue);
+    const newSelection = hasAllOfficesOption ? [] : rawSelection;
+
+    // When "All Offices" is picked, treat it as clearing the filter and cashiers list
+    if (hasAllOfficesOption) {
+      this.officeFilterControl.setValue([], { emitEvent: false });
+      this.officeSelect?.close(); // Explicitly close the dropdown to reflect the reset
+    }
     const previousSelection = this.selectedOfficeIds;
-    
+
     // Only reload if there's an actual change in selection (order-independent)
     if (this.arraysEqualIgnoreOrder(previousSelection, newSelection)) {
       return; // No change detected, skip reload
     }
-    
+
     // Update selected office IDs
     this.selectedOfficeIds = newSelection;
-    
-    // Clear current report data if selection becomes empty
-    if (newSelection.length === 0) {
+
+    // Reset cashier selection when offices change
+    this.revenueForm.patchValue({ cashierId: null });
+
+    // Load or clear cashiers based on office selection
+    if (newSelection.length > 0) {
+      // Reload cashiers for selected offices
+      this.loadCashiers();
+    } else {
+      // Clear cashiers when no office is selected
+      this.availableCashiers = [];
       this.clearCurrentReportData();
     }
-    
+
     // Reload current report with new office filter
     if (this.selectedReportType) {
       this.loadReportFor(this.selectedReportType);
@@ -739,7 +803,7 @@ export class ReportsComponent implements OnInit {
     if (!this.selectedReportType) {
       return false;
     }
-    
+
     // Check if any report is currently loading
     switch (this.selectedReportType) {
       case 'revenue':
@@ -760,6 +824,11 @@ export class ReportsComponent implements OnInit {
   clearOfficeFilter(): void {
     this.officeFilterControl.setValue([]);
     this.selectedOfficeIds = [];
+
+    // Clear cashiers and reset cashier selection
+    this.availableCashiers = [];
+    this.revenueForm.patchValue({ cashierId: null });
+
     // Reload current report without office filter
     if (this.selectedReportType) {
       this.loadReportFor(this.selectedReportType);

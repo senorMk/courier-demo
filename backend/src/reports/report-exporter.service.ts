@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Workbook } from 'exceljs';
 
-export type ReportExportFormat = 'csv' | 'excel';
+export type ReportExportFormat = 'csv' | 'excel' | 'pdf';
 
 export type ExportColumn = {
   header: string;
@@ -36,8 +36,10 @@ export class ReportExporterService {
         return this.exportCsv(options);
       case 'excel':
         return this.exportExcel(options);
+      case 'pdf':
+        return this.exportPdf(options);
       default:
-        throw new BadRequestException('format must be either "csv" or "excel"');
+        throw new BadRequestException('format must be either "csv", "excel", or "pdf"');
     }
   }
 
@@ -151,6 +153,115 @@ export class ReportExporterService {
       return `"${value}"`;
     }
     return value;
+  }
+
+  private async exportPdf(options: ReportExportOptions): Promise<ReportExportResult> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const PDFDocument = require('pdfkit');
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        resolve({
+          buffer,
+          contentType: 'application/pdf',
+          fileName: `${this.toFileName(options.fileBaseName)}.pdf`,
+        });
+      });
+      doc.on('error', reject);
+
+      // Add title
+      doc.fontSize(18).font('Helvetica-Bold').text(options.sheetName, { align: 'center' });
+      doc.moveDown(0.5);
+
+      // Add metadata if provided
+      if (options.metadata?.length) {
+        doc.fontSize(10).font('Helvetica');
+        options.metadata.forEach((entry) => {
+          doc.text(`${entry.label}: ${this.formatForDisplay(entry.value)}`);
+        });
+        doc.moveDown(1);
+      }
+
+      // Calculate column widths
+      const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const columnCount = options.columns.length;
+      const columnWidth = pageWidth / columnCount;
+
+      // Draw table header
+      doc.fontSize(10).font('Helvetica-Bold');
+      let currentX = doc.page.margins.left;
+      const headerY = doc.y;
+
+      options.columns.forEach((column) => {
+        doc.text(column.header, currentX, headerY, {
+          width: columnWidth,
+          align: 'left',
+        });
+        currentX += columnWidth;
+      });
+
+      doc.moveDown(0.5);
+
+      // Draw header line
+      doc.moveTo(doc.page.margins.left, doc.y)
+         .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+         .stroke();
+
+      doc.moveDown(0.5);
+
+      // Draw table rows
+      doc.fontSize(9).font('Helvetica');
+      options.rows.forEach((row, index) => {
+        // Check if we need a new page
+        if (doc.y > doc.page.height - doc.page.margins.bottom - 50) {
+          doc.addPage();
+        }
+
+        currentX = doc.page.margins.left;
+        const rowY = doc.y;
+
+        options.columns.forEach((column) => {
+          const value = this.formatForDisplay(row[column.key]);
+          doc.text(value, currentX, rowY, {
+            width: columnWidth,
+            align: 'left',
+            continued: false,
+          });
+          currentX += columnWidth;
+        });
+
+        doc.moveDown(0.8);
+
+        // Add subtle line between rows
+        if ((index + 1) % 5 === 0) {
+          doc.moveTo(doc.page.margins.left, doc.y)
+             .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+             .strokeOpacity(0.2)
+             .stroke()
+             .strokeOpacity(1);
+          doc.moveDown(0.3);
+        }
+      });
+
+      // Add footer with page numbers
+      const range = doc.bufferedPageRange();
+      for (let i = range.start; i < range.start + range.count; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(8).font('Helvetica').text(
+          `Page ${i + 1} of ${range.count}`,
+          doc.page.margins.left,
+          doc.page.height - doc.page.margins.bottom + 10,
+          { align: 'center' }
+        );
+      }
+
+      doc.end();
+    });
   }
 
   private toFileName(baseName: string): string {

@@ -24,47 +24,48 @@ export class ParcelService {
   async createParcel(
     data:
       | {
-        customerId: string;
-        receiverId: string;
-        officeId: string;
-        sendingOfficeId?: string;
+          customerId: string;
+          receiverId: string;
+          officeId: string;
+          sendingOfficeId?: string;
         createdById?: string;
-        description: string;
-        value: number;
-        size?: "SMALL" | "MEDIUM" | "LARGE";
-        payment?: {
-          method: "CASH" | "MOBILE_MONEY" | "CARD";
-          amount: number;
-          reference?: string;
-        };
-      }
+          description: string;
+          value: number;
+          size?: "SMALL" | "MEDIUM" | "LARGE";
+          payment?: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
+        }
       | {
-        customer: {
-          firstName: string;
-          lastName: string;
-          phoneNumber: string;
-          emailAddress?: string;
-          idNumber?: string;
-        };
-        receiver: {
-          firstName: string;
-          lastName: string;
-          phoneNumber: string;
-          emailAddress?: string;
-          idNumber?: string;
-        };
-        officeId: string;
-        description: string;
-        value: number;
-        sendingOfficeId?: string;
+          customer: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          receiver: {
+            firstName: string;
+            lastName: string;
+            phoneNumber: string;
+            emailAddress?: string;
+            idNumber?: string;
+          };
+          officeId: string;
+          description: string;
+          value: number;
+          sendingOfficeId?: string;
         createdById?: string;
-        size: "SMALL" | "MEDIUM" | "LARGE";
-        payment: {
-          method: "CASH" | "MOBILE_MONEY" | "CARD";
-          amount: number;
-          reference?: string;
-        };
-      }
+          size: "SMALL" | "MEDIUM" | "LARGE";
+          payment: {
+            method: "CASH" | "MOBILE_MONEY" | "CARD";
+            amount: number;
+            reference?: string;
+          };
+      },
+      options?: { requireReceivable?: boolean; cashierId?: string }
   ): Promise<Parcel> {
     const office: Office = await this.prisma.office.findUnique({
       where: { id: data.officeId },
@@ -191,6 +192,7 @@ export class ParcelService {
           amount: paymentPayload.amount,
           method: paymentPayload.method as any,
           reference: paymentPayload.reference || null,
+          cashierId: options?.cashierId || null,
         },
       });
     }
@@ -372,6 +374,21 @@ export class ParcelService {
               },
             },
           },
+          cancellationLogs: {
+            orderBy: { cancelledAt: 'desc' },
+            take: 1,
+            select: {
+              cancelledAt: true,
+              reason: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.parcel.count({ where }),
@@ -381,7 +398,7 @@ export class ParcelService {
     // Add isOverdue flag to each parcel
     const enrichedData = data.map((parcel) => {
       let isOverdue = false;
-      if (parcel.arrivedAt && parcel.status !== ParcelStatus.COLLECTED) {
+      if (parcel.arrivedAt && parcel.status !== ParcelStatus.COLLECTED && parcel.status !== ParcelStatus.CANCELLED) {
         const daysSinceArrival = this.time.diffInDays(parcel.arrivedAt, this.time.now());
         isOverdue = daysSinceArrival > thresholdDays;
       }
@@ -554,12 +571,64 @@ export class ParcelService {
     };
   }
 
+  async cancelParcel(parcelId: string, cancelledBy: string, reason: string) {
+    const cleanReason = (reason || "").trim();
+    if (!cleanReason) {
+      throw new BadRequestException("Cancellation reason is required");
+    }
+
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      include: {
+        TrackingCode: { select: { plainTextCode: true } },
+        office: { select: { name: true, branchCode: true } },
+      },
+    });
+
+    if (!parcel) {
+      throw new NotFoundException("Parcel not found");
+    }
+
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      throw new BadRequestException("Parcel is already cancelled");
+    }
+
+    if (parcel.status === ParcelStatus.COLLECTED) {
+      throw new BadRequestException("Collected parcels cannot be cancelled");
+    }
+
+    const cancelledAt = this.time.now();
+
+    const updated = await this.prisma.parcel.update({
+      where: { id: parcelId },
+      data: {
+        status: ParcelStatus.CANCELLED,
+        cancelledAt,
+        cancellationReason: cleanReason,
+      },
+    });
+
+    await this.prisma.parcelCancellationLog.create({
+      data: {
+        parcelId,
+        cancelledBy,
+        reason: cleanReason,
+        cancelledAt,
+      },
+    });
+
+    return updated;
+  }
+
   async markCollected(parcelId: string): Promise<Parcel> {
     const parcel = await this.prisma.parcel.findUnique({
       where: { id: parcelId },
       include: { TrackingCode: true, customer: true, office: true },
     });
     if (!parcel) throw new NotFoundException("Parcel not found");
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      throw new BadRequestException("Parcel has been cancelled");
+    }
     if (parcel.status !== (ParcelStatus as any).READY_FOR_COLLECTION) {
       throw new BadRequestException("Parcel is not ready for collection");
     }
@@ -657,7 +726,18 @@ export class ParcelService {
       });
     }
 
-    if (parcel.status === "COLLECTED") {
+    if (parcel.status === "CANCELLED") {
+      trackingHistory.push({
+        status: "CANCELLED",
+        location: parcel.office.name,
+        timestamp: parcel.cancelledAt
+          ? this.time.toISO(parcel.cancelledAt)
+          : this.time.toISO(parcel.createdAt),
+        description: parcel.cancellationReason
+          ? `Parcel cancelled: ${parcel.cancellationReason}`
+          : "Parcel cancelled",
+      });
+    } else if (parcel.status === "COLLECTED") {
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: "In Transit",
@@ -745,6 +825,10 @@ export class ParcelService {
       throw new NotFoundException('Parcel not found');
     }
 
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      throw new BadRequestException('Parcel has been cancelled');
+    }
+
     if (parcel.arrivedAt) {
       throw new BadRequestException('Parcel already marked as arrived');
     }
@@ -789,7 +873,7 @@ export class ParcelService {
     arrivedAt: Date | null;
     status: ParcelStatus;
   }): Promise<boolean> {
-    if (!parcel.arrivedAt || parcel.status === ParcelStatus.COLLECTED) {
+    if (!parcel.arrivedAt || parcel.status === ParcelStatus.COLLECTED || parcel.status === ParcelStatus.CANCELLED) {
       return false;
     }
 
@@ -815,6 +899,10 @@ export class ParcelService {
 
     if (!parcel) {
       throw new NotFoundException('Parcel not found');
+    }
+
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      throw new BadRequestException('Parcel has been cancelled');
     }
 
     if (!parcel.arrivedAt) {

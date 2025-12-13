@@ -8,7 +8,7 @@ export class CustomerService {
 
   async createCustomer(data: {
     firstName: string;
-    lastName: string;
+    lastName?: string;
     phoneNumber: string;
     emailAddress?: string;
     idNumber?: string;

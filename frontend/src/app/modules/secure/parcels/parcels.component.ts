@@ -31,6 +31,8 @@ import { ParcelTrackDialogComponent } from "./parcel-track-dialog.component";
 import { ParcelQueriesService } from "./parcel-queries.service";
 import { ParcelQueryDialogComponent } from "./parcel-query-dialog.component";
 import { ParcelQueriesListDialogComponent } from "./parcel-queries-list-dialog.component";
+import { RoleService } from "app/core/auth/role.service";
+import { CancelParcelDialogComponent } from "../dashboard/cancel-parcel-dialog.component";
 
 @Component({
   selector: "app-parcels",
@@ -51,6 +53,7 @@ import { ParcelQueriesListDialogComponent } from "./parcel-queries-list-dialog.c
     MatDividerModule,
     ReactiveFormsModule,
     MatInputModule,
+    CancelParcelDialogComponent,
   ],
 })
 export class ParcelsComponent implements OnInit {
@@ -76,6 +79,7 @@ export class ParcelsComponent implements OnInit {
   readonly searchControl = new FormControl('', { nonNullable: true });
   private readonly destroyRef = inject(DestroyRef);
   private readonly bayAuth = inject(BayAuthorizationService);
+  canCancelParcels = false;
 
   // Bay authorization check - only SENDING bay users can create parcels
   get canCreateParcels(): boolean {
@@ -87,7 +91,8 @@ export class ParcelsComponent implements OnInit {
     private _dialog: MatDialog,
     private _snackBar: MatSnackBar,
     private _complaints: ComplaintsApiService,
-    private _queriesService: ParcelQueriesService
+    private _queriesService: ParcelQueriesService,
+    private _roleService: RoleService
   ) {
     this.searchControl.valueChanges
       .pipe(
@@ -102,6 +107,11 @@ export class ParcelsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._roleService.role$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((role) => {
+        this.canCancelParcels = role === "supervisor";
+      });
     this.loadData();
   }
 
@@ -340,5 +350,53 @@ export class ParcelsComponent implements OnInit {
       return 'overdue-parcel';
     }
     return '';
+  }
+
+  canCancel(parcel: Parcel): boolean {
+    if (!this.canCancelParcels) {
+      return false;
+    }
+    const status = (parcel.status || "").toUpperCase();
+    return status !== "CANCELLED" && status !== "COLLECTED";
+  }
+
+  cancelParcel(row: Parcel): void {
+    const id = (row as any)?.id;
+    if (!id || !this.canCancel(row)) {
+      return;
+    }
+
+    const dialogRef = this._dialog.open(CancelParcelDialogComponent, {
+      width: "420px",
+      data: {
+        parcelLabel:
+          (row as any)?.TrackingCode?.plainTextCode || `Parcel #${row.parcelNumber}`,
+      },
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      const reason = result?.reason?.trim();
+      if (!reason) {
+        return;
+      }
+
+      this._service.cancelParcel(id, reason).subscribe({
+        next: () => {
+          this._snackBar.open("Parcel cancelled successfully", "Close", {
+            duration: 3000,
+            verticalPosition: "top",
+          });
+          this.loadData(this.currentPageIndex, this.pageSize);
+        },
+        error: (err) => {
+          const msg = err?.error?.message || "Failed to cancel parcel";
+          this._snackBar.open(msg, "Close", {
+            duration: 3500,
+            verticalPosition: "top",
+          });
+        },
+      });
+    });
   }
 }

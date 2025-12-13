@@ -9,6 +9,22 @@ export interface RevenueBucket {
   payments: number;
 }
 
+export interface RevenueDetailedRow {
+  paymentId: string;
+  trackingCode: string;
+  date: string;
+  period: string;
+  amount: number;
+  method: string;
+  reference: string;
+  officeName: string;
+  branchCode: string;
+  cashierName: string;
+  cashierEmail: string;
+  cashierOffice: string;
+  cashierBranchCode: string;
+}
+
 export interface RevenueReport {
   granularity: 'daily' | 'monthly';
   startDate: string;
@@ -16,6 +32,7 @@ export interface RevenueReport {
   totalAmount: number;
   totalPayments: number;
   data: RevenueBucket[];
+  detailedData: RevenueDetailedRow[];
   generatedAt: string;
 }
 
@@ -123,7 +140,33 @@ export interface ZictaReport {
   generatedAt: string;
 }
 
-export type ReportDownloadFormat = 'csv' | 'excel';
+export interface CashierRevenueRow {
+  cashierId: string;
+  cashierName: string;
+  cashierEmail: string;
+  officeName: string;
+  branchCode: string;
+  totalAmount: number;
+  paymentCount: number;
+  payments: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    paidAt: Date;
+  }>;
+}
+
+export interface CashierRevenueReport {
+  startDate: string;
+  endDate: string;
+  grandTotal: number;
+  totalPayments: number;
+  totalCashiers: number;
+  data: CashierRevenueRow[];
+  generatedAt: string;
+}
+
+export type ReportDownloadFormat = 'csv' | 'excel' | 'pdf';
 
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
@@ -162,12 +205,13 @@ export class ReportsApiService {
     }) as Observable<Blob>;
   }
 
-  getRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[] }): Observable<RevenueReport> {
+  getRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[]; cashierId?: string }): Observable<RevenueReport> {
     const url = this.buildUrl('/revenue', {
       startDate: params.startDate,
       endDate: params.endDate,
       granularity: params.granularity,
       officeIds: params.officeIds?.join(','),
+      cashierId: params.cashierId,
     });
     return this.http.get<RevenueReport>(url, { headers: this.createHeaders() });
   }
@@ -208,13 +252,14 @@ export class ReportsApiService {
     return this.http.get<ZictaReport>(url, { headers: this.createHeaders() });
   }
 
-  downloadRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+  downloadRevenue(params: { startDate?: string; endDate?: string; granularity?: 'daily' | 'monthly'; officeIds?: string[]; cashierId?: string }, format: ReportDownloadFormat): Observable<Blob> {
     return this.download('/revenue/export', {
       startDate: params.startDate,
       endDate: params.endDate,
       granularity: params.granularity,
       format,
       officeIds: params.officeIds?.join(','),
+      cashierId: params.cashierId,
     });
   }
 
@@ -249,6 +294,26 @@ export class ReportsApiService {
     return this.download('/zicta/export', {
       startDate: params.startDate,
       endDate: params.endDate,
+      format,
+      officeIds: params.officeIds?.join(','),
+    });
+  }
+
+  getCashierRevenue(params: { startDate?: string; endDate?: string; cashierId?: string; officeIds?: string[] }): Observable<CashierRevenueReport> {
+    const url = this.buildUrl('/cashier-revenue', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      cashierId: params.cashierId,
+      officeIds: params.officeIds?.join(','),
+    });
+    return this.http.get<CashierRevenueReport>(url, { headers: this.createHeaders() });
+  }
+
+  downloadCashierRevenue(params: { startDate?: string; endDate?: string; cashierId?: string; officeIds?: string[] }, format: ReportDownloadFormat): Observable<Blob> {
+    return this.download('/cashier-revenue/export', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      cashierId: params.cashierId,
       format,
       officeIds: params.officeIds?.join(','),
     });

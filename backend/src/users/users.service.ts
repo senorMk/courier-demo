@@ -330,4 +330,38 @@ export class UsersService {
       orderBy: { name: 'asc' },
     });
   }
+
+  async getCashiers(officeId?: string) {
+    const where: any = {
+      role: {
+        name: 'cashier',
+      },
+    };
+
+    if (officeId) {
+      where.officeId = officeId;
+    }
+
+    return this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        officeId: true,
+        office: {
+          select: {
+            id: true,
+            name: true,
+            branchCode: true,
+          },
+        },
+      },
+      orderBy: [
+        { firstName: 'asc' },
+        { lastName: 'asc' },
+      ],
+    });
+  }
 }

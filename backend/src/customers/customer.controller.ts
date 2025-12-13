@@ -35,14 +35,14 @@ export class CustomerController {
     @Body()
     body: {
       firstName: string;
-      lastName: string;
+      lastName?: string;
       phoneNumber: string;
       emailAddress?: string;
       idNumber?: string;
     }
   ) {
     const { firstName, lastName, phoneNumber } = body;
-    if (!firstName || !lastName || !phoneNumber) {
+    if (!firstName || !phoneNumber) {
       throw new BadRequestException("Missing required customer property");
     }
     return this.customerService.createCustomer(body);
