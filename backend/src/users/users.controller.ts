@@ -45,6 +45,12 @@ export class UsersController {
     return this.usersService.getAllRoles();
   }
 
+  @Get('cashiers')
+  @SetMetadata('roles', ['managing-director', 'operations-officer', 'supervisor'])
+  getCashiers(@Query('officeId') officeId?: string) {
+    return this.usersService.getCashiers(officeId);
+  }
+
   @Get(':id')
   getUserById(@Param('id') id: string) {
     return this.usersService.getUserById(id);

@@ -60,12 +60,16 @@ const PARCEL_RECEIVER_ROLES = [
   "receiver",
 ] as const;
 
+const PARCEL_CANCEL_ROLES = [
+  "supervisor",
+] as const;
+
 @Controller("api/v1/parcels")
 export class ParcelController {
   constructor(
     private readonly parcelService: ParcelService,
     private readonly time: TimeService
-  ) {}
+  ) { }
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -116,17 +120,39 @@ export class ParcelController {
   ) {
     try {
       const user: any = (req as any)?.user || {};
-      const userId = user?.userId || user?.sub;
       const enriched = { ...(body as any) };
       if (!enriched.sendingOfficeId && user?.officeId) {
         enriched.sendingOfficeId = user.officeId;
       }
-      if (!enriched.createdById && userId) {
-        enriched.createdById = userId;
-      }
-      return await this.parcelService.createParcel(enriched as any);
+      const cashierId = user?.userId || user?.id;
+      return await this.parcelService.createParcel(enriched as any, {
+        requireReceivable: true,
+        cashierId: cashierId
+      });
     } catch (e) {
       console.error("ParcelController.create error:", e);
+      throw e;
+    }
+  }
+
+  @Post(":parcelId/cancel")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_CANCEL_ROLES)
+  async cancelParcel(
+    @Param("parcelId") parcelId: string,
+    @Body() body: { reason: string },
+    @Req() req: Request
+  ) {
+    try {
+      const user: any = (req as any)?.user || {};
+      const userId = user?.userId || user?.id;
+      if (!userId) {
+        throw new BadRequestException("User ID not found");
+      }
+
+      return await this.parcelService.cancelParcel(parcelId, userId, body?.reason);
+    } catch (e) {
+      console.error("ParcelController.cancelParcel error:", e);
       throw e;
     }
   }

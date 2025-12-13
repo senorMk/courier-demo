@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, SetMetadata, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, SetMetadata, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Response } from 'express';
@@ -34,6 +34,13 @@ const ZICTA_REPORT_ROLES = [
   'operations-officer',
 ] as const;
 
+const CASHIER_REVENUE_REPORT_ROLES = [
+  'managing-director',
+  'operations-officer',
+  'supervisor',
+  'cashier',
+] as const;
+
 @Controller('api/v1/reports')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class ReportsController {
@@ -47,11 +54,12 @@ export class ReportsController {
     @Query('granularity') granularity?: string,
     @Query('officeId') officeId?: string,
     @Query('officeIds') officeIds?: string,
+    @Query('cashierId') cashierId?: string,
   ) {
     // Support both single officeId and multiple officeIds
-    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) :
                           (officeId ? [officeId] : undefined);
-    return this.reports.getRevenueReport({ startDate, endDate, granularity, officeIds: parsedOfficeIds });
+    return this.reports.getRevenueReport({ startDate, endDate, granularity, officeIds: parsedOfficeIds, cashierId });
   }
 
   @Get('revenue/export')
@@ -63,12 +71,13 @@ export class ReportsController {
     @Query('format') format: string | undefined,
     @Query('officeId') officeId?: string,
     @Query('officeIds') officeIds?: string,
+    @Query('cashierId') cashierId?: string,
     @Res() res?: Response,
   ) {
     // Support both single officeId and multiple officeIds
-    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) : 
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) :
                           (officeId ? [officeId] : undefined);
-    const file = await this.reports.exportRevenueReport({ startDate, endDate, granularity, format, officeIds: parsedOfficeIds });
+    const file = await this.reports.exportRevenueReport({ startDate, endDate, granularity, format, officeIds: parsedOfficeIds, cashierId });
     this.sendFile(res, file);
   }
 
@@ -194,6 +203,45 @@ export class ReportsController {
                           (officeId ? [officeId] : undefined);
     const file = await this.reports.exportZictaReport({ startDate, endDate, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
+  }
+
+  @Get('cashier-revenue')
+  @SetMetadata('roles', CASHIER_REVENUE_REPORT_ROLES)
+  getCashierRevenue(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('cashierId') cashierId?: string,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+  ) {
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) :
+                          (officeId ? [officeId] : undefined);
+    return this.reports.getCashierRevenueReport({ startDate, endDate, cashierId, officeIds: parsedOfficeIds });
+  }
+
+  @Get('cashier-revenue/export')
+  @SetMetadata('roles', CASHIER_REVENUE_REPORT_ROLES)
+  async downloadCashierRevenue(
+    @Query('startDate') startDate: string | undefined,
+    @Query('endDate') endDate: string | undefined,
+    @Query('cashierId') cashierId: string | undefined,
+    @Query('format') format: string | undefined,
+    @Query('officeId') officeId?: string,
+    @Query('officeIds') officeIds?: string,
+    @Res() res?: Response,
+  ) {
+    // Support both single officeId and multiple officeIds
+    const parsedOfficeIds = officeIds ? officeIds.split(',').filter(id => id.trim()) :
+                          (officeId ? [officeId] : undefined);
+    const file = await this.reports.exportCashierRevenueReport({ startDate, endDate, cashierId, format, officeIds: parsedOfficeIds });
+    this.sendFile(res, file);
+  }
+
+  @Post('fix-cashier-payments')
+  @SetMetadata('roles', ['managing-director'])
+  async fixCashierPayments() {
+    return this.reports.fixPaymentsWithNullCashier();
   }
 
   private sendFile(res: Response, file: ReportExportResult) {
