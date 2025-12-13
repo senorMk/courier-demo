@@ -120,9 +120,13 @@ export class ParcelController {
   ) {
     try {
       const user: any = (req as any)?.user || {};
+      const userId = user?.userId || user?.sub;
       const enriched = { ...(body as any) };
       if (!enriched.sendingOfficeId && user?.officeId) {
         enriched.sendingOfficeId = user.officeId;
+      }
+      if (!enriched.createdById && userId) {
+        enriched.createdById = userId;
       }
       const cashierId = user?.userId || user?.id;
       return await this.parcelService.createParcel(enriched as any, {
