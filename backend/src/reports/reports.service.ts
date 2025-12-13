@@ -102,34 +102,23 @@ export class ReportsService {
     // Build where clause with optional office and cashier filters
     const where: any = { paidAt: { gte: range.start, lte: range.end } };
 
-    // Build parcel filter conditions
-    const parcelConditions: any[] = [];
+    // Build parcel filter - exclude cancelled parcels and filter by office if provided
+    const parcelWhere: any = { status: { not: 'CANCELLED' } };
 
-    // Exclude cancelled parcels
-    parcelConditions.push({ status: { not: 'CANCELLED' } });
-
-    // Add office filter if provided
+    // Add office filter if provided - only filter by sending office
     if (params.officeIds && params.officeIds.length > 0) {
-      parcelConditions.push({
-        OR: params.officeIds.map(officeId => ({
-          OR: [
-            { sendingOfficeId: officeId },
-            { officeId: officeId }
-          ]
-        }))
-      });
+      parcelWhere.sendingOfficeId = { in: params.officeIds };
     }
 
-    // Apply parcel filters if any exist
-    if (parcelConditions.length > 0) {
-      where.parcel = parcelConditions.length === 1
-        ? parcelConditions[0]
-        : { AND: parcelConditions };
-    }
+    // Apply parcel filter
+    where.parcel = parcelWhere;
 
     if (params.cashierId) {
       where.cashierId = params.cashierId;
     }
+
+    console.log('Revenue Report Query WHERE:', JSON.stringify(where, null, 2));
+    console.log('Filtering for offices:', params.officeIds);
 
     const payments = await this.prisma.payment.findMany({
       where,
@@ -239,15 +228,10 @@ export class ReportsService {
   async getParcelMovementReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
 
-    // Build where clause with optional office filter
+    // Build where clause with optional office filter - only filter by sending office
     const where: any = { createdAt: { gte: range.start, lte: range.end } };
     if (params.officeIds && params.officeIds.length > 0) {
-      where.OR = params.officeIds.map(officeId => ({
-        OR: [
-          { sendingOfficeId: officeId },
-          { officeId: officeId }
-        ]
-      }));
+      where.sendingOfficeId = { in: params.officeIds };
     }
 
     const parcels = await this.prisma.parcel.findMany({
@@ -344,15 +328,10 @@ export class ReportsService {
       },
     };
 
-    // Add office filter if provided
+    // Add office filter if provided - only filter by sending office
     if (params.officeIds && params.officeIds.length > 0) {
       where.parcel = {
-        OR: params.officeIds.map(officeId => ({
-          OR: [
-            { sendingOfficeId: officeId },
-            { officeId: officeId }
-          ]
-        }))
+        sendingOfficeId: { in: params.officeIds }
       };
     }
 
@@ -532,15 +511,10 @@ export class ReportsService {
   async getZictaReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
 
-    // Build where clause with optional office filter
+    // Build where clause with optional office filter - only filter by sending office
     const where: any = { createdAt: { gte: range.start, lte: range.end } };
     if (params.officeIds && params.officeIds.length > 0) {
-      where.OR = params.officeIds.map(officeId => ({
-        OR: [
-          { sendingOfficeId: officeId },
-          { officeId: officeId }
-        ]
-      }));
+      where.sendingOfficeId = { in: params.officeIds };
     }
 
     const parcels = await this.prisma.parcel.findMany({
@@ -873,30 +847,16 @@ export class ReportsService {
       where.cashierId = params.cashierId;
     }
 
-    // Build parcel filter conditions
-    const parcelConditions: any[] = [];
+    // Build parcel filter - exclude cancelled parcels and filter by office if provided
+    const parcelWhere: any = { status: { not: 'CANCELLED' } };
 
-    // Exclude cancelled parcels
-    parcelConditions.push({ status: { not: 'CANCELLED' } });
-
-    // Add office filter if provided
+    // Add office filter if provided - only filter by sending office
     if (params.officeIds && params.officeIds.length > 0) {
-      parcelConditions.push({
-        OR: params.officeIds.map(officeId => ({
-          OR: [
-            { sendingOfficeId: officeId },
-            { officeId: officeId }
-          ]
-        }))
-      });
+      parcelWhere.sendingOfficeId = { in: params.officeIds };
     }
 
-    // Apply parcel filters if any exist
-    if (parcelConditions.length > 0) {
-      where.parcel = parcelConditions.length === 1
-        ? parcelConditions[0]
-        : { AND: parcelConditions };
-    }
+    // Apply parcel filter
+    where.parcel = parcelWhere;
 
     const payments = await this.prisma.payment.findMany({
       where,
