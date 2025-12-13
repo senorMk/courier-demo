@@ -15,6 +15,8 @@ export interface Parcel {
   status?: string;
   createdAt?: string;
   arrivedAt?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
   isOverdue?: boolean;
   daysSinceArrival?: number | null;
   office?: { name: string; branchCode: string; officeTypes?: string[] } | null;
@@ -46,6 +48,15 @@ export interface Parcel {
       firstName?: string | null;
       lastName?: string | null;
     };
+  }>;
+  cancellationLogs?: Array<{
+    cancelledAt: string;
+    reason?: string | null;
+    user?: {
+      firstName?: string | null;
+      lastName?: string | null;
+      email?: string | null;
+    } | null;
   }>;
 }
 
@@ -231,6 +242,14 @@ export class ParcelsService {
     const params = officeId ? `?officeId=${officeId}` : '';
     return this._httpClient.get<Parcel[]>(
       `${this.baseUrl}/v1/parcels/overdue${params}`,
+      this.getHeader()
+    );
+  }
+
+  cancelParcel(parcelId: string, reason: string): Observable<Parcel> {
+    return this._httpClient.post<Parcel>(
+      `${this.baseUrl}/v1/parcels/${parcelId}/cancel`,
+      { reason },
       this.getHeader()
     );
   }

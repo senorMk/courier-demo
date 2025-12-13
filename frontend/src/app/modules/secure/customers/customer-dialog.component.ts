@@ -33,7 +33,7 @@ export class CustomerDialogComponent {
   ) {
     this.form = this._fb.group({
       firstName: ["", Validators.required],
-      lastName: ["", Validators.required],
+      lastName: [""],
       phoneNumber: ["", Validators.required],
       emailAddress: [""],
       idNumber: [""],

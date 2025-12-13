@@ -1,6 +1,6 @@
 <div class="flex flex-col flex-auto w-full">
-  <div *ngIf="availableReportTypes.length > 0; else noReports"
-    class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
+  <div *ngIf="availableReportTypes.length > 0; else noReports" class="flex flex-col gap-4"
+    style="width: 100%; padding: 20px; height: 100%;">
     <!-- Page Header -->
     <div class="flex items-center justify-between w-full">
       <div>
@@ -18,18 +18,15 @@
       <div class="flex flex-wrap gap-2">
         <ng-container *ngFor="let report of reportDefinitions">
           <button *ngIf="isReportAvailable(report.type)" mat-flat-button
-            [class.mat-primary]="selectedReportType === report.type"
-            (click)="onSelectReport(report.type)">
+            [class.mat-primary]="selectedReportType === report.type" (click)="onSelectReport(report.type)">
             {{ report.label }}
           </button>
         </ng-container>
       </div>
-      
+
       <!-- Refresh Button -->
-      <button mat-flat-button 
-              (click)="refreshCurrentReport()"
-              [disabled]="!selectedReportType || isRefreshing()"
-              class="flex items-center gap-2 refresh-button">
+      <button mat-flat-button (click)="refreshCurrentReport()" [disabled]="!selectedReportType || isRefreshing()"
+        class="flex items-center gap-2 refresh-button">
         <mat-icon *ngIf="!isRefreshing()">refresh</mat-icon>
         <mat-spinner *ngIf="isRefreshing()" diameter="20" class="text-white"></mat-spinner>
         <span>Refresh</span>
@@ -42,38 +39,31 @@
         <mat-icon class="text-gray-500">business</mat-icon>
         <span class="text-sm font-medium text-gray-700">Office Filter</span>
       </div>
-      
-      <mat-form-field appearance="outline" class="w-96" 
-                      [ngClass]="{'opacity-75': loadingOffices}">
+
+      <mat-form-field appearance="outline" class="w-96" [ngClass]="{'opacity-75': loadingOffices}">
         <mat-label class="text-sm">Select office to filter reports</mat-label>
-        <mat-select [formControl]="officeFilterControl" 
-                    multiple
-                    (selectionChange)="onOfficeFilterChange()"
-                    panelClass="office-filter-panel">
-          <mat-option value="">All Offices</mat-option>
-          <mat-option *ngFor="let office of availableOffices" 
-                       [value]="office.id">
+        <mat-select #officeSelect [formControl]="officeFilterControl" multiple
+          (selectionChange)="onOfficeFilterChange()" panelClass="office-filter-panel">
+          <mat-option [value]="allOfficesOptionValue">All Offices</mat-option>
+          <mat-option *ngFor="let office of availableOffices" [value]="office.id">
             {{ office.name }} ({{ office.branchCode }})
           </mat-option>
         </mat-select>
         <div matSuffix class="flex items-center gap-2">
-          <mat-spinner diameter="20" *ngIf="loadingOffices" 
-                       class="text-blue-500"></mat-spinner>
-          <mat-icon *ngIf="!loadingOffices && officeFilterControl.value.length > 0" 
-                    class="text-blue-500 animate-pulse">filter_list</mat-icon>
+          <mat-spinner diameter="20" *ngIf="loadingOffices" class="text-blue-500"></mat-spinner>
+          <mat-icon *ngIf="!loadingOffices && officeFilterControl.value.length > 0"
+            class="text-blue-500 animate-pulse">filter_list</mat-icon>
         </div>
       </mat-form-field>
-      
-      <button mat-stroked-button 
-              *ngIf="officeFilterControl.value.length > 0"
-              (click)="clearOfficeFilter()"
-              class="text-gray-600 hover:text-gray-800 border-gray-300 hover:border-gray-400 transition-all duration-200">
+
+      <button mat-stroked-button *ngIf="officeFilterControl.value.length > 0" (click)="clearOfficeFilter()"
+        class="text-gray-600 hover:text-gray-800 border-gray-300 hover:border-gray-400 transition-all duration-200">
         <mat-icon class="text-sm">clear</mat-icon>
         <span class="ml-1">Clear</span>
       </button>
-      
-      <div *ngIf="officeFilterControl.value.length > 0" 
-           class="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+
+      <div *ngIf="officeFilterControl.value.length > 0"
+        class="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
         <mat-icon class="text-sm">check_circle</mat-icon>
         <span>{{ officeFilterControl.value.length }} office(s) selected</span>
       </div>
@@ -101,6 +91,15 @@
               <mat-select formControlName="granularity">
                 <mat-option value="daily">Daily</mat-option>
                 <mat-option value="monthly">Monthly</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="w-52">
+              <mat-label>Cashier</mat-label>
+              <mat-select formControlName="cashierId">
+                <mat-option [value]="null">All Cashiers</mat-option>
+                <mat-option *ngFor="let cashier of availableCashiers" [value]="cashier.id">
+                  {{ cashier.firstName }} {{ cashier.lastName }} ({{ cashier.email }})
+                </mat-option>
               </mat-select>
             </mat-form-field>
             <button mat-stroked-button color="primary" type="submit">Apply</button>
@@ -315,6 +314,10 @@
                 <ng-container matColumnDef="damaged">
                   <th mat-header-cell *matHeaderCellDef>Damaged</th>
                   <td mat-cell *matCellDef="let row">{{ row.damaged }}</td>
+                </ng-container>
+                <ng-container matColumnDef="cancelled">
+                  <th mat-header-cell *matHeaderCellDef>Cancelled</th>
+                  <td mat-cell *matCellDef="let row">{{ row.cancelled }}</td>
                 </ng-container>
 
                 <tr mat-header-row *matHeaderRowDef="parcelColumns"></tr>
@@ -556,8 +559,8 @@
                   <td mat-cell *matCellDef="let row">{{ row.statusCounts?.COMPLETED || 0 }}</td>
                 </ng-container>
                 <ng-container matColumnDef="averageDuration">
-                  <th mat-header-cell *matHeaderCellDef>Avg Duration (mins)</th>
-                  <td mat-cell *matCellDef="let row">{{ row.averageDurationMinutes ?? '—' }}</td>
+                  <th mat-header-cell *matHeaderCellDef>Avg Duration (hrs)</th>
+                  <td mat-cell *matCellDef="let row">{{ row.averageDurationMinutes ? Math.ceil(row.averageDurationMinutes / 60) : '—' }}</td>
                 </ng-container>
                 <ng-container matColumnDef="trucks">
                   <th mat-header-cell *matHeaderCellDef>Trucks</th>

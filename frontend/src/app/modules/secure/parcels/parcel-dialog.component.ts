@@ -70,7 +70,7 @@ export class ParcelDialogComponent {
     this.form = this._fb.group({
       customer: this._fb.group({
         firstName: ["", Validators.required],
-        lastName: ["", Validators.required],
+        lastName: [""],
         phoneNumber: [
           "",
           [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
@@ -80,7 +80,7 @@ export class ParcelDialogComponent {
       }),
       receiver: this._fb.group({
         firstName: ["", Validators.required],
-        lastName: ["", Validators.required],
+        lastName: [""],
         phoneNumber: [
           "",
           [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
@@ -99,6 +99,7 @@ export class ParcelDialogComponent {
         reference: [""],
       }),
     });
+    this.setupUppercaseTransformers();
     this.offices$ = this.officeSearchControl.valueChanges.pipe(
       startWith(""),
       map((value) =>
@@ -110,7 +111,12 @@ export class ParcelDialogComponent {
       debounceTime(250),
       distinctUntilChanged(),
       switchMap((query) =>
-        this._officesSearch.searchOffices(query).pipe(catchError(() => of([])))
+        this._officesSearch
+          .searchOffices(query)
+          .pipe(
+            map((offices) => this.filterReceivingOffices(offices)),
+            catchError(() => of([]))
+          )
       )
     );
 
@@ -141,6 +147,15 @@ export class ParcelDialogComponent {
     );
     return parts.join(" • ");
   };
+
+  private filterReceivingOffices(offices: Office[]): Office[] {
+    return (offices || []).filter((office) => {
+      const types = Array.isArray(office.officeTypes)
+        ? office.officeTypes
+        : [];
+      return types.includes("RECEIVING");
+    });
+  }
 
   save(): void {
     if (this.form.invalid) {
@@ -196,5 +211,40 @@ export class ParcelDialogComponent {
         );
       },
     });
+  }
+
+  // Keep cashier-entered text fields consistently uppercased
+  private setupUppercaseTransformers(): void {
+    const uppercasePaths = [
+      "customer.firstName",
+      "customer.lastName",
+      "customer.idNumber",
+      "receiver.firstName",
+      "receiver.lastName",
+      "receiver.idNumber",
+      "description",
+      "payment.reference",
+    ];
+
+    uppercasePaths.forEach((path) => this.uppercaseControl(path));
+  }
+
+  private uppercaseControl(path: string): void {
+    const control = this.form.get(path);
+    if (!control) {
+      return;
+    }
+
+    control.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (typeof value !== "string") {
+          return;
+        }
+        const uppercased = value.toUpperCase();
+        if (value !== uppercased) {
+          control.setValue(uppercased, { emitEvent: false });
+        }
+      });
   }
 }

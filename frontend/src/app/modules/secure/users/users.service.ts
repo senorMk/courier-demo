@@ -96,4 +96,12 @@ export class UsersService {
   getRoles(): Observable<Role[]> {
     return this.http.get<Role[]>(`${this.apiUrl}/roles`);
   }
+
+  getCashiers(officeId?: string): Observable<User[]> {
+    let params = new HttpParams();
+    if (officeId) {
+      params = params.set('officeId', officeId);
+    }
+    return this.http.get<User[]>(`${this.apiUrl}/cashiers`, { params });
+  }
 }

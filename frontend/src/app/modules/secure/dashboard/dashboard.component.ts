@@ -1,4 +1,3 @@
-import { MatDialog } from "@angular/material/dialog";
 import { ApexOptions } from "ng-apexcharts";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { Platform } from "@angular/cdk/platform";
@@ -21,6 +20,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatDialog } from "@angular/material/dialog";
+import { CancelParcelDialogComponent } from "./cancel-parcel-dialog.component";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { RoleService } from "app/core/auth/role.service";
 
 @Component({
   selector: "administrator-dashboard",
@@ -35,6 +38,7 @@ import { MatPaginatorModule } from "@angular/material/paginator";
     MatIconModule,
     MatCheckboxModule,
     MatButtonModule,
+    CancelParcelDialogComponent,
   ],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
@@ -49,15 +53,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     "customerId",
     "receiverId",
     "destinationId",
+    "status",
+    "actions",
   ];
   @ViewChild(MatPaginator) paginator: MatPaginator;
+  canCancelParcels = false;
+  cancellingParcelId: string | null = null;
 
   constructor(
     private _fuseNavigationService: FuseNavigationService,
     private _navigationService: NavigationService,
     private _userService: UserService,
     private _parcelsService: ParcelsService,
-    private _dashboard: DashboardService
+    private _dashboard: DashboardService,
+    private _dialog: MatDialog,
+    private _snackBar: MatSnackBar,
+    private _roleService: RoleService
   ) {}
 
   ngOnInit(): void {
@@ -66,6 +77,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this._unsubscribeAll))
       .subscribe((navigation: Navigation) => {
         this.navigation = navigation;
+      });
+
+    this._roleService.role$
+      .pipe(takeUntil(this._unsubscribeAll))
+      .subscribe((role) => {
+        this.canCancelParcels = role === "supervisor";
       });
 
     this.loadData();
@@ -121,5 +138,55 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (mainNavigation) {
       mainNavigation.toggle();
     }
+  }
+
+  canCancel(parcel: Parcel): boolean {
+    if (!this.canCancelParcels) {
+      return false;
+    }
+    const status = (parcel.status || "").toUpperCase();
+    return status !== "CANCELLED" && status !== "COLLECTED";
+  }
+
+  cancelParcel(parcel: Parcel): void {
+    if (!parcel?.id || !this.canCancel(parcel)) {
+      return;
+    }
+
+    const dialogRef = this._dialog.open(CancelParcelDialogComponent, {
+      width: "420px",
+      data: {
+        parcelLabel:
+          parcel?.TrackingCode?.plainTextCode || `Parcel #${parcel.parcelNumber}`,
+      },
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      const reason = result?.reason?.trim();
+      if (!reason) {
+        return;
+      }
+
+      this.cancellingParcelId = parcel.id;
+
+      const sub = this._parcelsService.cancelParcel(parcel.id, reason).subscribe({
+        next: () => {
+          this._snackBar.open("Parcel cancelled", "Dismiss", { duration: 3000 });
+          const index = this.paginator?.pageIndex ?? 0;
+          const size = this.paginator?.pageSize ?? 10;
+          this.loadData(index, size);
+        },
+        error: (err) => {
+          const message =
+            err?.error?.message || "Failed to cancel parcel. Please try again.";
+          this._snackBar.open(message, "Dismiss", { duration: 4000 });
+        },
+      });
+
+      sub.add(() => {
+        this.cancellingParcelId = null;
+      });
+    });
   }
 }
