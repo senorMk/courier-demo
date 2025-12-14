@@ -2,38 +2,19 @@
   <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
     <mat-form-field appearance="outline" class="w-full md:w-72">
       <mat-label>Search parcels</mat-label>
-      <input
-        matInput
-        [formControl]="searchControl"
-        placeholder="Tracking code, customer, office"
-        type="search"
-      />
-      <button
-        mat-icon-button
-        matSuffix
-        type="button"
-        *ngIf="searchControl.value"
-        aria-label="Clear search"
-        (click)="clearSearch()"
-      >
+      <input matInput [formControl]="searchControl" placeholder="Tracking code, customer, office" type="search" />
+      <button mat-icon-button matSuffix type="button" *ngIf="searchControl.value" aria-label="Clear search"
+        (click)="clearSearch()">
         <mat-icon>close</mat-icon>
       </button>
     </mat-form-field>
 
     <div class="flex justify-end gap-2">
-      <button
-        *ngIf="canCreateParcels"
-        mat-raised-button
-        (click)="openCreateDialog()"
-        class="custom-primary-btn">
+      <button *ngIf="canCreateParcels" mat-raised-button (click)="openCreateDialog()" class="custom-primary-btn">
         <mat-icon style="color: #fff;">add</mat-icon>
         Create Parcel
       </button>
-      <button
-        *ngIf="selectedParcel"
-        mat-raised-button
-        (click)="openDetailsDialog()"
-        class="custom-primary-btn">
+      <button *ngIf="selectedParcel" mat-raised-button (click)="openDetailsDialog()" class="custom-primary-btn">
         <mat-icon style="color: #fff;">info</mat-icon>
         Details
       </button>
@@ -83,9 +64,7 @@
             <span [ngClass]="{ 'text-orange-600 font-semibold': element?.isOverdue }">
               {{ element?.status }}
             </span>
-            <mat-icon
-              *ngIf="element?.isOverdue"
-              class="text-orange-600"
+            <mat-icon *ngIf="element?.isOverdue" class="text-orange-600"
               matTooltip="Parcel is overdue for collection ({{ element?.daysSinceArrival }} days since arrival)"
               style="font-size: 18px; width: 18px; height: 18px;">
               warning
@@ -96,7 +75,7 @@
 
       <ng-container matColumnDef="createdAt">
         <th mat-header-cell *matHeaderCellDef>Created</th>
-  <td mat-cell *matCellDef="let element">{{ element?.createdAt | date:'short' }}</td>
+        <td mat-cell *matCellDef="let element">{{ element?.createdAt | date:'short' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
@@ -106,26 +85,19 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #actionsMenu="matMenu">
-            <button
-              mat-menu-item
-              (click)="markParcelArrived(element)"
+            <button mat-menu-item (click)="markParcelArrived(element)"
               *ngIf="!element?.arrivedAt && element?.status === 'PENDING'">
               <mat-icon>check_circle</mat-icon>
               <span>Mark as Arrived</span>
             </button>
-            <button
-              mat-menu-item
-              (click)="sendReminder(element)"
-              *ngIf="element?.isOverdue"
+            <button mat-menu-item (click)="sendReminder(element)" *ngIf="element?.isOverdue"
               [disabled]="!element?.isOverdue">
               <mat-icon class="text-orange-600">notifications_active</mat-icon>
               <span class="text-orange-600 font-semibold">Send SMS Reminder</span>
             </button>
-            <mat-divider *ngIf="element?.isOverdue || (!element?.arrivedAt && element?.status === 'PENDING')"></mat-divider>
-            <button
-              mat-menu-item
-              (click)="cancelParcel(element)"
-              *ngIf="canCancel(element)">
+            <mat-divider
+              *ngIf="element?.isOverdue || (!element?.arrivedAt && element?.status === 'PENDING')"></mat-divider>
+            <button mat-menu-item (click)="cancelParcel(element)" *ngIf="canCancel(element)">
               <mat-icon color="warn">cancel</mat-icon>
               <span class="text-red-600">Cancel Parcel</span>
             </button>
@@ -178,11 +150,6 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
   </div>
-  <mat-paginator
-    [length]="total"
-    [pageSize]="pageSize"
-    [pageIndex]="currentPageIndex"
-    [pageSizeOptions]="[5, 10, 25, 50]"
-    (page)="onPage($event)"
-  ></mat-paginator>
+  <mat-paginator [length]="total" [pageSize]="pageSize" [pageIndex]="currentPageIndex"
+    [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)"></mat-paginator>
 </div>
