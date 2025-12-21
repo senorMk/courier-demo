@@ -144,6 +144,7 @@ model Parcel {
   receiver           Customer                @relation("Receiver", fields: [receiverId], references: [id])
   office             Office                  @relation(fields: [officeId], references: [id])
   sendingOffice      Office?                 @relation("SendingOffice", fields: [sendingOfficeId], references: [id])
+  createdBy          User?                   @relation("ParcelCreator", fields: [createdById], references: [id])
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
   TrackingCode       TrackingCode?
@@ -337,6 +338,7 @@ model User {
   sentReminders         ParcelReminderLog[]
   payments              Payment[]               @relation("PaymentCashier")
   ParcelCancellationLog ParcelCancellationLog[]
+  createdParcels        Parcel[]                @relation("ParcelCreator")
 }
 
 model SystemSettings {
