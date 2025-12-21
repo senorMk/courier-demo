@@ -210,7 +210,7 @@ export class ScanningController {
     const userId = user.sub || (user as any).userId;
 
     // Dispatchers and sorters should only see their own sessions
-    const restrictedRoles = ["dispatcher", "sorter"];
+    const restrictedRoles = ["dispatcher", "sorter", "receiver"];
     const shouldFilterByUser = restrictedRoles.includes(user.role?.toLowerCase());
 
     return this.service.getPaginatedSessions(

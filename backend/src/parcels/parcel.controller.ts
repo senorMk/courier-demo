@@ -24,12 +24,12 @@ import { TimeService } from "../common/time/time.service";
 const PARCEL_CREATE_ROLES = [
   "managing-director",
   "operations-officer",
-  "supervisor",
   "cashier",
 ] as const;
 
 const PARCEL_VIEW_ROLES = [
   ...PARCEL_CREATE_ROLES,
+  "supervisor",
   "customer-service-agent",
   "customer-service-director",
   "dispatcher",
@@ -69,7 +69,7 @@ export class ParcelController {
   constructor(
     private readonly parcelService: ParcelService,
     private readonly time: TimeService
-  ) { }
+  ) {}
 
   @Post("create")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -84,6 +84,7 @@ export class ParcelController {
         description: string;
         value: number;
         size?: "SMALL" | "MEDIUM" | "LARGE";
+        cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
         payment?: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
           amount: number;
@@ -109,6 +110,7 @@ export class ParcelController {
         description: string;
         value: number;
         size: "SMALL" | "MEDIUM" | "LARGE";
+        cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
         payment: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
           amount: number;
@@ -116,17 +118,14 @@ export class ParcelController {
         };
       }
     ,
+
     @Req() req: Request
   ) {
     try {
       const user: any = (req as any)?.user || {};
-      const userId = user?.userId || user?.sub;
       const enriched = { ...(body as any) };
       if (!enriched.sendingOfficeId && user?.officeId) {
         enriched.sendingOfficeId = user.officeId;
-      }
-      if (!enriched.createdById && userId) {
-        enriched.createdById = userId;
       }
       const cashierId = user?.userId || user?.id;
       return await this.parcelService.createParcel(enriched as any, {
@@ -137,6 +136,9 @@ export class ParcelController {
       console.error("ParcelController.create error:", e);
       throw e;
     }
+  } catch (e) {
+    console.error("ParcelController.create error:", e);
+    throw e;
   }
 
   @Post(":parcelId/cancel")
@@ -168,19 +170,39 @@ export class ParcelController {
     @Query("page") page: number = 1,
     @Query("pageSize") pageSize: number = 10,
     @Query("search") search?: string,
+    @Query("status") status?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("cashierId") cashierId?: string,
     @Req() req?: Request
   ) {
     try {
       const user: any = (req as any)?.user || {};
-      const userId = user?.userId || user?.sub;
       const userRole = user?.role;
+      const userId = user?.userId || user?.id;
+
+      // Supervisors can only view parcels from their own office
+      let sendingOfficeId: string | undefined;
+      if (userRole === 'supervisor' && user?.officeId) {
+        sendingOfficeId = user.officeId;
+      }
+
+      // Cashiers can only view parcels they created
+      let createdById: string | undefined;
+      if (userRole === 'cashier' && userId) {
+        createdById = userId;
+      }
 
       return await this.parcelService.getParcelsPaginated(
         Number(page),
         Number(pageSize),
         search,
-        userId,
-        userRole
+        status,
+        startDate,
+        endDate,
+        sendingOfficeId,
+        cashierId,
+        createdById
       );
     } catch (e) {
       console.error('ParcelController.getPaginated error:', e);
@@ -219,12 +241,7 @@ export class ParcelController {
         path.join(receiptsDir, `parcel-${parcelId}-accounts.pdf`),
       ];
 
-      try {
-        await generateReceiptsForParcel(parcelId);
-      } catch (e) {
-        console.error("ParcelController.downloadReceipts generate error:", e);
-      }
-
+    
       res.setHeader(
         "Content-Type",
         "application/zip, application/octet-stream"
@@ -268,12 +285,24 @@ export class ParcelController {
         fs.mkdirSync(receiptsDir, { recursive: true });
       }
       const filePath = path.join(receiptsDir, `parcel-${parcelId}-${type}.pdf`);
-      try {
-        await generateReceiptsForParcel(parcelId);
-      } catch (e) {
-        console.error("ParcelController.downloadReceipt generate error:", e);
+
+      // If file doesn't exist, try to regenerate receipts
+      if (!fs.existsSync(filePath)) {
+        try {
+          // Get parcel with payment info to extract cashierId
+          const parcel = await this.parcelService.findByIdWithPayment(parcelId);
+          if (!parcel) {
+            throw new BadRequestException("Parcel not found");
+          }
+          const cashierId = parcel.payment?.cashierId || undefined;
+          await generateReceiptsForParcel(parcelId, cashierId);
+        } catch (regenerateError) {
+          console.error("Failed to regenerate receipt:", regenerateError);
+          throw new BadRequestException("Receipt not available");
+        }
       }
 
+      // Check again after regeneration attempt
       if (!fs.existsSync(filePath)) {
         throw new BadRequestException("Receipt not available");
       }
@@ -348,13 +377,28 @@ export class ParcelController {
 
       const cleanCode = trackingCode.trim().toUpperCase();
 
-      // Validate tracking code format (basic pattern check)
-      const trackingCodePattern = /^[A-Z]{2}-\d{3}-\d{3}-\d+$/;
-      if (!trackingCodePattern.test(cleanCode)) {
-        throw new NotFoundException("Invalid tracking code format");
+      // First try strict validation for new format (no dashes)
+      // Format: routeCode + destinationCode + branchCode + parcelNumber
+      // Example: ABCDEFGHI123
+      const strictPattern = /^[A-Z0-9]{6,36}\d+$/;
+
+      if (strictPattern.test(cleanCode)) {
+        return await this.parcelService.getPublicTrackingInfo(cleanCode);
       }
 
-      return await this.parcelService.getPublicTrackingInfo(cleanCode);
+      // Fallback: try old format with dashes for backward compatibility
+      const legacyPattern = /^[A-Z0-9]{2,12}-[A-Z0-9]{2,12}-[A-Z0-9]{2,12}-\d+$/;
+      if (legacyPattern.test(cleanCode)) {
+        // Try direct database lookup for old format
+        try {
+          return await this.parcelService.getPublicTrackingInfo(cleanCode);
+        } catch (dbError) {
+          // If database lookup fails, return invalid format error
+          throw new NotFoundException("Invalid tracking code format");
+        }
+      }
+
+      throw new NotFoundException("Invalid tracking code format");
     } catch (e) {
       // Don't log sensitive information, just log that an attempt was made
       console.error("ParcelController.trackParcel attempt:", {
@@ -425,6 +469,120 @@ export class ParcelController {
       return await this.parcelService.getOverdueParcels(effectiveOfficeId);
     } catch (e) {
       console.error("ParcelController.getOverdueParcels error:", e);
+      throw e;
+    }
+  }
+
+  @Get("export/csv")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
+  async exportCSV(
+    @Query("search") search?: string,
+    @Query("status") status?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("cashierId") cashierId?: string,
+    @Res() res?: Response,
+    @Req() req?: Request
+  ) {
+    try {
+      const user: any = (req as any)?.user || {};
+      const userRole = user?.role?.name;
+      const userId = user?.userId || user?.id;
+
+      // Supervisors can only export parcels from their own office
+      let sendingOfficeId: string | undefined;
+      if (userRole === 'supervisor' && user?.officeId) {
+        sendingOfficeId = user.officeId;
+      }
+
+      // Cashiers can only export parcels they created
+      let createdById: string | undefined;
+      if (userRole === 'cashier' && userId) {
+        createdById = userId;
+      }
+
+      const csvContent = await this.parcelService.exportParcelsToCSV(
+        search,
+        status,
+        startDate,
+        endDate,
+        sendingOfficeId,
+        cashierId,
+        createdById
+      );
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=parcels-export-${new Date().toISOString().split('T')[0]}.csv`
+      );
+      res.send(csvContent);
+    } catch (e) {
+      console.error("ParcelController.exportCSV error:", e);
+      throw e;
+    }
+  }
+
+  @Get("export/pdf")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
+  async exportPDF(
+    @Query("search") search?: string,
+    @Query("status") status?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("cashierId") cashierId?: string,
+    @Res() res?: Response,
+    @Req() req?: Request
+  ) {
+    try {
+      const user: any = (req as any)?.user || {};
+      const userRole = user?.role?.name;
+      const userId = user?.userId || user?.id;
+
+      // Supervisors can only export parcels from their own office
+      let sendingOfficeId: string | undefined;
+      if (userRole === 'supervisor' && user?.officeId) {
+        sendingOfficeId = user.officeId;
+      }
+
+      // Cashiers can only export parcels they created
+      let createdById: string | undefined;
+      if (userRole === 'cashier' && userId) {
+        createdById = userId;
+      }
+
+      const pdfBuffer = await this.parcelService.exportParcelsToPDF(
+        search,
+        status,
+        startDate,
+        endDate,
+        sendingOfficeId,
+        cashierId,
+        createdById
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=parcels-export-${new Date().toISOString().split('T')[0]}.pdf`
+      );
+      res.send(pdfBuffer);
+    } catch (e) {
+      console.error("ParcelController.exportPDF error:", e);
+      throw e;
+    }
+  }
+
+  @Post("fix-parcel-created-by")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async fixParcelCreatedBy() {
+    try {
+      return await this.parcelService.fixParcelsWithNullCreatedBy();
+    } catch (e) {
+      console.error("ParcelController.fixParcelCreatedBy error:", e);
       throw e;
     }
   }

@@ -2,6 +2,7 @@ import { Route } from "@angular/router";
 import { initialDataResolver } from "app/app.resolvers";
 import { AuthGuard } from "app/core/auth/guards/auth.guard";
 import { NoAuthGuard } from "app/core/auth/guards/noAuth.guard";
+import { SignedInRedirectGuard } from "app/core/auth/guards/signed-in-redirect.guard";
 import { getRolesWithFeature, STAFF_ROLES } from "app/core/auth/role-permissions";
 import { LayoutComponent } from "app/layout/layout.component";
 
@@ -12,15 +13,15 @@ export const appRoutes: Route[] = [
   // Redirect empty path to '/example'
   { path: "", pathMatch: "full", redirectTo: "sign-in" },
 
-  // Redirect signed-in user to the '/example'
+  // Redirect signed-in user to role-based default route
   //
   // After the user signs in, the sign-in page will redirect the user to the 'signed-in-redirect'
-  // path. Below is another redirection for that path to redirect the user to the desired
-  // location. This is a small convenience to keep all main routes together here on this file.
+  // path. The SignedInRedirectGuard will then redirect to the appropriate route based on the user's role.
   {
     path: "signed-in-redirect",
     pathMatch: "full",
-    redirectTo: "secure/dashboard",
+    canActivate: [SignedInRedirectGuard],
+    children: [],
   },
 
   // Auth routes for guests
@@ -95,6 +96,11 @@ export const appRoutes: Route[] = [
         path: "home",
         loadChildren: () => import("app/modules/landing/home/home.routes"),
       },
+      {
+        path: "tracking",
+        loadChildren: () =>
+          import("app/modules/landing/tracking/tracking.routes"),
+      },
     ],
   },
 
@@ -120,6 +126,16 @@ export const appRoutes: Route[] = [
         loadChildren: () =>
           import("app/modules/secure/dashboard/dashboard.module").then(
             (m) => m.DashboardModule
+          ),
+      },
+      {
+        path: "supervisor-dashboard",
+        data: {
+          allowedRoles: getRolesWithFeature("supervisor-dashboard"),
+        },
+        loadComponent: () =>
+          import("app/modules/secure/supervisor-dashboard/supervisor-dashboard.component").then(
+            (m) => m.SupervisorDashboardComponent
           ),
       },
       {

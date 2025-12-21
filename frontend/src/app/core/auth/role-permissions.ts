@@ -14,6 +14,7 @@ export type RoleKey =
 
 export type FeatureKey =
   | "dashboard"
+  | "supervisor-dashboard"
   | "reports"
   | "reports.revenue"
   | "reports.parcel"
@@ -118,6 +119,7 @@ const ROLE_FEATURES: Record<RoleKey, FeatureKey[]> = {
     "customers",
   ],
   supervisor: [
+    "supervisor-dashboard",
     "parcels",
     "parcels-history",
     "customers",
@@ -187,6 +189,7 @@ const REPORT_TYPE_FEATURE: Record<ReportType, FeatureKey> = {
 
 export const NAV_ITEM_FEATURE: Record<string, FeatureKey> = {
   dashboard: "dashboard",
+  "supervisor-dashboard": "supervisor-dashboard",
   reports: "reports",
   scan: "scanning",
   "parcels-history": "parcels",
@@ -203,7 +206,7 @@ export const NAV_ITEM_FEATURE: Record<string, FeatureKey> = {
 const ROLE_DEFAULT_ROUTE: Record<RoleKey, string> = {
   customer: "/home",
   cashier: "/secure/parcels",
-  supervisor: "/secure/scanning",
+  supervisor: "/secure/supervisor-dashboard",
   driver: "/secure/trips",
   "assistant-driver": "/secure/trips",
   "operations-officer": "/secure/live-tracking",

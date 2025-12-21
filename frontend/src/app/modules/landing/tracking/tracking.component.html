@@ -1,0 +1,227 @@
+<div class="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 w-screen max-w-none">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 w-full max-w-none">
+        <div class="w-full max-w-none px-4 sm:px-8 lg:px-16 h-16 flex items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-sm border border-blue-100 flex items-center justify-center">
+                    <img
+                        src="images/logo/Platinum Logo.jpg"
+                        alt="Platinum Courier Services logo"
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900 dark:text-white leading-none">Platinum Courier Services</h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Customer Tracking Portal</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow w-full max-w-none py-8 px-4 sm:px-8 lg:px-16">
+        <div class="w-full max-w-none space-y-10">
+            <!-- Search Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700 w-full max-w-none">
+                <div class="flex justify-center mb-4">
+                    <mat-icon class="text-blue-600 icon-size-8" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Track Your Parcel</h2>
+                <p class="text-gray-500 dark:text-gray-400 mb-8">Enter your tracking number to get detailed information about your parcel delivery</p>
+
+                <form [formGroup]="trackingForm" (ngSubmit)="trackParcel()" class="flex flex-col sm:flex-row gap-4 w-full">
+                    <div class="flex-grow relative">
+                        <mat-icon class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                        <input
+                            [formControlName]="'trackingNumber'"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                            placeholder="Enter tracking number (e.g., AR-LSK-LCS-1)"
+                        />
+                    </div>
+                    <button
+                        mat-flat-button
+                        color="primary"
+                        class="h-[50px] px-8 rounded-lg !bg-blue-600 hover:!bg-blue-700 text-white font-medium"
+                        [disabled]="trackingForm.invalid || isTrackingLoading"
+                        type="submit"
+                    >
+                        <span *ngIf="!isTrackingLoading">Track Parcel</span>
+                        <mat-progress-spinner *ngIf="isTrackingLoading" [diameter]="24" [mode]="'indeterminate'"></mat-progress-spinner>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Error Alert -->
+            <div *ngIf="showTrackingAlert" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-4 w-full max-w-none">
+                <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center flex-shrink-0">
+                    <mat-icon class="text-red-600 dark:text-red-200" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                </div>
+                <div>
+                    <h3 class="text-red-800 dark:text-red-200 font-medium">Parcel Not Found</h3>
+                    <p class="text-red-600 dark:text-red-300 text-sm">{{ trackingAlert.message }}</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div *ngIf="parcelInfo" class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-none">
+                <!-- Left Column -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Current Status -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-2 mb-6">
+                            <mat-icon class="text-green-500" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Current Status</h3>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ formatStatusText(parcelInfo.status) }}</h2>
+                                <p class="text-gray-500 dark:text-gray-400">
+                                    {{ parcelInfo.currentLocation?.name || parcelInfo.destination?.name || 'Awaiting first scan' }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">Last updated: {{ parcelInfo.currentLocation?.timestamp | date:'yyyy-MM-dd HH:mm' }}</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium mt-4 md:mt-0" [ngClass]="getStatusBadgeClass(parcelInfo.status)">
+                                {{ formatStatusText(parcelInfo.status) }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Tracking Number</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{ parcelInfo.parcelNumber }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Destination</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{ parcelInfo.destination?.name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Created</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{ parcelInfo.createdAt | date:'yyyy-MM-dd' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sender & Receiver Details -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Sender & Receiver Details</h3>
+
+                        <div class="space-y-6">
+                            <!-- Sender -->
+                            <div>
+                                <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Sender</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{ parcelInfo.sender?.firstName }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ parcelInfo.sender?.phoneNumber }}</p>
+                            </div>
+
+                            <!-- Receiver -->
+                            <div>
+                                <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Receiver</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white">{{ parcelInfo.receiver?.firstName }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ parcelInfo.receiver?.phoneNumber }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tracking History -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Tracking History</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Complete timeline of your parcel's journey</p>
+
+                        <div class="relative pl-4 space-y-8 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+                            <div *ngFor="let event of parcelInfo.trackingHistory; let last = last" class="relative flex gap-6">
+                                <div class="relative">
+                                    <div class="w-6 h-6 rounded-full flex items-center justify-center" [ngClass]="last ? 'bg-green-500 text-white' : 'bg-blue-100 text-blue-600'"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-base font-semibold text-gray-900 dark:text-white">{{ formatStatusText(event.status) }}</p>
+                                        <span class="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{{ event.location }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ event.description }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">{{ event.timestamp | date:'yyyy-MM-dd HH:mm' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-8">
+                    <!-- Tracking Barcode -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 text-center">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 text-left">Tracking Barcode</h3>
+                        <div class="bg-white p-4 rounded border border-gray-200 w-full mb-4 overflow-hidden flex justify-center">
+                            <ngx-barcode6
+                                [bc-format]="'CODE128'"
+                                [bc-value]="parcelInfo.parcelNumber"
+                                [bc-display-value]="true"
+                                [bc-height]="80"
+                                [bc-width]="1.2"
+                            ></ngx-barcode6>
+                        </div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Tracking Number</p>
+                        <p class="text-lg font-bold text-blue-600">{{ parcelInfo.parcelNumber }}</p>
+                    </div>
+
+                    <!-- Parcel Information -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Parcel Information</h3>
+
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                                <p class="text-xs text-purple-700 dark:text-purple-200">Current Status</p>
+                                <p class="text-base font-semibold text-purple-900 dark:text-purple-100">{{ formatStatusText(parcelInfo.status) }}</p>
+                            </div>
+                            <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                                <p class="text-xs text-orange-700 dark:text-orange-200">Delivery State</p>
+                                <p class="text-base font-semibold text-orange-900 dark:text-orange-100">{{ isDeliveredStatus(parcelInfo.status) ? 'Ready for collection' : 'In transit' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                <span class="text-gray-500 dark:text-gray-400">Destination</span>
+                                <span class="font-medium text-gray-900 dark:text-white text-right">{{ parcelInfo.destination?.name || 'TBD' }}</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                <span class="text-gray-500 dark:text-gray-400">Created</span>
+                                <span class="font-medium text-gray-900 dark:text-white text-right">{{ parcelInfo.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
+                            </div>
+                            <div class="flex justify-between py-2">
+                                <span class="text-gray-500 dark:text-gray-400">Last Update</span>
+                                <span class="font-medium text-gray-900 dark:text-white text-right">{{ parcelInfo.currentLocation?.timestamp | date:'yyyy-MM-dd HH:mm' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700 w-full max-w-none">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Need Help?</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">
+                    Behind every safe delivery is a dedicated, disciplined, detailed, and reliable team equipped to ensure your parcel is well delivered.
+                    When you trust us with your parcel, it matters. 🇿🇲 Call us today for affordable and secure delivery.
+                </p>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button mat-stroked-button class="h-[42px] rounded-lg border-gray-300 dark:border-gray-600">
+                        <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                        +260773826745
+                    </button>
+                    <button mat-stroked-button class="h-[42px] rounded-lg border-gray-300 dark:border-gray-600">
+                        <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                        +260766515244
+                    </button>
+                    <button mat-stroked-button class="h-[42px] rounded-lg border-gray-300 dark:border-gray-600">
+                        <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                        +260972154219
+                    </button>
+                </div>
+
+                <p class="text-xs text-gray-400 mt-4">#Secure #Reliable #ZambiaInMotion</p>
+            </div>
+        </div>
+    </div>
+</div>

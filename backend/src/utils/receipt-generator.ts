@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { normalizeZMBPhone } from './phone.util';
 import { TimeService } from '../common/time/time.service';
 import { getLogoAsset, getSvgToPdfModule } from './logo.util';
+import e from 'express';
 const prisma = new PrismaClient();
 const time = new TimeService();
 
@@ -27,7 +28,10 @@ function loadPdfKit(): any | null {
  * Generate four PDF receipts for a parcel: original, copy-of-original, sticker, accounts
  * Files are written under ./receipts/parcel-<id>-<type>.pdf
  */
-export async function generateReceiptsForParcel(parcelId: string): Promise<void> {
+export async function generateReceiptsForParcel(
+  parcelId: string,
+  cashierId?: string
+): Promise<void> {
   const PDFDocument = loadPdfKit();
   if (!PDFDocument) return; // no-op if pdfkit missing
 
@@ -47,6 +51,17 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
   });
   if (!parcel) return;
 
+  // Fetch the cashier information if cashierId is provided
+  let cashier: { firstName: string; lastName: string } | null = null;
+  if (cashierId) {
+
+    const user = await prisma.user.findUnique({
+      where: { id: cashierId },
+      select: { firstName: true, lastName: true },
+    });
+    cashier = user;
+
+  }
   const types = [
     { key: 'original', title: 'Original Copy' },
     { key: 'copy-of-original', title: 'Copy of Original' },
@@ -79,7 +94,8 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
       // 4" wide, height depends on version
       const width = inToPt(4);
       // Short version uses 3.5" height to eliminate white space below barcode
-      const height = useStickerShortVersion ? inToPt(3.3) : inToPt(6);
+      // Added 30pt to both heights for additional space
+      const height = useStickerShortVersion ? inToPt(3.3) + 30 : inToPt(6) + 30;
       opts = { size: [width, height], margin: 14 };
     }
     return opts;
@@ -101,12 +117,25 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
     doc.x = doc.page.margins.left;
   }
 
+  function formatCargoType(cargoType: string): string {
+    if (cargoType === 'ELECTRONIC_SENSITIVE') {
+      return 'ELECTRONICS & SENSITIVE DOCUMENTS';
+    }
+    return cargoType.toUpperCase();
+  }
+
   function drawParcelSummary(doc: any) {
     doc.moveDown(0.7);
     doc.font('Helvetica-Bold').text('Parcel Details');
     doc.font('Helvetica');
     doc.text(`Description: ${parcel.description}`);
     doc.text(`Declared Value: ZMW ${formatAmt(parcel.value as unknown as number)}`);
+    // Add cargo type in bold uppercase
+    if ((parcel as any).cargoType) {
+      const cargoLabel = formatCargoType((parcel as any).cargoType);
+      doc.font('Helvetica-Bold').text(`Category: ${cargoLabel}`);
+      doc.font('Helvetica');
+    }
     doc.moveDown(0.3);
   }
 
@@ -189,12 +218,19 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
         doc.text(`Payment: ${parcel.payment.method} · ZMW ${parcel.payment.amount}`);
         if ((parcel.payment as any).reference) doc.text(`Ref: ${(parcel.payment as any).reference}`);
       }
+      // Add cashier information
+      if (cashier) {
+        const cashierName = `${cashier.firstName || ''} ${cashier.lastName || ''}`.trim();
+        const displayName = cashierName || 'N/A';
+        doc.font('Helvetica-Bold').text(`Cashier: ${displayName}`);
+        doc.font('Helvetica');
+      }
       doc.moveDown(0.6);
     }
 
     if (isStickerShort) {
       // Short version: condensed format
-      doc.font('Helvetica-Bold').text(`Sender: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
+      doc.font('Helvetica-Bold').text(`Sender: ${parcel.customer.firstName}`);
       doc.font('Helvetica');
       const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
       const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
@@ -202,26 +238,48 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
       const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
       doc.text(`Contact No: ${senderContact}`);
       doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').text(`Receiver: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
+      doc.font('Helvetica-Bold').text(`Receiver: ${parcel.receiver.firstName}`);
       doc.font('Helvetica');
       doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
       const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
       doc.text(`Contact No: ${receiverContact}`);
+      // Add cargo type in bold uppercase for short sticker
+      if ((parcel as any).cargoType) {
+        doc.moveDown(0.3);
+        const cargoLabel = formatCargoType((parcel as any).cargoType);
+        doc.font('Helvetica-Bold').text(`Category: ${cargoLabel}`);
+        doc.font('Helvetica');
+      }
+      // Add cashier to sticker short version
+      if (cashier) {
+        doc.moveDown(0.3);
+        const cashierName = `${cashier.firstName || ''} ${cashier.lastName || ''}`.trim();
+        const displayName = cashierName || 'N/A';
+        doc.font('Helvetica-Bold').text(`Cashier: ${displayName}`);
+        doc.font('Helvetica');
+      }
     } else {
       // Full version
       doc.font('Helvetica-Bold').text('Sender Details');
       doc.font('Helvetica');
-      doc.text(`Sender Name: ${parcel.customer.firstName} ${parcel.customer.lastName}`);
+      doc.text(`Sender Name: ${parcel.customer.firstName}`);
       const originName = (parcel as any).sendingOffice?.name || parcel.office.name;
       const originCode = (parcel as any).sendingOffice?.branchCode || parcel.office.branchCode;
       doc.text(`Office: ${originName} (${originCode})`);
       doc.text(`Date: ${formattedDate}`);
       const senderContact = normalizeZMBPhone((parcel as any).customer?.phoneNumber) ?? '';
       doc.text(`Contact No: ${senderContact}`);
+      // Add cashier to full sticker version (sender section)
+      if (isSticker && cashier) {
+        const cashierName = `${cashier.firstName || ''} ${cashier.lastName || ''}`.trim();
+        const displayName = cashierName || 'N/A';
+        doc.font('Helvetica-Bold').text(`Cashier: ${displayName}`);
+        doc.font('Helvetica');
+      }
       doc.moveDown(0.5);
       doc.font('Helvetica-Bold').text("Receiver's Details");
       doc.font('Helvetica');
-      doc.text(`Receiver's Name: ${parcel.receiver.firstName} ${parcel.receiver.lastName}`);
+      doc.text(`Receiver's Name: ${parcel.receiver.firstName}`);
       doc.text(`Office: ${parcel.office.name} (${parcel.office.branchCode})`);
       doc.text(`Date: ${formattedDate}`);
       const receiverContact = normalizeZMBPhone((parcel as any).receiver?.phoneNumber) ?? '';
@@ -241,7 +299,7 @@ export async function generateReceiptsForParcel(parcelId: string): Promise<void>
         doc.moveDown(0.5);
         await drawCenteredBarcode(doc, barcodePath, 240);
       }
-    } catch {}
+    } catch { }
 
     // Only show disclaimer if not short sticker version
     if (!isStickerShort) {

@@ -6,6 +6,8 @@ import { catchError, Observable, of, switchMap, throwError, tap } from "rxjs";
 import { UserSelectionService } from "app/services/user-selection.service";
 import { decodeJwt } from "../utils/jwt.util";
 import { OfficesSearchService } from "app/modules/secure/trips/offices-search.service";
+import { ViewModeService } from "app/services/view-mode.service";
+import { BusinessDayService } from "app/services/business-day.service";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -14,6 +16,8 @@ export class AuthService {
   private _userService = inject(UserService);
   private userSelectionService = inject(UserSelectionService);
   private officesSearchService = inject(OfficesSearchService);
+  private viewModeService = inject(ViewModeService);
+  private businessDayService = inject(BusinessDayService);
 
   // -----------------------------------------------------------------------------------------------------
   // @ Accessors
@@ -93,6 +97,13 @@ export class AuthService {
 
           this.userSelectionService.setUser(baseUser);
 
+          // Initialize workspace for cashiers
+          // Reset to customer view (customer-safe mode) on login
+          this.viewModeService.resetToCustomerView();
+
+          // Detect and initialize business day
+          this.businessDayService.initializeNewBusinessDay();
+
           // Fetch office name if officeId is available
           if (payload.officeId) {
             this.officesSearchService.getById(payload.officeId).subscribe({
@@ -163,6 +174,9 @@ export class AuthService {
 
     // Clear cached user context
     this.userSelectionService.clearUser();
+
+    // Reset to customer view on sign out
+    this.viewModeService.resetToCustomerView();
 
     // Set the authenticated flag to false
     this._authenticated = false;

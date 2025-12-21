@@ -1,0 +1,175 @@
+<div class="flex flex-col flex-auto w-full">
+  <div class="flex flex-col gap-4" style="width: 100%; padding: 20px; height: 100%;">
+    <!-- Header -->
+    <div class="flex items-center justify-between w-full flex-wrap gap-4">
+      <div>
+        <div class="text-3xl font-semibold tracking-tight leading-8">
+          Supervisor Dashboard
+        </div>
+        <p class="tracking-tight leading-8">
+          Branch performance metrics
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <mat-form-field appearance="outline" class="date-picker-field">
+          <mat-label>Select Date</mat-label>
+          <input matInput [matDatepicker]="picker" [formControl]="selectedDate" [max]="maxDate">
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="refreshMetrics()"
+          [disabled]="loading">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Metrics Widgets -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full min-w-0">
+      <!-- Branch Revenue -->
+      <div class="flex flex-col flex-auto p-5 rounded-2xl border border-green-200 bg-green-50">
+        <div class="flex items-start justify-between w-full">
+          <div class="text-[11px] font-semibold tracking-wide text-green-600 uppercase">
+            Branch Revenue
+          </div>
+          <div class="flex items-center justify-center h-9 w-9 rounded-full border border-green-200 bg-white text-green-500">
+            <mat-icon class="icon-size-5">payments</mat-icon>
+          </div>
+        </div>
+        <div class="mt-3 text-2xl font-bold tracking-tight text-green-700">
+          ZMW {{ branchRevenueToday | number:'1.2-2' }}
+        </div>
+      </div>
+
+      <!-- Parcels -->
+      <div class="flex flex-col flex-auto p-5 rounded-2xl border border-blue-200 bg-blue-50">
+        <div class="flex items-start justify-between w-full">
+          <div class="text-[11px] font-semibold tracking-wide text-blue-600 uppercase">
+            Parcels
+          </div>
+          <div class="flex items-center justify-center h-9 w-9 rounded-full border border-blue-200 bg-white text-blue-600">
+            <mat-icon class="icon-size-5">inventory_2</mat-icon>
+          </div>
+        </div>
+        <div class="mt-3 text-2xl font-bold tracking-tight text-blue-700">
+          {{ parcelsToday }}
+        </div>
+      </div>
+
+      <!-- Cancelled Totals -->
+      <div class="flex flex-col flex-auto p-5 rounded-2xl border border-red-200 bg-red-50">
+        <div class="flex items-start justify-between w-full">
+          <div class="text-[11px] font-semibold tracking-wide text-red-600 uppercase">
+            Cancelled
+          </div>
+          <div class="flex items-center justify-center h-9 w-9 rounded-full border border-red-200 bg-white text-red-500">
+            <mat-icon class="icon-size-5">cancel</mat-icon>
+          </div>
+        </div>
+        <div class="mt-3 text-lg font-bold tracking-tight text-red-700">
+          {{ cancelledCount }} parcels
+        </div>
+        <div class="text-sm text-red-600">
+          ZMW {{ cancelledRevenueToday | number:'1.2-2' }} lost
+        </div>
+      </div>
+
+      <!-- Net Revenue -->
+      <div class="flex flex-col flex-auto p-5 rounded-2xl border border-purple-200 bg-purple-50">
+        <div class="flex items-start justify-between w-full">
+          <div class="text-[11px] font-semibold tracking-wide text-purple-600 uppercase">
+            Net Revenue
+          </div>
+          <div class="flex items-center justify-center h-9 w-9 rounded-full border border-purple-200 bg-white text-purple-500">
+            <mat-icon class="icon-size-5">trending_up</mat-icon>
+          </div>
+        </div>
+        <div class="mt-3 text-2xl font-bold tracking-tight text-purple-700">
+          ZMW {{ netRevenue | number:'1.2-2' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Cashier Performance Table -->
+    <div class="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="p-4 border-b">
+        <h2 class="text-xl font-semibold">Cashier Performance</h2>
+      </div>
+
+      <div class="overflow-auto flex-1" *ngIf="!loading && dataSource.data.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort style="width: 100%">
+          <!-- Cashier Name -->
+          <ng-container matColumnDef="cashierName">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Cashier Name</th>
+            <td mat-cell *matCellDef="let row">{{ row.cashierName }}</td>
+          </ng-container>
+
+          <!-- Parcels -->
+          <ng-container matColumnDef="parcelsToday">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Parcels</th>
+            <td mat-cell *matCellDef="let row">{{ row.parcelsToday }}</td>
+          </ng-container>
+
+          <!-- Revenue -->
+          <ng-container matColumnDef="revenueToday">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Revenue</th>
+            <td mat-cell *matCellDef="let row">ZMW {{ row.revenueToday | number:'1.2-2' }}</td>
+          </ng-container>
+
+          <!-- Cancelled -->
+          <ng-container matColumnDef="cancelledToday">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Cancelled</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.cancelledToday }}
+              <span class="text-sm text-red-600" *ngIf="row.cancelledRevenueToday > 0">
+                (-ZMW {{ row.cancelledRevenueToday | number:'1.2-2' }})
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Net -->
+          <ng-container matColumnDef="netToday">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Net</th>
+            <td mat-cell *matCellDef="let row">
+              <span [ngClass]="row.netToday >= 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold'">
+                ZMW {{ row.netToday | number:'1.2-2' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Download Report -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Download Report</th>
+            <td mat-cell *matCellDef="let row">
+              <button mat-raised-button color="primary" (click)="downloadCashierReport(row)" matTooltip="Download Cashier Report" [disabled]="downloading">
+                <mat-icon>download</mat-icon>
+                Download
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-center p-8" *ngIf="loading">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <div class="flex items-center justify-center p-8" *ngIf="!loading && dataSource.data.length === 0">
+        <p class="text-gray-500">No cashiers found for this office</p>
+      </div>
+
+      <mat-paginator
+        *ngIf="dataSource.data.length > 0"
+        [pageSizeOptions]="[10, 20, 50]"
+        showFirstLastButtons>
+      </mat-paginator>
+    </div>
+  </div>
+</div>

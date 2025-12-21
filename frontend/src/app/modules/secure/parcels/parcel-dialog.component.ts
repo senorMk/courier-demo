@@ -70,23 +70,17 @@ export class ParcelDialogComponent {
     this.form = this._fb.group({
       customer: this._fb.group({
         firstName: ["", Validators.required],
-        lastName: [""],
         phoneNumber: [
           "",
           [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
         ],
-        emailAddress: [""],
-        idNumber: [""],
       }),
       receiver: this._fb.group({
         firstName: ["", Validators.required],
-        lastName: [""],
         phoneNumber: [
           "",
           [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
         ],
-        emailAddress: [""],
-        idNumber: [""],
       }),
       description: ["", Validators.required],
       value: [null, [Validators.required, Validators.min(0)]],
@@ -217,11 +211,7 @@ export class ParcelDialogComponent {
   private setupUppercaseTransformers(): void {
     const uppercasePaths = [
       "customer.firstName",
-      "customer.lastName",
-      "customer.idNumber",
       "receiver.firstName",
-      "receiver.lastName",
-      "receiver.idNumber",
       "description",
       "payment.reference",
     ];
