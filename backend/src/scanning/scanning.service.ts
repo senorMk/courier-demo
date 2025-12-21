@@ -170,6 +170,14 @@ export class ScanningService {
       throw new BadRequestException("Invalid tracking code");
     }
     const parcel = tracking.parcel;
+
+    // Prevent scanning of cancelled parcels
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
+      throw new BadRequestException(
+        `Cannot scan parcel ${codeTxt}: This parcel has been cancelled`
+      );
+    }
     const officeTypes = Array.isArray((session.office as any)?.officeTypes)
       ? (session.office as any).officeTypes
       : [];
@@ -356,6 +364,15 @@ export class ScanningService {
       },
     });
     if (!parcel) throw new BadRequestException("Parcel not found");
+
+    // Prevent scanning of cancelled parcels
+    if (parcel.status === ParcelStatus.CANCELLED) {
+      const codeTxt = parcel.TrackingCode?.plainTextCode || parcel.id;
+      throw new BadRequestException(
+        `Cannot scan parcel ${codeTxt}: This parcel has been cancelled`
+      );
+    }
+
     const correctDest2 = `${parcel.office.name} (${parcel.office.branchCode})`;
     const currentOffice2 = session.office
       ? `${session.office.name} (${session.office.branchCode})`
