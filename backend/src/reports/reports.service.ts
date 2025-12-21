@@ -21,7 +21,7 @@ export class ReportsService {
     private readonly prisma: PrismaService,
     private readonly time: TimeService,
     private readonly exporter: ReportExporterService,
-  ) { }
+  ) {}
 
   private parseDate(value: string | undefined, label: 'startDate' | 'endDate'): Date | undefined {
     if (!value) {
@@ -102,29 +102,54 @@ export class ReportsService {
     // Build where clause with optional office and cashier filters
     const where: any = { paidAt: { gte: range.start, lte: range.end } };
 
-    // Build parcel filter - exclude cancelled parcels and filter by office if provided
-    const parcelWhere: any = { status: { not: 'CANCELLED' } };
+    // Build parcel filter conditions
+    const parcelConditions: any[] = [];
 
-    // Add office filter if provided - only filter by sending office
+    // Exclude cancelled parcels
+    parcelConditions.push({ status: { not: 'CANCELLED' } });
+
+    // Add office filter if provided
     if (params.officeIds && params.officeIds.length > 0) {
-      parcelWhere.sendingOfficeId = { in: params.officeIds };
+      parcelConditions.push({
+        OR: params.officeIds.map(officeId => ({
+          OR: [
+            { sendingOfficeId: officeId },
+            { officeId: officeId }
+          ]
+        }))
+      });
     }
 
-    // Apply parcel filter
-    where.parcel = parcelWhere;
+    // Apply parcel filters if any exist
+    if (parcelConditions.length > 0) {
+      where.parcel = parcelConditions.length === 1
+        ? parcelConditions[0]
+        : { AND: parcelConditions };
+    }
 
     if (params.cashierId) {
       where.cashierId = params.cashierId;
     }
 
-    console.log('Revenue Report Query WHERE:', JSON.stringify(where, null, 2));
-    console.log('Filtering for offices:', params.officeIds);
-
     const payments = await this.prisma.payment.findMany({
       where,
       orderBy: { paidAt: 'asc' },
       include: {
-        cashier: true,
+        cashier: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            office: {
+              select: {
+                id: true,
+                name: true,
+                branchCode: true,
+              },
+            },
+          },
+        },
         parcel: {
           select: {
             id: true,
@@ -152,16 +177,6 @@ export class ReportsService {
       },
     });
 
-    // Fetch offices for cashiers that have an officeId
-    const officeIds = [...new Set(payments.map(p => p.cashier?.officeId).filter(Boolean))] as string[];
-    const offices = officeIds.length > 0
-      ? await this.prisma.office.findMany({
-          where: { id: { in: officeIds } },
-          select: { id: true, name: true, branchCode: true },
-        })
-      : [];
-    const officeMap = new Map(offices.map(o => [o.id, o]));
-
     let totalAmount = 0;
     const buckets = new Map<string, { amount: number; payments: number; sampleDate: Date }>();
     const detailedData: any[] = [];
@@ -186,7 +201,7 @@ export class ReportsService {
       const cashierName = payment.cashier
         ? `${payment.cashier.firstName || ''} ${payment.cashier.lastName || ''}`.trim() || payment.cashier.email
         : 'N/A';
-      const cashierOffice = payment.cashier?.officeId ? officeMap.get(payment.cashier.officeId) : null;
+      const cashierOffice = payment.cashier?.office;
 
       detailedData.push({
         paymentId: payment.id,
@@ -227,13 +242,18 @@ export class ReportsService {
 
   async getParcelMovementReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
-
-    // Build where clause with optional office filter - only filter by sending office
+    
+    // Build where clause with optional office filter
     const where: any = { createdAt: { gte: range.start, lte: range.end } };
     if (params.officeIds && params.officeIds.length > 0) {
-      where.sendingOfficeId = { in: params.officeIds };
+      where.OR = params.officeIds.map(officeId => ({
+        OR: [
+          { sendingOfficeId: officeId },
+          { officeId: officeId }
+        ]
+      }));
     }
-
+    
     const parcels = await this.prisma.parcel.findMany({
       where,
       select: { createdAt: true, status: true },
@@ -328,10 +348,15 @@ export class ReportsService {
       },
     };
 
-    // Add office filter if provided - only filter by sending office
+    // Add office filter if provided
     if (params.officeIds && params.officeIds.length > 0) {
       where.parcel = {
-        sendingOfficeId: { in: params.officeIds }
+        OR: params.officeIds.map(officeId => ({
+          OR: [
+            { sendingOfficeId: officeId },
+            { officeId: officeId }
+          ]
+        }))
       };
     }
 
@@ -387,13 +412,13 @@ export class ReportsService {
 
   async getDriverTripReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 60);
-
+    
     // Build where clause with optional office filter
     const where: any = { plannedAt: { gte: range.start, lte: range.end } };
     if (params.officeIds && params.officeIds.length > 0) {
       where.officeId = { in: params.officeIds };
     }
-
+    
     const trips = await this.prisma.trip.findMany({
       where,
       include: {
@@ -510,13 +535,18 @@ export class ReportsService {
 
   async getZictaReport(params: { startDate?: string; endDate?: string; officeIds?: string[] }) {
     const range = this.normalizeRange(params?.startDate, params?.endDate, 30);
-
-    // Build where clause with optional office filter - only filter by sending office
+    
+    // Build where clause with optional office filter
     const where: any = { createdAt: { gte: range.start, lte: range.end } };
     if (params.officeIds && params.officeIds.length > 0) {
-      where.sendingOfficeId = { in: params.officeIds };
+      where.OR = params.officeIds.map(officeId => ({
+        OR: [
+          { sendingOfficeId: officeId },
+          { officeId: officeId }
+        ]
+      }));
     }
-
+    
     const parcels = await this.prisma.parcel.findMany({
       where,
       orderBy: { createdAt: 'asc' },
@@ -551,39 +581,35 @@ export class ReportsService {
         declaredValue,
         originOffice: parcel.sendingOffice
           ? {
-            name: parcel.sendingOffice.name,
-            branchCode: parcel.sendingOffice.branchCode,
-          }
+              name: parcel.sendingOffice.name,
+              branchCode: parcel.sendingOffice.branchCode,
+            }
           : null,
         destinationOffice: parcel.office
           ? {
-            name: parcel.office.name,
-            branchCode: parcel.office.branchCode,
-          }
+              name: parcel.office.name,
+              branchCode: parcel.office.branchCode,
+            }
           : null,
         sender: parcel.customer
           ? {
-            firstName: parcel.customer.firstName,
-            lastName: parcel.customer.lastName,
-            phoneNumber: parcel.customer.phoneNumber,
-            idNumber: parcel.customer.idNumber,
-          }
+              firstName: parcel.customer.firstName,
+              phoneNumber: parcel.customer.phoneNumber,
+            }
           : null,
         receiver: parcel.receiver
           ? {
-            firstName: parcel.receiver.firstName,
-            lastName: parcel.receiver.lastName,
-            phoneNumber: parcel.receiver.phoneNumber,
-            idNumber: parcel.receiver.idNumber,
-          }
+              firstName: parcel.receiver.firstName,
+              phoneNumber: parcel.receiver.phoneNumber,
+            }
           : null,
         payment: parcel.payment
           ? {
-            amount: parcel.payment.amount,
-            method: parcel.payment.method,
-            reference: parcel.payment.reference,
-            paidAt: parcel.payment.paidAt?.toISOString() ?? null,
-          }
+              amount: parcel.payment.amount,
+              method: parcel.payment.method,
+              reference: parcel.payment.reference,
+              paidAt: parcel.payment.paidAt?.toISOString() ?? null,
+            }
           : null,
       };
     });
@@ -765,12 +791,8 @@ export class ReportsService {
         { header: 'Status', key: 'status' },
       ],
       rows: report.records.map((record) => {
-        const senderName = [record.sender?.firstName, record.sender?.lastName]
-          .filter((part) => !!part)
-          .join(' ');
-        const receiverName = [record.receiver?.firstName, record.receiver?.lastName]
-          .filter((part) => !!part)
-          .join(' ');
+        const senderName = record.sender?.firstName || '';
+        const receiverName = record.receiver?.firstName || '';
         const originPieces = [] as string[];
         if (record.originOffice?.name) {
           originPieces.push(record.originOffice.name);
@@ -847,16 +869,30 @@ export class ReportsService {
       where.cashierId = params.cashierId;
     }
 
-    // Build parcel filter - exclude cancelled parcels and filter by office if provided
-    const parcelWhere: any = { status: { not: 'CANCELLED' } };
+    // Build parcel filter conditions
+    const parcelConditions: any[] = [];
 
-    // Add office filter if provided - only filter by sending office
+    // Exclude cancelled parcels
+    parcelConditions.push({ status: { not: 'CANCELLED' } });
+
+    // Add office filter if provided
     if (params.officeIds && params.officeIds.length > 0) {
-      parcelWhere.sendingOfficeId = { in: params.officeIds };
+      parcelConditions.push({
+        OR: params.officeIds.map(officeId => ({
+          OR: [
+            { sendingOfficeId: officeId },
+            { officeId: officeId }
+          ]
+        }))
+      });
     }
 
-    // Apply parcel filter
-    where.parcel = parcelWhere;
+    // Apply parcel filters if any exist
+    if (parcelConditions.length > 0) {
+      where.parcel = parcelConditions.length === 1
+        ? parcelConditions[0]
+        : { AND: parcelConditions };
+    }
 
     const payments = await this.prisma.payment.findMany({
       where,
@@ -957,6 +993,173 @@ export class ReportsService {
       totalPayments,
       totalCashiers: data.length,
       data,
+      generatedAt: this.time.nowISO(),
+    };
+  }
+
+  async getSupervisorMetrics(params: { date?: string; officeId?: string }) {
+    // Parse date (default to today)
+    const targetDate = params.date
+      ? this.time.parse(params.date)
+      : this.time.now();
+    const dayStart = this.time.startOfDay(targetDate);
+    const dayEnd = this.time.endOfDay(targetDate);
+
+    // Office filter: only parcels created at this office (sendingOfficeId)
+    const officeFilter = params.officeId
+      ? { sendingOfficeId: params.officeId }
+      : {};
+
+    // WIDGET 1: Branch Revenue Today (all payments for parcels created today)
+    const allPayments = await this.prisma.payment.aggregate({
+      where: {
+        parcel: {
+          createdAt: { gte: dayStart, lte: dayEnd },
+          ...officeFilter,
+        },
+      },
+      _sum: { amount: true },
+    });
+    const branchRevenueToday = Number(
+      (allPayments._sum.amount || 0).toFixed(2),
+    );
+
+    // WIDGET 2: Parcels Today (non-cancelled parcels created today)
+    const parcelsToday = await this.prisma.parcel.count({
+      where: {
+        createdAt: { gte: dayStart, lte: dayEnd },
+        status: { not: 'CANCELLED' },
+        ...officeFilter,
+      },
+    });
+
+    // WIDGET 3: Cancelled Totals (parcels created today that are cancelled)
+    const cancelledParcels = await this.prisma.parcel.findMany({
+      where: {
+        createdAt: { gte: dayStart, lte: dayEnd },
+        status: 'CANCELLED',
+        ...officeFilter,
+      },
+      include: { payment: true },
+    });
+    const cancelledCount = cancelledParcels.length;
+    const cancelledRevenue = cancelledParcels.reduce(
+      (sum, p) => sum + (p.payment?.amount || 0),
+      0,
+    );
+
+    // WIDGET 4: Net Revenue (revenue from non-cancelled parcels only)
+    const netPayments = await this.prisma.payment.aggregate({
+      where: {
+        parcel: {
+          createdAt: { gte: dayStart, lte: dayEnd },
+          status: { not: 'CANCELLED' },
+          ...officeFilter,
+        },
+      },
+      _sum: { amount: true },
+    });
+    const netRevenue = Number((netPayments._sum.amount || 0).toFixed(2));
+
+    // CASHIER TABLE: Get all cashiers who have transactions for this office today
+    // First, get all unique cashier IDs from payments for parcels created at this office today
+    const paymentsWithCashiers = await this.prisma.payment.findMany({
+      where: {
+        parcel: {
+          createdAt: { gte: dayStart, lte: dayEnd },
+          ...officeFilter,
+        },
+        cashierId: { not: null },
+      },
+      select: { cashierId: true },
+      distinct: ['cashierId'],
+    });
+
+    const cashierIds = paymentsWithCashiers
+      .map((p) => p.cashierId)
+      .filter((id): id is string => id !== null);
+
+    // Fetch full cashier details
+    const cashiers = cashierIds.length > 0
+      ? await this.prisma.user.findMany({
+          where: { id: { in: cashierIds } },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : [];
+
+    // Aggregate metrics per cashier
+    const cashierMetrics = await Promise.all(
+      cashiers.map(async (cashier) => {
+        // Parcels by this cashier (non-cancelled)
+        const parcelsCount = await this.prisma.payment.count({
+          where: {
+            cashierId: cashier.id,
+            parcel: {
+              createdAt: { gte: dayStart, lte: dayEnd },
+              status: { not: 'CANCELLED' },
+              ...officeFilter,
+            },
+          },
+        });
+
+        // Revenue by this cashier (all parcels created today)
+        const revenue = await this.prisma.payment.aggregate({
+          where: {
+            cashierId: cashier.id,
+            parcel: {
+              createdAt: { gte: dayStart, lte: dayEnd },
+              ...officeFilter,
+            },
+          },
+          _sum: { amount: true },
+        });
+
+        // Cancelled parcels by this cashier (created today that are cancelled)
+        const cancelledByCashier = await this.prisma.parcel.findMany({
+          where: {
+            createdAt: { gte: dayStart, lte: dayEnd },
+            status: 'CANCELLED',
+            ...officeFilter,
+            payment: { cashierId: cashier.id },
+          },
+          include: { payment: true },
+        });
+
+        const cancelledCountCashier = cancelledByCashier.length;
+        const cancelledRevCashier = cancelledByCashier.reduce(
+          (sum, p) => sum + (p.payment?.amount || 0),
+          0,
+        );
+
+        return {
+          cashierId: cashier.id,
+          cashierName:
+            `${cashier.firstName || ''} ${cashier.lastName || ''}`.trim() ||
+            cashier.email,
+          cashierEmail: cashier.email,
+          parcelsToday: parcelsCount,
+          revenueToday: Number((revenue._sum.amount || 0).toFixed(2)),
+          cancelledToday: cancelledCountCashier,
+          cancelledRevenueToday: Number(cancelledRevCashier.toFixed(2)),
+          netToday: Number(((revenue._sum.amount || 0) - cancelledRevCashier).toFixed(2)),
+        };
+      }),
+    );
+
+    // Sort by revenue descending
+    cashierMetrics.sort((a, b) => b.revenueToday - a.revenueToday);
+
+    return {
+      date: this.time.toISO(targetDate),
+      officeId: params.officeId,
+      widgets: {
+        branchRevenueToday,
+        parcelsToday,
+        cancelledCount,
+        cancelledRevenueToday: Number(cancelledRevenue.toFixed(2)),
+        netRevenue,
+      },
+      cashiers: cashierMetrics,
       generatedAt: this.time.nowISO(),
     };
   }

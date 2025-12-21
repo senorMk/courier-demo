@@ -62,10 +62,7 @@ export interface Parcel {
 
 export interface CustomerPayload {
   firstName: string;
-  lastName: string;
   phoneNumber: string;
-  emailAddress?: string;
-  idNumber?: string;
 }
 
 export type PaymentMethod = "CASH" | "MOBILE_MONEY" | "CARD";
@@ -137,7 +134,11 @@ export class ParcelsService {
   getParcels(
     pageIndex = 0,
     pageSize = 10,
-    search?: string
+    search?: string,
+    status?: string,
+    startDate?: string,
+    endDate?: string,
+    cashierId?: string
   ): Observable<{ data: Parcel[]; total: number }> {
     const page = (pageIndex ?? 0) + 1;
     const params = new URLSearchParams();
@@ -145,6 +146,18 @@ export class ParcelsService {
     params.set("pageSize", String(pageSize));
     if (search && search.trim()) {
       params.set("search", search.trim());
+    }
+    if (status && status.trim()) {
+      params.set("status", status.trim());
+    }
+    if (startDate) {
+      params.set("startDate", startDate);
+    }
+    if (endDate) {
+      params.set("endDate", endDate);
+    }
+    if (cashierId && cashierId.trim()) {
+      params.set("cashierId", cashierId.trim());
     }
     return this._httpClient.get<{ data: Parcel[]; total: number }>(
       `${this.baseUrl}/v1/parcels/paginated?${params.toString()}`,
@@ -251,6 +264,72 @@ export class ParcelsService {
       `${this.baseUrl}/v1/parcels/${parcelId}/cancel`,
       { reason },
       this.getHeader()
+    );
+  }
+
+  exportParcelsCSV(filters: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    cashierId?: string;
+  }): Observable<Blob> {
+    const params = new URLSearchParams();
+    if (filters.search && filters.search.trim()) {
+      params.set("search", filters.search.trim());
+    }
+    if (filters.status && filters.status.trim()) {
+      params.set("status", filters.status.trim());
+    }
+    if (filters.startDate) {
+      params.set("startDate", filters.startDate);
+    }
+    if (filters.endDate) {
+      params.set("endDate", filters.endDate);
+    }
+    if (filters.cashierId && filters.cashierId.trim()) {
+      params.set("cashierId", filters.cashierId.trim());
+    }
+
+    return this._httpClient.get(
+      `${this.baseUrl}/v1/parcels/export/csv?${params.toString()}`,
+      {
+        responseType: "blob",
+        ...this.getHeader(),
+      }
+    );
+  }
+
+  exportParcelsPDF(filters: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    cashierId?: string;
+  }): Observable<Blob> {
+    const params = new URLSearchParams();
+    if (filters.search && filters.search.trim()) {
+      params.set("search", filters.search.trim());
+    }
+    if (filters.status && filters.status.trim()) {
+      params.set("status", filters.status.trim());
+    }
+    if (filters.startDate) {
+      params.set("startDate", filters.startDate);
+    }
+    if (filters.endDate) {
+      params.set("endDate", filters.endDate);
+    }
+    if (filters.cashierId && filters.cashierId.trim()) {
+      params.set("cashierId", filters.cashierId.trim());
+    }
+
+    return this._httpClient.get(
+      `${this.baseUrl}/v1/parcels/export/pdf?${params.toString()}`,
+      {
+        responseType: "blob",
+        ...this.getHeader(),
+      }
     );
   }
 }

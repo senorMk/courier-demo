@@ -19,6 +19,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
     meta: metaFor("dashboard"),
   },
   {
+    id: "supervisor-dashboard",
+    title: "Supervisor Dashboard",
+    type: "basic",
+    icon: "heroicons_outline:chart-pie",
+    link: "/secure/supervisor-dashboard",
+    meta: metaFor("supervisor-dashboard"),
+  },
+  {
     id: "reports",
     title: "Reports",
     type: "basic",
@@ -27,20 +35,20 @@ export const defaultNavigation: FuseNavigationItem[] = [
     meta: metaFor("reports"),
   },
   {
-  id: "scan",
-  title: "Scan",
-  type: "basic",
-  icon: "heroicons_outline:qr-code",
-  link: "/secure/scanning",
-  meta: metaFor("scan"),
-  },
-  {
     id: "parcels-history",
     title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
     meta: metaFor("parcels-history"),
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qr-code",
+    link: "/secure/scanning",
+    meta: metaFor("scan"),
   },
   {
     id: "customers",
@@ -67,14 +75,6 @@ export const defaultNavigation: FuseNavigationItem[] = [
     meta: metaFor("destinations"),
   },
   {
-    id: "trips",
-    title: "Trips",
-    type: "basic",
-    icon: "heroicons_outline:truck",
-    link: "/secure/trips",
-    meta: metaFor("trips"),
-  },
-  {
     id: "drivers",
     title: "Drivers",
     type: "basic",
@@ -97,14 +97,6 @@ export const defaultNavigation: FuseNavigationItem[] = [
     icon: "heroicons_outline:truck",
     link: "/secure/trucks",
     meta: metaFor("trucks"),
-  },
-  {
-    id: "complaints",
-    title: "Complaints",
-    type: "basic",
-    icon: "heroicons_outline:exclamation-triangle",
-    link: "/secure/complaints",
-    meta: metaFor("complaints"),
   },
   {
     id: "users",
@@ -127,6 +119,14 @@ export const compactNavigation: FuseNavigationItem[] = [
     meta: metaFor("dashboard"),
   },
   {
+    id: "supervisor-dashboard",
+    title: "Supervisor Dashboard",
+    type: "basic",
+    icon: "heroicons_outline:chart-pie",
+    link: "/secure/supervisor-dashboard",
+    meta: metaFor("supervisor-dashboard"),
+  },
+  {
     id: "reports",
     title: "Reports",
     type: "basic",
@@ -135,20 +135,20 @@ export const compactNavigation: FuseNavigationItem[] = [
     meta: metaFor("reports"),
   },
   {
-  id: "scan",
-  title: "Scan",
-  type: "basic",
-  icon: "heroicons_outline:qr-code",
-  link: "/secure/scanning",
-  meta: metaFor("scan"),
-  },
-  {
     id: "parcels-history",
     title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
     meta: metaFor("parcels-history"),
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qrcode",
+    link: "/secure/scanning",
+    meta: metaFor("scan"),
   },
   {
     id: "customers",
@@ -175,14 +175,6 @@ export const compactNavigation: FuseNavigationItem[] = [
     meta: metaFor("destinations"),
   },
   {
-    id: "trips",
-    title: "Trips",
-    type: "basic",
-    icon: "heroicons_outline:truck",
-    link: "/secure/trips",
-    meta: metaFor("trips"),
-  },
-  {
     id: "drivers",
     title: "Drivers",
     type: "basic",
@@ -205,14 +197,6 @@ export const compactNavigation: FuseNavigationItem[] = [
     icon: "heroicons_outline:truck",
     link: "/secure/trucks",
     meta: metaFor("trucks"),
-  },
-  {
-    id: "complaints",
-    title: "Complaints",
-    type: "basic",
-    icon: "heroicons_outline:exclamation-triangle",
-    link: "/secure/complaints",
-    meta: metaFor("complaints"),
   },
 ];
 export const futuristicNavigation: FuseNavigationItem[] = [
@@ -225,6 +209,14 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     meta: metaFor("dashboard"),
   },
   {
+    id: "supervisor-dashboard",
+    title: "Supervisor Dashboard",
+    type: "basic",
+    icon: "heroicons_outline:chart-pie",
+    link: "/secure/supervisor-dashboard",
+    meta: metaFor("supervisor-dashboard"),
+  },
+  {
     id: "reports",
     title: "Reports",
     type: "basic",
@@ -233,20 +225,20 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     meta: metaFor("reports"),
   },
   {
-  id: "scan",
-  title: "Scan",
-  type: "basic",
-  icon: "heroicons_outline:qr-code",
-  link: "/secure/scanning",
-  meta: metaFor("scan"),
-  },
-  {
     id: "parcels-history",
     title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
     meta: metaFor("parcels-history"),
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qrcode",
+    link: "/secure/scanning",
+    meta: metaFor("scan"),
   },
   {
     id: "customers",
@@ -273,14 +265,6 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     meta: metaFor("destinations"),
   },
   {
-    id: "trips",
-    title: "Trips",
-    type: "basic",
-    icon: "heroicons_outline:truck",
-    link: "/secure/trips",
-    meta: metaFor("trips"),
-  },
-  {
     id: "drivers",
     title: "Drivers",
     type: "basic",
@@ -304,14 +288,6 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     link: "/secure/trucks",
     meta: metaFor("trucks"),
   },
-  {
-    id: "complaints",
-    title: "Complaints",
-    type: "basic",
-    icon: "heroicons_outline:exclamation-triangle",
-    link: "/secure/complaints",
-    meta: metaFor("complaints"),
-  },
 ];
 export const horizontalNavigation: FuseNavigationItem[] = [
   {
@@ -323,6 +299,14 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     meta: metaFor("dashboard"),
   },
   {
+    id: "supervisor-dashboard",
+    title: "Supervisor Dashboard",
+    type: "basic",
+    icon: "heroicons_outline:chart-pie",
+    link: "/secure/supervisor-dashboard",
+    meta: metaFor("supervisor-dashboard"),
+  },
+  {
     id: "reports",
     title: "Reports",
     type: "basic",
@@ -331,20 +315,20 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     meta: metaFor("reports"),
   },
   {
-  id: "scan",
-  title: "Scan",
-  type: "basic",
-  icon: "heroicons_outline:qr-code",
-  link: "/secure/scanning",
-  meta: metaFor("scan"),
-  },
-  {
     id: "parcels-history",
     title: "Parcels",
     type: "basic",
     icon: "custom:parcels-history",
     link: "/secure/parcels",
     meta: metaFor("parcels-history"),
+  },
+  {
+    id: "scan",
+    title: "Scan",
+    type: "basic",
+    icon: "heroicons_outline:qrcode",
+    link: "/secure/scanning",
+    meta: metaFor("scan"),
   },
   {
     id: "customers",

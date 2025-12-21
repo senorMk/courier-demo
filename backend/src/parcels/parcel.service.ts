@@ -28,10 +28,10 @@ export class ParcelService {
           receiverId: string;
           officeId: string;
           sendingOfficeId?: string;
-        createdById?: string;
           description: string;
           value: number;
           size?: "SMALL" | "MEDIUM" | "LARGE";
+          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
           payment?: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
             amount: number;
@@ -41,37 +41,45 @@ export class ParcelService {
       | {
           customer: {
             firstName: string;
-            lastName: string;
             phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
           };
           receiver: {
             firstName: string;
-            lastName: string;
             phoneNumber: string;
-            emailAddress?: string;
-            idNumber?: string;
           };
           officeId: string;
           description: string;
           value: number;
           sendingOfficeId?: string;
-        createdById?: string;
           size: "SMALL" | "MEDIUM" | "LARGE";
+          cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
           payment: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
             amount: number;
             reference?: string;
           };
-      },
-      options?: { requireReceivable?: boolean; cashierId?: string }
+        },
+    options?: { requireReceivable?: boolean; cashierId?: string }
   ): Promise<Parcel> {
+
+    const requireReceivable = options?.requireReceivable ?? false;
     const office: Office = await this.prisma.office.findUnique({
       where: { id: data.officeId },
     });
     if (!office) {
       throw new Error("Office not found");
+    }
+
+    if (requireReceivable) {
+      const officeTypes = Array.isArray((office as any).officeTypes)
+        ? (office as any).officeTypes
+        : [];
+      const isReceivingOffice = officeTypes.includes('RECEIVING');
+      const isDispatchOnly = !isReceivingOffice && officeTypes.length === 1 && officeTypes.includes('DISPATCH');
+
+      if (!isReceivingOffice || isDispatchOnly) {
+        throw new BadRequestException('Selected destination office cannot receive parcels.');
+      }
     }
 
     // Determine whether we received IDs or nested customer objects
@@ -93,34 +101,22 @@ export class ParcelService {
           where: { phoneNumber: customerPhone },
           create: {
             firstName: payload.customer.firstName,
-            lastName: payload.customer.lastName,
             phoneNumber: customerPhone,
-            emailAddress: payload.customer.emailAddress || null,
-            idNumber: payload.customer.idNumber || null,
           },
           update: {
             firstName: payload.customer.firstName,
-            lastName: payload.customer.lastName,
             phoneNumber: customerPhone,
-            emailAddress: payload.customer.emailAddress || null,
-            idNumber: payload.customer.idNumber || null,
           },
         }),
         this.prisma.customer.upsert({
           where: { phoneNumber: receiverPhone },
           create: {
             firstName: payload.receiver.firstName,
-            lastName: payload.receiver.lastName,
             phoneNumber: receiverPhone,
-            emailAddress: payload.receiver.emailAddress || null,
-            idNumber: payload.receiver.idNumber || null,
           },
           update: {
             firstName: payload.receiver.firstName,
-            lastName: payload.receiver.lastName,
             phoneNumber: receiverPhone,
-            emailAddress: payload.receiver.emailAddress || null,
-            idNumber: payload.receiver.idNumber || null,
           },
         }),
       ]);
@@ -138,16 +134,23 @@ export class ParcelService {
       throw new BadRequestException('Parcel value must be a non-negative number');
     }
 
+    // Normalize cargo type: map ELECTRONIC_SENSITIVE to ELECTRONIC for database
+    let cargoType = ((data as any).cargoType as any) || "NORMAL";
+    if (cargoType === "ELECTRONIC_SENSITIVE") {
+      cargoType = "ELECTRONIC";
+    }
+
     const parcel = await this.prisma.parcel.create({
       data: {
         customerId,
         receiverId,
         officeId: (data as any).officeId,
         sendingOfficeId: (data as any).sendingOfficeId || (data as any).officeId,
-        createdById: (data as any).createdById || null,
         size: ((data as any).size as any) || "MEDIUM",
+        cargoType,
         description,
         value: Number(declaredValueRaw.toFixed(2)),
+        createdById: options?.cashierId || null,
       },
     });
 
@@ -163,7 +166,7 @@ export class ParcelService {
   const destinationCode = (office as any).areaCode ?? office.branchCode;
     const branchCode = office.branchCode;
     const parcelNumber = parcel.parcelNumber;
-    const plainTextCode = `${routeCode}-${destinationCode}-${branchCode}-${parcelNumber}`;
+    const plainTextCode = `${routeCode}${destinationCode}${branchCode}${parcelNumber}`;
 
     // Create the tracking code
     await this.prisma.trackingCode.create({
@@ -198,12 +201,13 @@ export class ParcelService {
     }
 
     // Generate triplicate receipts (sender, sticker, accounts)
-    try {
-      await generateReceiptsForParcel(parcel.id);
-    } catch (e) {
-      // Non-blocking: log but do not fail parcel creation
-      console.error("Failed to generate receipts", e);
-    }
+try {
+  const cashierId = options?.cashierId;
+  await generateReceiptsForParcel(parcel.id, cashierId);
+} catch (e) {
+  // Non-blocking: log but do not fail parcel creation
+  console.error("Failed to generate receipts", e);
+}
 
     // Send SMS notifications (sender & receiver)
     try {
@@ -217,13 +221,28 @@ export class ParcelService {
       const receiver = await this.prisma.customer.findUnique({
         where: { id: receiverId },
       });
+      
+      // Get sending office and destination office
+      const sendingOffice = await this.prisma.office.findUnique({
+        where: { id: parcel.sendingOfficeId },
+      });
+      const destinationOffice = await this.prisma.office.findUnique({
+        where: { id: parcel.officeId },
+      });
+      
       if (sender?.phoneNumber && code) {
         const senderMsisdn = normalizeZMBPhone(sender.phoneNumber as any);
         if (senderMsisdn) {
           await sendTemplateSms(
             senderMsisdn,
             SmsTemplates.PARCEL.CREATED.SENDER,
-            code
+            sender.firstName,
+            sender.lastName,
+            sendingOffice?.name || 'Unknown',
+            destinationOffice?.name || 'Unknown',
+            code,
+            `${receiver?.firstName || ''} ${receiver?.lastName || ''}`.trim() || 'Unknown',
+            description
           );
         }
       }
@@ -233,7 +252,13 @@ export class ParcelService {
           await sendTemplateSms(
             receiverMsisdn,
             SmsTemplates.PARCEL.CREATED.RECEIVER,
-            code
+            receiver.firstName,
+            receiver.lastName,
+            sendingOffice?.name || 'Unknown',
+            destinationOffice?.name || 'Unknown',
+            code,
+            `${sender.firstName} ${sender.lastName}`,
+            description
           );
         }
       }
@@ -248,20 +273,38 @@ export class ParcelService {
     page: number = 1,
     pageSize: number = 10,
     search?: string,
-    userId?: string,
-    userRole?: string
+    status?: string,
+    startDate?: string,
+    endDate?: string,
+    sendingOfficeId?: string,
+    cashierId?: string,
+    createdById?: string
   ) {
     page = Math.max(1, page);
     const skip = (page - 1) * pageSize;
     const where: any = {};
     const term = search?.trim();
 
-    // Filter parcels based on user role
-    // Cashiers can only see parcels they created
-    if (userRole === 'cashier' && userId) {
-      where.createdById = userId;
+    // Filter by sending office if provided (for supervisors)
+    if (sendingOfficeId) {
+      where.sendingOfficeId = sendingOfficeId;
     }
 
+    // Filter by cashier if provided
+    if (cashierId) {
+      where.payment = {
+        is: {
+          cashierId: cashierId,
+        },
+      };
+    }
+
+    // Filter by createdById if provided (for cashiers)
+    if (createdById) {
+      where.createdById = createdById;
+    }
+
+    // Handle search term
     if (term) {
       const or: any[] = [
         {
@@ -312,6 +355,46 @@ export class ParcelService {
       where.OR = or;
     }
 
+    // Handle status filter
+    if (status && status.trim()) {
+      const statusUpper = status.trim().toUpperCase();
+
+      // Handle pseudo-statuses that are determined by other fields
+      if (statusUpper === 'ARRIVED') {
+        // ARRIVED means the parcel has arrivedAt timestamp set
+        where.arrivedAt = { not: null };
+      } else if (statusUpper === 'IN_TRANSIT') {
+        // IN_TRANSIT means the parcel hasn't arrived yet and isn't cancelled
+        where.arrivedAt = null;
+        where.status = { not: 'CANCELLED' };
+      } else {
+        // Handle actual enum statuses
+        const validStatuses = Object.values(ParcelStatus) as string[];
+        if (validStatuses.includes(statusUpper)) {
+          where.status = statusUpper as ParcelStatus;
+        }
+      }
+    }
+
+    // Handle date range filter (using raw YYYY-MM-DD format from frontend)
+    if (startDate || endDate) {
+      where.createdAt = {};
+
+      if (startDate) {
+        // Parse YYYY-MM-DD and set to start of day in local timezone
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        where.createdAt.gte = start;
+      }
+
+      if (endDate) {
+        // Parse YYYY-MM-DD and set to end of day in local timezone
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
     const [data, total, thresholdDays] = await Promise.all([
       this.prisma.parcel.findMany({
         skip,
@@ -319,6 +402,7 @@ export class ParcelService {
         where,
         orderBy: { createdAt: 'desc' },
         include: {
+          // Include user who created the parcel
           customer: {
             select: {
               firstName: true,
@@ -359,6 +443,14 @@ export class ParcelService {
               method: true,
               reference: true,
               paidAt: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
           reminderLogs: {
@@ -646,12 +738,31 @@ export class ParcelService {
         await sendTemplateSms(
           msisdn,
           SmsTemplates.PARCEL.COLLECTED,
+          (parcel as any).customer.firstName,
+          (parcel as any).customer.lastName,
           code,
-          dest
+          dest,
+          'Collected',
+          parcel.description
         );
       }
     } catch { }
     return updated;
+  }
+
+  async findByIdWithPayment(parcelId: string) {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+      include: {
+        payment: {
+          select: {
+            cashierId: true,
+          },
+        },
+      },
+    });
+    if (!parcel) throw new NotFoundException("Parcel not found");
+    return parcel;
   }
 
   async findByTrackingCode(code: string) {
@@ -703,6 +814,11 @@ export class ParcelService {
                 name: true,
               },
             },
+            complaints: {
+              where: { status: 'CLOSED' },
+              orderBy: { updatedAt: 'desc' },
+              take: 1,
+            },
           },
         },
       },
@@ -741,29 +857,86 @@ export class ParcelService {
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: "In Transit",
-        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(this.time.addHours(parcel.arrivedAt, -24))
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
         description: "Parcel in transit to destination",
       });
 
       trackingHistory.push({
         status: "DELIVERED",
         location: parcel.office.name,
-        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(this.time.addHours(parcel.arrivedAt, 24))
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
         description: "Parcel collected by recipient",
       });
     } else if (parcel.status === "READY_FOR_COLLECTION") {
       trackingHistory.push({
         status: "IN_TRANSIT",
         location: "In Transit",
-        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(this.time.addHours(parcel.arrivedAt, -24))
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
         description: "Parcel in transit to destination",
       });
 
       trackingHistory.push({
-        status: "IN_TRANSIT",
+        status: "READY_FOR_COLLECTION",
         location: parcel.office.name,
-        timestamp: this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(parcel.arrivedAt)
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
         description: "Parcel ready for collection at destination office",
+      });
+    } else if (parcel.status === "DAMAGED") {
+      trackingHistory.push({
+        status: "IN_TRANSIT",
+        location: "In Transit",
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(this.time.addHours(parcel.arrivedAt, -24))
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
+        description: "Parcel in transit to destination",
+      });
+
+      trackingHistory.push({
+        status: "DAMAGED",
+        location: parcel.office.name,
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(parcel.arrivedAt)
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
+        description: "Parcel damaged during transit - complaint filed",
+      });
+    } else if (parcel.status === "COMPLAINT_BOX") {
+      trackingHistory.push({
+        status: "IN_TRANSIT",
+        location: "In Transit",
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(this.time.addHours(parcel.arrivedAt, -24))
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 24)),
+        description: "Parcel in transit to destination",
+      });
+
+      trackingHistory.push({
+        status: "COMPLAINT_BOX",
+        location: parcel.office.name,
+        timestamp: parcel.arrivedAt 
+          ? this.time.toISO(parcel.arrivedAt)
+          : this.time.toISO(this.time.addHours(parcel.createdAt, 48)),
+        description: "Parcel under complaint investigation",
+      });
+    }
+
+    // Add complaint resolution tracking entry if there's a resolved complaint
+    const hasResolvedComplaint = parcel.complaints && parcel.complaints.length > 0;
+    
+    if (hasResolvedComplaint) {
+      const resolvedComplaint = parcel.complaints[0];
+      trackingHistory.push({
+        status: "RESOLVED",
+        location: parcel.office.name,
+        timestamp: this.time.toISO(resolvedComplaint.updatedAt),
+        description: "Complaint resolved - issue has been addressed",
       });
     }
 
@@ -782,10 +955,14 @@ export class ParcelService {
     return {
       id: parcel.id,
       parcelNumber: tracking.plainTextCode,
-      status: parcel.status === "COLLECTED" ? "DELIVERED" : parcel.status || "PENDING",
+      status: parcel.status === "COLLECTED" 
+        ? "DELIVERED" 
+        : hasResolvedComplaint && (parcel.status === "DAMAGED" || parcel.status === "COMPLAINT_BOX")
+          ? "READY_FOR_COLLECTION"
+          : parcel.status || "PENDING",
       createdAt: this.time.toISO(parcel.createdAt),
-      deliveredAt: parcel.status === "COLLECTED"
-        ? this.time.toISO(this.time.addHours(parcel.createdAt, 48))
+      deliveredAt: parcel.status === "COLLECTED" && parcel.arrivedAt
+        ? this.time.toISO(this.time.addHours(parcel.arrivedAt, 24))
         : undefined,
       sender: {
         firstName: maskName(parcel.customer.firstName),
@@ -854,8 +1031,11 @@ export class ParcelService {
           await sendTemplateSms(
             msisdn,
             SmsTemplates.READY.COLLECTION,
+            parcel.receiver.firstName,
+            parcel.receiver.lastName,
             code,
-            destination
+            destination,
+            parcel.description
           );
         }
       }
@@ -923,7 +1103,13 @@ export class ParcelService {
       ? `${parcel.office.name} (${parcel.office.branchCode})`
       : 'the office';
 
-    const message = SmsTemplates.PARCEL.UNCOLLECTED_REMINDER(code, destination);
+    const message = SmsTemplates.PARCEL.UNCOLLECTED_REMINDER(
+      parcel.receiver?.firstName || '',
+      parcel.receiver?.lastName || '',
+      code,
+      destination,
+      parcel.description
+    );
 
     if (!parcel.receiver?.phoneNumber) {
       throw new BadRequestException('Receiver phone number not found');
@@ -1005,5 +1191,465 @@ export class ParcelService {
         arrivedAt: 'asc',
       },
     });
+  }
+
+  async exportParcelsToCSV(
+    search?: string,
+    status?: string,
+    startDate?: string,
+    endDate?: string,
+    sendingOfficeId?: string,
+    cashierId?: string,
+    createdById?: string
+  ): Promise<string> {
+    // Use the same filtering logic as getParcelsPaginated
+    const where: any = {};
+    const term = search?.trim();
+
+    // Filter by sending office if provided (for supervisors)
+    if (sendingOfficeId) {
+      where.sendingOfficeId = sendingOfficeId;
+    }
+
+    // Filter by cashier if provided
+    if (cashierId) {
+      where.payment = {
+        is: {
+          cashierId: cashierId,
+        },
+      };
+    }
+
+    // Filter by createdById if provided (for cashiers)
+    if (createdById) {
+      where.createdById = createdById;
+    }
+
+    if (term) {
+      const or: any[] = [
+        {
+          TrackingCode: {
+            is: {
+              plainTextCode: {
+                contains: term,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        {
+          customer: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+        {
+          receiver: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+
+      const parcelNumberMatch = Number(term);
+      if (!Number.isNaN(parcelNumberMatch)) {
+        or.push({ parcelNumber: parcelNumberMatch });
+      }
+
+      where.OR = or;
+    }
+
+    if (status && status.trim()) {
+      const statusUpper = status.trim().toUpperCase();
+
+      // Handle pseudo-statuses that are determined by other fields
+      if (statusUpper === 'ARRIVED') {
+        // ARRIVED means the parcel has arrivedAt timestamp set
+        where.arrivedAt = { not: null };
+      } else if (statusUpper === 'IN_TRANSIT') {
+        // IN_TRANSIT means the parcel hasn't arrived yet and isn't cancelled
+        where.arrivedAt = null;
+        where.status = { not: 'CANCELLED' };
+      } else {
+        // Handle actual enum statuses
+        const validStatuses = Object.values(ParcelStatus) as string[];
+        if (validStatuses.includes(statusUpper)) {
+          where.status = statusUpper as ParcelStatus;
+        }
+      }
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        where.createdAt.gte = start;
+      }
+
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const parcels = await this.prisma.parcel.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        receiver: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        office: {
+          select: {
+            name: true,
+            branchCode: true,
+          },
+        },
+        sendingOffice: {
+          select: {
+            name: true,
+            branchCode: true,
+          },
+        },
+        TrackingCode: {
+          select: {
+            plainTextCode: true,
+          },
+        },
+        payment: {
+          select: {
+            amount: true,
+            method: true,
+            paidAt: true,
+          },
+        },
+      },
+    });
+
+    // Build CSV content
+    const headers = [
+      'Tracking Code',
+      'Parcel Number',
+      'Status',
+      'Description',
+      'Value',
+      'Size',
+      'Sender Name',
+      'Sender Phone',
+      'Receiver Name',
+      'Receiver Phone',
+      'Destination Office',
+      'Sending Office',
+      'Payment Amount',
+      'Payment Method',
+      'Created At',
+    ];
+
+    const rows = parcels.map((p: any) => [
+      p.TrackingCode?.plainTextCode || '',
+      p.parcelNumber || '',
+      p.status || '',
+      (p.description || '').replace(/"/g, '""'), // Escape quotes
+      p.value || '',
+      p.size || '',
+      `${p.customer?.firstName || ''} ${p.customer?.lastName || ''}`.trim(),
+      p.customer?.phoneNumber || '',
+      `${p.receiver?.firstName || ''} ${p.receiver?.lastName || ''}`.trim(),
+      p.receiver?.phoneNumber || '',
+      p.office?.name || '',
+      p.sendingOffice?.name || '',
+      p.payment?.amount || '',
+      p.payment?.method || '',
+      p.createdAt ? new Date(p.createdAt).toISOString() : '',
+    ]);
+
+    const csvLines = [
+      headers.map(h => `"${h}"`).join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ];
+
+    return csvLines.join('\n');
+  }
+
+  async exportParcelsToPDF(
+    search?: string,
+    status?: string,
+    startDate?: string,
+    endDate?: string,
+    sendingOfficeId?: string,
+    cashierId?: string,
+    createdById?: string
+  ): Promise<Buffer> {
+    // Use the same filtering logic
+    const where: any = {};
+    const term = search?.trim();
+
+    // Filter by sending office if provided (for supervisors)
+    if (sendingOfficeId) {
+      where.sendingOfficeId = sendingOfficeId;
+    }
+
+    // Filter by cashier if provided
+    if (cashierId) {
+      where.payment = {
+        is: {
+          cashierId: cashierId,
+        },
+      };
+    }
+
+    // Filter by createdById if provided (for cashiers)
+    if (createdById) {
+      where.createdById = createdById;
+    }
+
+    if (term) {
+      const or: any[] = [
+        {
+          TrackingCode: {
+            is: {
+              plainTextCode: {
+                contains: term,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        {
+          customer: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+        {
+          receiver: {
+            is: {
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+                { phoneNumber: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+
+      const parcelNumberMatch = Number(term);
+      if (!Number.isNaN(parcelNumberMatch)) {
+        or.push({ parcelNumber: parcelNumberMatch });
+      }
+
+      where.OR = or;
+    }
+
+    if (status && status.trim()) {
+      const statusUpper = status.trim().toUpperCase();
+
+      // Handle pseudo-statuses that are determined by other fields
+      if (statusUpper === 'ARRIVED') {
+        // ARRIVED means the parcel has arrivedAt timestamp set
+        where.arrivedAt = { not: null };
+      } else if (statusUpper === 'IN_TRANSIT') {
+        // IN_TRANSIT means the parcel hasn't arrived yet and isn't cancelled
+        where.arrivedAt = null;
+        where.status = { not: 'CANCELLED' };
+      } else {
+        // Handle actual enum statuses
+        const validStatuses = Object.values(ParcelStatus) as string[];
+        if (validStatuses.includes(statusUpper)) {
+          where.status = statusUpper as ParcelStatus;
+        }
+      }
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        where.createdAt.gte = start;
+      }
+
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const parcels = await this.prisma.parcel.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        receiver: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+          },
+        },
+        office: {
+          select: {
+            name: true,
+            branchCode: true,
+          },
+        },
+        sendingOffice: {
+          select: {
+            name: true,
+            branchCode: true,
+          },
+        },
+        TrackingCode: {
+          select: {
+            plainTextCode: true,
+          },
+        },
+        payment: {
+          select: {
+            amount: true,
+            method: true,
+            paidAt: true,
+          },
+        },
+      },
+    });
+
+    // Generate a simple PDF using a library (you'll need to install one like pdfkit)
+    // For now, return a simple text-based PDF or throw error
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 30 });
+
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+
+    // Add title
+    doc.fontSize(16).text('Parcel Export Report', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.moveDown();
+
+    // Add filters info
+    if (search || status || startDate || endDate) {
+      doc.fontSize(10).text('Filters:', { underline: true });
+      if (search) doc.text(`Search: ${search}`);
+      if (status) doc.text(`Status: ${status}`);
+      if (startDate) doc.text(`Start Date: ${startDate}`);
+      if (endDate) doc.text(`End Date: ${endDate}`);
+      doc.moveDown();
+    }
+
+    doc.fontSize(12).text(`Total Parcels: ${parcels.length}`, { underline: true });
+    doc.moveDown();
+
+    // Add parcel data
+    parcels.forEach((p: any, index) => {
+      if (index > 0) doc.moveDown();
+
+      doc.fontSize(10);
+      doc.text(`${index + 1}. ${p.TrackingCode?.plainTextCode || 'N/A'} - Parcel #${p.parcelNumber}`);
+      doc.fontSize(8);
+      doc.text(`   Status: ${p.status} | Size: ${p.size} | Value: K${p.value}`);
+      doc.text(`   From: ${p.customer?.firstName || ''} (${p.customer?.phoneNumber || 'N/A'})`);
+      doc.text(`   To: ${p.receiver?.firstName || ''} (${p.receiver?.phoneNumber || 'N/A'})`);
+      doc.text(`   Destination: ${p.office?.name || 'N/A'}`);
+      doc.text(`   Created: ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'}`);
+
+      // Add page break if needed
+      if (doc.y > 700) {
+        doc.addPage();
+      }
+    });
+
+    doc.end();
+
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => {
+        resolve(Buffer.concat(buffers));
+      });
+      doc.on('error', reject);
+    });
+  }
+
+  async fixParcelsWithNullCreatedBy() {
+    // Find all parcels with null createdById
+    const parcelsWithNullCreatedBy = await this.prisma.parcel.findMany({
+      where: {
+        createdById: null,
+      },
+    });
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let orphanedCount = 0;
+
+    // Update each parcel where payment exists and has a cashierId
+    for (const parcel of parcelsWithNullCreatedBy) {
+      const payment = await this.prisma.payment.findUnique({
+        where: { parcelId: parcel.id },
+        select: { cashierId: true },
+      });
+
+      // Skip orphaned parcels (no payment)
+      if (!payment) {
+        orphanedCount++;
+        continue;
+      }
+
+      if (payment.cashierId) {
+        await this.prisma.parcel.update({
+          where: { id: parcel.id },
+          data: { createdById: payment.cashierId },
+        });
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    return {
+      message: 'Parcel createdBy fix completed',
+      totalParcelsFound: parcelsWithNullCreatedBy.length,
+      parcelsUpdated: updatedCount,
+      parcelsSkipped: skippedCount,
+      orphanedParcels: orphanedCount,
+    };
   }
 }

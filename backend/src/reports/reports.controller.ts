@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Query, Res, SetMetadata, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Query, Req, Res, SetMetadata, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ReportExportResult } from './report-exporter.service';
 import { ReportsService } from './reports.service';
 
@@ -236,6 +236,17 @@ export class ReportsController {
                           (officeId ? [officeId] : undefined);
     const file = await this.reports.exportCashierRevenueReport({ startDate, endDate, cashierId, format, officeIds: parsedOfficeIds });
     this.sendFile(res, file);
+  }
+
+  @Get('supervisor-metrics')
+  @SetMetadata('roles', ['supervisor', 'managing-director', 'operations-officer'])
+  getSupervisorMetrics(
+    @Query('date') date?: string,
+    @Req() req?: Request,
+  ) {
+    const user: any = (req as any)?.user || {};
+    const officeId = user?.officeId;
+    return this.reports.getSupervisorMetrics({ date, officeId });
   }
 
   @Post('fix-cashier-payments')

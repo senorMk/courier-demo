@@ -12,22 +12,13 @@
       <form [formGroup]="form.controls['customer']">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <mat-form-field appearance="fill">
-            <mat-label>First Name</mat-label>
+            <mat-label>Name</mat-label>
             <input matInput formControlName="firstName" style="
                 font-size: 0.875rem;
                 line-height: 1.23rem;
                 font-family: &quot;Inter&quot;, sans-serif;
               " />
-            <mat-error *ngIf="form.get('customer.firstName')?.hasError('required')">First name is required</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Last Name</mat-label>
-            <input matInput formControlName="lastName" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
+            <mat-error *ngIf="form.get('customer.firstName')?.hasError('required')">Name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Phone Number</mat-label>
@@ -46,24 +37,6 @@
             <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g.
               971234567)</mat-error>
           </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="emailAddress" type="email" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>ID Number</mat-label>
-            <input matInput formControlName="idNumber" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
-          </mat-form-field>
         </div>
       </form>
       <div class="flex justify-end gap-2 mt-2">
@@ -77,22 +50,13 @@
       <form [formGroup]="form.controls['receiver']">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <mat-form-field appearance="fill">
-            <mat-label>First Name</mat-label>
+            <mat-label>Name</mat-label>
             <input matInput formControlName="firstName" style="
                 font-size: 0.875rem;
                 line-height: 1.23rem;
                 font-family: &quot;Inter&quot;, sans-serif;
               " />
-            <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">First name is required</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Last Name</mat-label>
-            <input matInput formControlName="lastName" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
+            <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">Name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
             <mat-label>Phone Number</mat-label>
@@ -110,24 +74,6 @@
               required</mat-error>
             <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g.
               971234567)</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="emailAddress" type="email" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>ID Number</mat-label>
-            <input matInput formControlName="idNumber" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-hint>Optional</mat-hint>
           </mat-form-field>
         </div>
       </form>
@@ -270,10 +216,8 @@
           <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
           <div>Description: {{ form.value.description }}</div>
           <div>Declared Value: ZMW {{ form.value.value }}</div>
-          <div>Sender: {{ form.value.customer.firstName }} {{ form.value.customer.lastName }} · +260{{
-            form.value.customer.phoneNumber }}</div>
-          <div>Receiver: {{ form.value.receiver.firstName }} {{ form.value.receiver.lastName }} · +260{{
-            form.value.receiver.phoneNumber }}</div>
+          <div>Sender: {{ form.value.customer.firstName }} · +260{{ form.value.customer.phoneNumber }}</div>
+          <div>Receiver: {{ form.value.receiver.firstName }} · +260{{ form.value.receiver.phoneNumber }}</div>
           <div>Destination: {{ selectedOffice ? displayOffice(selectedOffice) : 'Not selected' }}</div>
           <div>Size: {{ form.value.size }} · Amount: ZMW {{ form.value.payment?.amount }} ({{ form.value.payment?.method
             }})</div>

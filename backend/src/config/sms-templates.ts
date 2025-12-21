@@ -8,38 +8,73 @@ type TemplateFunction = (...args: any[]) => string;
 // Customer care information to be included in all messages
 const CUSTOMER_CARE_FOOTER = `
 
-For any more inquiries, kindly call us on 0974486944 or 09767763646.
+Should you require any clarification or assistance, please feel free to contact us on +260773483020 or +260773826745.
 
-Thank you for using Platinum Courier Services`;
+Thank you for choosing Platinum Courier Services. We look forward to serving you again.`;
 
 export const SmsTemplates = {
   PARCEL: {
     CREATED: {
-      SENDER: (code: string): string =>
-        `Parcel Created: ${code}.${CUSTOMER_CARE_FOOTER}`,
-      RECEIVER: (code: string): string =>
-        `Incoming Parcel: ${code}. You will be notified upon arrival.${CUSTOMER_CARE_FOOTER}`,
+      SENDER: (firstName: string, lastName: string, sendingOffice: string, receivingOffice: string, trackingCode: string, senderName: string, parcelDescription: string): string =>
+        `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your package has been successfully registered for shipment from ${sendingOffice} to ${receivingOffice}.
+
+Receiver: ${senderName}
+Parcel Description: ${parcelDescription}
+Tracking Code: ${trackingCode}
+${CUSTOMER_CARE_FOOTER}`,
+      RECEIVER: (firstName: string, lastName: string, sendingOffice: string, receivingOffice: string, trackingCode: string, senderName: string, parcelDescription: string): string =>
+        `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+You have an incoming package from ${sendingOffice} that is scheduled to arrive at ${receivingOffice}.
+
+Sender: ${senderName}
+Parcel Description: ${parcelDescription}
+Tracking Code: ${trackingCode}
+
+You will be notified upon arrival.${CUSTOMER_CARE_FOOTER}`,
     },
-    COLLECTED: (code: string, destination: string): string =>
-      `PCS: Parcel ${code} has been collected at ${destination}.${CUSTOMER_CARE_FOOTER}`,
-    UNCOLLECTED_REMINDER: (code: string, destination: string): string =>
-      `PCS: REMINDER - Your parcel ${code} is awaiting collection at ${destination}. Please collect it as soon as possible to avoid storage fees.${CUSTOMER_CARE_FOOTER}`,
+    COLLECTED: (firstName: string, lastName: string, trackingCode: string, destination: string, collectedBy: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your package "${parcelDescription}" (${trackingCode}) has been successfully collected at ${destination} by ${collectedBy}.${CUSTOMER_CARE_FOOTER}`,
+    UNCOLLECTED_REMINDER: (firstName: string, lastName: string, trackingCode: string, destination: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+REMINDER - Your package "${parcelDescription}" (${trackingCode}) is awaiting collection at ${destination}. Please collect it as soon as possible to avoid storage fees.${CUSTOMER_CARE_FOOTER}`,
   },
   TRIP: {
-    DEPARTED: (code: string, destination: string): string =>
-      `PCS: Your parcel ${code} has departed and is in transit to ${destination}.${CUSTOMER_CARE_FOOTER}`,
-    IN_TRANSIT: (code: string, destination: string): string =>
-      `PCS: Parcel ${code} for you is in transit to ${destination}.${CUSTOMER_CARE_FOOTER}`,
+    DEPARTED: (firstName: string, lastName: string, trackingCode: string, destination: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your package "${parcelDescription}" (${trackingCode}) has departed and is in transit to ${destination}.${CUSTOMER_CARE_FOOTER}`,
+    IN_TRANSIT: (firstName: string, lastName: string, trackingCode: string, destination: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your package "${parcelDescription}" (${trackingCode}) for you is in transit to ${destination}.${CUSTOMER_CARE_FOOTER}`,
   },
   READY: {
-    COLLECTION: (code: string, destination: string): string =>
-      `PCS: Parcel ${code} is ready for collection at ${destination}.${CUSTOMER_CARE_FOOTER}`,
+    COLLECTION: (firstName: string, lastName: string, trackingCode: string, destination: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your package "${parcelDescription}" (${trackingCode}) is ready for collection at ${destination}.${CUSTOMER_CARE_FOOTER}`,
   },
   COMPLAINT: {
-    RECEIVED: (code: string, type: string = ''): string =>
-      `PCS: Complaint received for parcel ${code}${type ? ` (${type})` : ''}. We will investigate and update you within 14 days.${CUSTOMER_CARE_FOOTER}`,
-    RESOLVED: (code: string, destination: string): string =>
-      `PCS: Complaint for parcel ${code} has been resolved at ${destination}.${CUSTOMER_CARE_FOOTER}`,
+    RECEIVED: (firstName: string, lastName: string, trackingCode: string, type: string = '', parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Complaint received for your package.
+
+Parcel Description: ${parcelDescription}
+Tracking Code: ${trackingCode}
+Complaint Type: ${type || 'General'}
+
+We will investigate and update you within 14 days.${CUSTOMER_CARE_FOOTER}`,
+    RESOLVED: (firstName: string, lastName: string, trackingCode: string, destination: string, parcelDescription: string): string =>
+      `Hello ${firstName}${lastName ? ` ${lastName}` : ''}
+
+Your complaint for package "${parcelDescription}" (${trackingCode}) has been resolved at ${destination}.${CUSTOMER_CARE_FOOTER}`,
   },
 } as const;
 

@@ -52,36 +52,20 @@ interface ParcelDetailsData {
       <div class="section-title">Sender</div>
       <div class="row">
         <span class="label">Name</span>
-        <span class="value">{{ parcel.customer?.firstName || "—" }} {{ parcel.customer?.lastName || "" }}</span>
+        <span class="value">{{ parcel.customer?.firstName || "—" }}</span>
       </div>
       <div class="row">
         <span class="label">Phone</span>
-        <span class="value">{{ parcel.customer?.phoneNumber ? "+260" + parcel.customer?.phoneNumber : "—" }}</span>
-      </div>
-      <div class="row">
-        <span class="label">Email</span>
-        <span class="value">{{ parcel.customer?.emailAddress || "—" }}</span>
-      </div>
-      <div class="row">
-        <span class="label">ID Number</span>
-        <span class="value">{{ parcel.customer?.idNumber || "—" }}</span>
+        <span class="value">{{ parcel.customer?.phoneNumber ? parcel.customer?.phoneNumber : "—" }}</span>
       </div>
       <div class="section-title">Receiver</div>
       <div class="row">
         <span class="label">Name</span>
-        <span class="value">{{ parcel.receiver?.firstName || "—" }} {{ parcel.receiver?.lastName || "" }}</span>
+        <span class="value">{{ parcel.receiver?.firstName || "—" }}</span>
       </div>
       <div class="row">
         <span class="label">Phone</span>
-        <span class="value">{{ parcel.receiver?.phoneNumber ? "+260" + parcel.receiver?.phoneNumber : "—" }}</span>
-      </div>
-      <div class="row">
-        <span class="label">Email</span>
-        <span class="value">{{ parcel.receiver?.emailAddress || "—" }}</span>
-      </div>
-      <div class="row">
-        <span class="label">ID Number</span>
-        <span class="value">{{ parcel.receiver?.idNumber || "—" }}</span>
+        <span class="value">{{ parcel.receiver?.phoneNumber ? parcel.receiver?.phoneNumber : "—" }}</span>
       </div>
       <div class="section-title">Payment</div>
       <div class="row">
