@@ -67,6 +67,14 @@ export const defaultNavigation: FuseNavigationItem[] = [
     meta: metaFor("routes"),
   },
   {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:clipboard-document-list",
+    link: "/secure/trips",
+    meta: metaFor("trips"),
+  },
+  {
     id: "destinations",
     title: "Offices",
     type: "basic",
@@ -167,6 +175,14 @@ export const compactNavigation: FuseNavigationItem[] = [
     meta: metaFor("routes"),
   },
   {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:clipboard-document-list",
+    link: "/secure/trips",
+    meta: metaFor("trips"),
+  },
+  {
     id: "destinations",
     title: "Offices",
     type: "basic",
@@ -257,6 +273,14 @@ export const futuristicNavigation: FuseNavigationItem[] = [
     meta: metaFor("routes"),
   },
   {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:clipboard-document-list",
+    link: "/secure/trips",
+    meta: metaFor("trips"),
+  },
+  {
     id: "destinations",
     title: "Offices",
     type: "basic",
@@ -345,6 +369,14 @@ export const horizontalNavigation: FuseNavigationItem[] = [
     icon: "custom:routes",
     link: "/secure/routes",
     meta: metaFor("routes"),
+  },
+  {
+    id: "trips",
+    title: "Trips",
+    type: "basic",
+    icon: "heroicons_outline:clipboard-document-list",
+    link: "/secure/trips",
+    meta: metaFor("trips"),
   },
   {
     id: "destinations",
