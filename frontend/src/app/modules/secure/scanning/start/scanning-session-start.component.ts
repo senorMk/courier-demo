@@ -89,7 +89,24 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     }
   }
 
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  private _paginator: MatPaginator;
+
+  @ViewChild(MatPaginator)
+  set paginator(value: MatPaginator) {
+    if (value) {
+      this._paginator = value;
+      this._paginator.page.subscribe(() => {
+        this.pageIndex = this._paginator.pageIndex;
+        this.pageSize = this._paginator.pageSize;
+        this.fetchSessions();
+      });
+    }
+  }
+
+  get paginator(): MatPaginator {
+    return this._paginator;
+  }
+
   displayedColumns = ["route", "mode", "staff", "createdAt", "status", "actions"];
   recentSessions: any[] = [];
   totalSessions = 0;
@@ -100,13 +117,6 @@ export class ScanningSessionStartComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.fetchSessions();
     this.loadRoutes();
-    if (this.paginator) {
-      this.paginator.page.subscribe(() => {
-        this.pageIndex = this.paginator.pageIndex;
-        this.pageSize = this.paginator.pageSize;
-        this.fetchSessions();
-      });
-    }
   }
 
   private loadRoutes(limit: number = 200): void {
@@ -207,6 +217,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
               ((s.user?.firstName || "") + " " + (s.user?.lastName || "")).trim(),
             createdAt: s.createdAt,
             status: s.closedAt ? "Completed" : "Draft",
+            totalScans: s._count?.scans || 0,
           }));
           this.totalSessions = data.total || 0;
         },

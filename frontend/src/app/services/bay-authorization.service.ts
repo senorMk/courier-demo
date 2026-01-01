@@ -130,7 +130,7 @@ export class BayAuthorizationService {
     const user = this.userSelectionService.getCurrentUser();
 
     // Dispatchers, sorters, and receivers can access delivery notes
-    return user.roleKey === 'dispatcher' || user.roleKey === 'sorter' || user.roleKey === 'receiver';
+    return user.roleKey === 'managing-director' || user.roleKey === 'dispatcher' || user.roleKey === 'sorter' || user.roleKey === 'receiver';
   }
 
   /**

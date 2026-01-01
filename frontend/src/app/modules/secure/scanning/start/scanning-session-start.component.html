@@ -427,6 +427,10 @@
                   <span>Mode:</span>
                   <span class="capitalize">{{ session.mode }}</span>
                 </div>
+                 <div class="flex justify-between">
+                  <span>Parcels:</span>
+                  <span class="capitalize">{{ session?.totalScans }}</span>
+                </div>
                 <div class="flex justify-between">
                   <span>Staff:</span>
                   <span>{{ session.staff || '—' }}</span>
@@ -451,7 +455,7 @@
                 <div class="ml-auto" *ngIf="canAccessDeliveryNotes">
                   <button mat-icon-button (click)="download(session.id)" [disabled]="session.status !== 'Completed'"
                     [title]="session.status === 'Completed' ? 'Download delivery note' : 'Available after session is closed'"
-                    class="!w-8 !h-8">
+                    class="!w-8 !h-8" matTooltip="Download Delivery Note">
                     <mat-icon class="!text-lg">file_download</mat-icon>
                   </button>
                 </div>
@@ -460,7 +464,7 @@
           </div>
 
           <div *ngIf="totalSessions > pageSize" class="border-t p-4">
-            <mat-paginator [pageSize]="pageSize" [length]="totalSessions" class="!p-0"></mat-paginator>
+            <mat-paginator #paginator [pageSize]="pageSize" [pageIndex]="pageIndex" [length]="totalSessions" class="!p-0"></mat-paginator>
           </div>
         </div>
       </div>
