@@ -352,6 +352,19 @@ export class ParcelController {
     }
   }
 
+  @Get("descriptions/search")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", PARCEL_VIEW_ROLES)
+  async searchDescriptions(@Query("q") query: string) {
+    try {
+      const descriptions = await this.parcelService.searchDescriptions(query || "");
+      return { descriptions };
+    } catch (e) {
+      console.error("ParcelController.searchDescriptions error:", e);
+      throw e;
+    }
+  }
+
   @Post("collect-by-code")
   @UseGuards(AuthGuard("jwt"), RolesGuard)
   @SetMetadata("roles", PARCEL_COLLECTION_ROLES)

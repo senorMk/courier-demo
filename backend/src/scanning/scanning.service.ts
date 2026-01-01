@@ -25,7 +25,8 @@ export class ScanningService {
     routeId: string,
     mode: "bag" | "individual",
     tripId?: string,
-    bayId?: string
+    bayId?: string,
+    sessionCategory?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "DOCUMENT"
   ) {
     // Basic validation: ensure office belongs to route
     const office = await this.prisma.office.findUnique({
@@ -112,6 +113,7 @@ export class ScanningService {
         bayId: bayId || null,
         tripId: tripId || null,
         mailBagCode: mode === "bag" ? `MB-${this.time.now().getTime()}` : null,
+        sessionCategory: sessionCategory || null,
       },
     });
     return session;
@@ -121,6 +123,7 @@ export class ScanningService {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
       include: { office: true, trip: true, bay: true },
+      // sessionCategory is already included by default
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -268,6 +271,15 @@ export class ScanningService {
           scannedById: userId,
         },
       });
+
+      // Override parcel cargoType if session has a category set
+      if (session.sessionCategory) {
+        await this.prisma.parcel.update({
+          where: { id: parcel.id },
+          data: { cargoType: session.sessionCategory as any },
+        });
+      }
+
       // If linked to a trip and trip is PLANNED, flip to LOADING
       if (session.trip && session.trip.status === "PLANNED") {
         await this.prisma.trip.update({
@@ -334,6 +346,7 @@ export class ScanningService {
     const session = await this.prisma.scanningSession.findUnique({
       where: { id: sessionId },
       include: { office: true, trip: true, bay: true },
+      // sessionCategory is already included by default
     });
     if (!session) throw new NotFoundException("Session not found");
     if (session.closedAt) throw new BadRequestException("Session closed");
@@ -421,6 +434,15 @@ export class ScanningService {
       const created = await this.prisma.scannedParcel.create({
         data: { scanningSessionId: sessionId, parcelId, scannedById: userId },
       });
+
+      // Override parcel cargoType if session has a category set
+      if (session.sessionCategory) {
+        await this.prisma.parcel.update({
+          where: { id: parcel.id },
+          data: { cargoType: session.sessionCategory as any },
+        });
+      }
+
       if (session.trip && session.trip.status === "PLANNED") {
         await this.prisma.trip.update({
           where: { id: session.trip.id },

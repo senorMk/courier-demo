@@ -89,8 +89,18 @@
       <div class="flex flex-col gap-4">
         <mat-form-field appearance="fill">
           <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" rows="2"
-            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;"></textarea>
+          <input type="text" matInput [matAutocomplete]="descAuto" [formControl]="descriptionSearchControl"
+            placeholder="Type description or select from suggestions"
+            style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          <button matSuffix mat-icon-button type="button" aria-label="Clear description"
+            *ngIf="descriptionSearchControl.value" (click)="descriptionSearchControl.setValue('')">
+            <mat-icon>close</mat-icon>
+          </button>
+          <mat-autocomplete #descAuto="matAutocomplete" [displayWith]="displayDescription">
+            <mat-option *ngFor="let desc of descriptions$ | async" [value]="desc">
+              {{ desc }}
+            </mat-option>
+          </mat-autocomplete>
           <mat-error *ngIf="form.controls['description'].hasError('required')">
             Description is required
           </mat-error>

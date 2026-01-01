@@ -1608,6 +1608,48 @@ try {
     });
   }
 
+  /**
+   * Search for historical parcel descriptions for autocomplete
+   */
+  async searchDescriptions(query: string): Promise<string[]> {
+    const cleanQuery = (query || '').trim().toUpperCase();
+
+    if (!cleanQuery) {
+      return [];
+    }
+
+    // Query recent parcels with matching descriptions
+    const parcels = await this.prisma.parcel.findMany({
+      where: {
+        description: {
+          contains: cleanQuery,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        description: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 50,
+    });
+
+    // Deduplicate and normalize to uppercase
+    const uniqueDescriptions = new Set<string>();
+    for (const parcel of parcels) {
+      if (parcel.description) {
+        const normalized = parcel.description.trim().toUpperCase();
+        if (normalized) {
+          uniqueDescriptions.add(normalized);
+        }
+      }
+    }
+
+    // Convert to array and limit to 10 results
+    return Array.from(uniqueDescriptions).slice(0, 10);
+  }
+
   async fixParcelsWithNullCreatedBy() {
     // Find all parcels with null createdById
     const parcelsWithNullCreatedBy = await this.prisma.parcel.findMany({
