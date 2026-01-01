@@ -232,24 +232,25 @@ model ScannedParcel {
 }
 
 model ScanningSession {
-  id          String          @id @default(uuid())
-  routeId     String
-  officeId    String
-  bayId       String?
-  staffId     String // references User.id
-  mode        String // 'bag' | 'individual'
-  mailBagCode String?         @unique
-  startedAt   DateTime        @default(now())
-  closedAt    DateTime?
-  tripId      String?
-  trip        Trip?           @relation(fields: [tripId], references: [id])
-  scans       ScannedParcel[]
-  user        User            @relation("UserScanningSessions", fields: [staffId], references: [id])
-  office      Office          @relation(fields: [officeId], references: [id])
-  bay         Bay?            @relation(fields: [bayId], references: [id])
-  route       Route           @relation(fields: [routeId], references: [id])
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id              String          @id @default(uuid())
+  routeId         String
+  officeId        String
+  bayId           String?
+  staffId         String // references User.id
+  mode            String // 'bag' | 'individual'
+  mailBagCode     String?         @unique
+  sessionCategory CargoType? // Optional category applied to all parcels in this session
+  startedAt       DateTime        @default(now())
+  closedAt        DateTime?
+  tripId          String?
+  trip            Trip?           @relation(fields: [tripId], references: [id])
+  scans           ScannedParcel[]
+  user            User            @relation("UserScanningSessions", fields: [staffId], references: [id])
+  office          Office          @relation(fields: [officeId], references: [id])
+  bay             Bay?            @relation(fields: [bayId], references: [id])
+  route           Route           @relation(fields: [routeId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 model TrackingCode {
