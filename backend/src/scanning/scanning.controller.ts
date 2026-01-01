@@ -64,6 +64,7 @@ export class ScanningController {
       tripId?: string;
       bayId?: string;
       bayType?: string;
+      sessionCategory?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "DOCUMENT";
     }
   ) {
     const user = req.user as JwtUser;
@@ -78,6 +79,16 @@ export class ScanningController {
       officeId = dbUser?.officeId ?? null;
     }
     if (!officeId) throw new BadRequestException("Office context required");
+
+    // Validate that the office actually exists before proceeding
+    const office = await this.prisma.office.findUnique({
+      where: { id: officeId },
+    });
+    if (!office) {
+      throw new BadRequestException(
+        "Office not found. Please ensure your user account is assigned to a valid office."
+      );
+    }
 
     // Resolve bayId from bayType if provided
     let bayId = body.bayId;
@@ -118,7 +129,8 @@ export class ScanningController {
       body.routeId,
       body.mode,
       body.tripId,
-      bayId
+      bayId,
+      body.sessionCategory
     );
   }
 

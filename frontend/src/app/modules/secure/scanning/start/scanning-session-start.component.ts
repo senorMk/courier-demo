@@ -68,10 +68,17 @@ export class ScanningSessionStartComponent implements AfterViewInit {
     return user.roleKey === 'receiver';
   }
 
+  // Check if user can select parcel categories (sorter or dispatcher)
+  get canSelectCategory(): boolean {
+    const user = this._userSelection.getCurrentUser();
+    return user.roleKey === 'sorter' || user.roleKey === 'dispatcher';
+  }
+
   form = this.fb.group({
     routeId: ["", Validators.required],
     mode: ["bag", Validators.required],
-    tripId: [""] // Validators will be added dynamically based on bay type
+    tripId: [""], // Validators will be added dynamically based on bay type
+    sessionCategory: [""] // Optional parcel category for sorters and dispatchers
   });
 
   constructor() {
@@ -234,6 +241,8 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       ...(value.tripId ? { tripId: value.tripId } : {}),
       // Add bay type based on role
       ...(bayType ? { bayType } : {}),
+      // Add session category if selected
+      ...(value.sessionCategory ? { sessionCategory: value.sessionCategory } : {}),
     };
 
     this._scanningSessionsService.startSession(payload).subscribe({

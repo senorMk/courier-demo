@@ -211,6 +211,81 @@
             </mat-radio-group>
           </div>
 
+          <!-- Step 2.5: Parcel Category Selection (For Sorters and Dispatchers - Optional) -->
+          <div *ngIf="canSelectCategory" class="space-y-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div
+                class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-lg font-bold">
+                <mat-icon class="!text-base">category</mat-icon>
+              </div>
+              <h3 class="text-2xl font-semibold text-gray-900">Parcel Category</h3>
+              <span class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">Optional</span>
+            </div>
+
+            <div class="bg-purple-50 rounded-lg p-4 mb-4">
+              <div class="flex items-start gap-2">
+                <mat-icon class="text-purple-600 mt-0.5">info</mat-icon>
+                <div class="text-sm text-purple-800">
+                  <strong>Optional:</strong> Select a category to apply to all parcels in this session. If selected, it will override the individual parcel categories and appear on the delivery note. You can proceed without selecting a category.
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div
+                class="cursor-pointer p-6 rounded-xl border-2 hover:bg-gray-50 transition-all"
+                [class.border-purple-500]="form.get('sessionCategory')?.value === 'NORMAL'"
+                [class.bg-purple-50]="form.get('sessionCategory')?.value === 'NORMAL'"
+                (click)="form.patchValue({ sessionCategory: form.get('sessionCategory')?.value === 'NORMAL' ? '' : 'NORMAL' })">
+                <div class="flex items-center justify-between mb-3">
+                  <mat-icon class="text-gray-600 text-2xl">inventory_2</mat-icon>
+                  <mat-icon *ngIf="form.get('sessionCategory')?.value === 'NORMAL'" class="text-purple-600">check_circle</mat-icon>
+                </div>
+                <div class="text-xl font-semibold text-gray-900 mb-1">Normal</div>
+                <div class="text-sm text-gray-600">Standard parcels</div>
+              </div>
+
+              <div
+                class="cursor-pointer p-6 rounded-xl border-2 hover:bg-gray-50 transition-all"
+                [class.border-purple-500]="form.get('sessionCategory')?.value === 'FRAGILE'"
+                [class.bg-purple-50]="form.get('sessionCategory')?.value === 'FRAGILE'"
+                (click)="form.patchValue({ sessionCategory: form.get('sessionCategory')?.value === 'FRAGILE' ? '' : 'FRAGILE' })">
+                <div class="flex items-center justify-between mb-3">
+                  <mat-icon class="text-orange-600 text-2xl">warning</mat-icon>
+                  <mat-icon *ngIf="form.get('sessionCategory')?.value === 'FRAGILE'" class="text-purple-600">check_circle</mat-icon>
+                </div>
+                <div class="text-xl font-semibold text-gray-900 mb-1">Fragile</div>
+                <div class="text-sm text-gray-600">Handle with care</div>
+              </div>
+
+              <div
+                class="cursor-pointer p-6 rounded-xl border-2 hover:bg-gray-50 transition-all"
+                [class.border-purple-500]="form.get('sessionCategory')?.value === 'ELECTRONIC'"
+                [class.bg-purple-50]="form.get('sessionCategory')?.value === 'ELECTRONIC'"
+                (click)="form.patchValue({ sessionCategory: form.get('sessionCategory')?.value === 'ELECTRONIC' ? '' : 'ELECTRONIC' })">
+                <div class="flex items-center justify-between mb-3">
+                  <mat-icon class="text-blue-600 text-2xl">devices</mat-icon>
+                  <mat-icon *ngIf="form.get('sessionCategory')?.value === 'ELECTRONIC'" class="text-purple-600">check_circle</mat-icon>
+                </div>
+                <div class="text-xl font-semibold text-gray-900 mb-1">Electronic</div>
+                <div class="text-sm text-gray-600">Electronic items</div>
+              </div>
+
+              <div
+                class="cursor-pointer p-6 rounded-xl border-2 hover:bg-gray-50 transition-all"
+                [class.border-purple-500]="form.get('sessionCategory')?.value === 'DOCUMENT'"
+                [class.bg-purple-50]="form.get('sessionCategory')?.value === 'DOCUMENT'"
+                (click)="form.patchValue({ sessionCategory: form.get('sessionCategory')?.value === 'DOCUMENT' ? '' : 'DOCUMENT' })">
+                <div class="flex items-center justify-between mb-3">
+                  <mat-icon class="text-green-600 text-2xl">description</mat-icon>
+                  <mat-icon *ngIf="form.get('sessionCategory')?.value === 'DOCUMENT'" class="text-purple-600">check_circle</mat-icon>
+                </div>
+                <div class="text-xl font-semibold text-gray-900 mb-1">Document</div>
+                <div class="text-sm text-gray-600">Important papers</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Step 3: Trip Selection (For Dispatchers and Receivers) -->
           <div *ngIf="canAssignTrips" class="space-y-6" [class.opacity-50]="!form.get('mode')?.value">
             <div class="flex items-center gap-3 mb-6">
@@ -358,7 +433,7 @@
                 </div>
                 <div class="flex justify-between">
                   <span>Time:</span>
-                  <span>{{ session.createdAt | date: 'short' }}</span>
+                  <span>{{ session.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
                 </div>
               </div>
 
