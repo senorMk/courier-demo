@@ -22,6 +22,7 @@ import {
   OfficesSearchService,
   Office,
 } from "../offices/offices-search.service";
+import { ParcelDescriptionsSearchService } from "./parcel-descriptions-search.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
@@ -58,6 +59,10 @@ export class ParcelDialogComponent {
     nonNullable: true,
   });
   selectedOffice: Office | null = null;
+  descriptions$: Observable<string[]> = of([]);
+  descriptionSearchControl = new FormControl<string>("", {
+    nonNullable: true,
+  });
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(
@@ -65,6 +70,7 @@ export class ParcelDialogComponent {
     private _service: ParcelsService,
     private _dialogRef: MatDialogRef<ParcelDialogComponent>,
     private _officesSearch: OfficesSearchService,
+    private _descriptionsSearch: ParcelDescriptionsSearchService,
     private _snackBar: MatSnackBar
   ) {
     this.form = this._fb.group({
@@ -114,6 +120,24 @@ export class ParcelDialogComponent {
       )
     );
 
+    this.descriptions$ = this.descriptionSearchControl.valueChanges.pipe(
+      startWith(""),
+      map((value) => (typeof value === "string" ? value.trim() : "")),
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) =>
+        this._descriptionsSearch
+          .searchDescriptions(query)
+          .pipe(catchError(() => of([])))
+      )
+    );
+
+    this.descriptionSearchControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        this.form.controls["description"].setValue(value, { emitEvent: false });
+      });
+
     this.officeSearchControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
@@ -140,6 +164,11 @@ export class ParcelDialogComponent {
       Boolean
     );
     return parts.join(" • ");
+  };
+
+  displayDescription = (value?: string | null): string => {
+    if (!value) return "";
+    return typeof value === "string" ? value : "";
   };
 
   private filterReceivingOffices(offices: Office[]): Office[] {
