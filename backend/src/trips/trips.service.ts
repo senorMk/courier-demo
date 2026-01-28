@@ -241,6 +241,11 @@ export class TripsService {
       if (!p) continue;
       const code = p.TrackingCode?.plainTextCode || p.id;
       const dest = p.office?.name ? `${p.office.name} (${p.office.branchCode})` : 'destination office';
+      const parcelDescription = p.description || 'package';
+      const senderFirstName = p.customer?.firstName || 'Customer';
+      const senderLastName = p.customer?.lastName || '';
+      const receiverFirstName = p.receiver?.firstName || 'Customer';
+      const receiverLastName = p.receiver?.lastName || '';
       
       try {
         const customerPhone = normalizeZMBPhone(p.customer?.phoneNumber);
@@ -248,8 +253,11 @@ export class TripsService {
           await sendTemplateSms(
             customerPhone,
             SmsTemplates.TRIP.DEPARTED,
+            senderFirstName,
+            senderLastName,
             code,
-            dest
+            dest,
+            parcelDescription
           );
         }
       } catch {}
@@ -260,8 +268,11 @@ export class TripsService {
           await sendTemplateSms(
             receiverPhone,
             SmsTemplates.TRIP.IN_TRANSIT,
+            receiverFirstName,
+            receiverLastName,
             code,
-            dest
+            dest,
+            parcelDescription
           );
         }
       } catch {}
