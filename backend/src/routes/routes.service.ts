@@ -123,7 +123,7 @@ export class RoutesService {
     } : {};
     const offices = await this.prisma.office.findMany({
       where,
-      take: 100,
+      take: 200,
       orderBy: { name: "asc" },
       include: { route: { select: { id: true, name: true, code: true } } },
     });
