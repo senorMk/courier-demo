@@ -65,6 +65,7 @@ export class ScanningController {
       bayId?: string;
       bayType?: string;
       sessionCategory?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "DOCUMENT";
+      town?: string;
     }
   ) {
     const user = req.user as JwtUser;
@@ -130,7 +131,8 @@ export class ScanningController {
       body.mode,
       body.tripId,
       bayId,
-      body.sessionCategory
+      body.sessionCategory,
+      body.town
     );
   }
 

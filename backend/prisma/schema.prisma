@@ -240,6 +240,7 @@ model ScanningSession {
   mode            String // 'bag' | 'individual'
   mailBagCode     String?         @unique
   sessionCategory CargoType? // Optional category applied to all parcels in this session
+  town            String? // Optional town identifier for the scanning session
   startedAt       DateTime        @default(now())
   closedAt        DateTime?
   tripId          String?

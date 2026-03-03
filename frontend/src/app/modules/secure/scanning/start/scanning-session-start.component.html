@@ -162,6 +162,13 @@
                   {{ form.get('routeId')?.value ? 'check_circle' : 'radio_button_unchecked' }}
                 </mat-icon>
               </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Town</mat-label>
+                <input matInput [formControl]="form.controls['town']" placeholder="e.g. Lusaka, Ndola, Kitwe" />
+                <mat-icon matPrefix class="mr-2">location_city</mat-icon>
+                <mat-hint>Optional — identifies the town for this session</mat-hint>
+              </mat-form-field>
             </div>
           </div>
 
@@ -426,6 +433,10 @@
                 <div class="flex justify-between">
                   <span>Mode:</span>
                   <span class="capitalize">{{ session.mode }}</span>
+                </div>
+                <div *ngIf="session.town" class="flex justify-between">
+                  <span>Town:</span>
+                  <span>{{ session.town }}</span>
                 </div>
                  <div class="flex justify-between">
                   <span>Parcels:</span>
