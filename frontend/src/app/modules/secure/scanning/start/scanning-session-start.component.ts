@@ -15,6 +15,7 @@ import { MatRadioModule } from "@angular/material/radio";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
+import { MatInputModule } from "@angular/material/input";
 import { MatTableModule } from "@angular/material/table";
 import { MatPaginatorModule, MatPaginator } from "@angular/material/paginator";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
@@ -34,6 +35,7 @@ import { UserSelectionService } from 'app/services/user-selection.service';
     MatIconModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatInputModule,
     MatTableModule,
     MatPaginatorModule,
     MatSnackBarModule,
@@ -76,6 +78,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
 
   form = this.fb.group({
     routeId: ["", Validators.required],
+    town: [""], // Optional town for the scanning session
     mode: ["bag", Validators.required],
     tripId: [""], // Validators will be added dynamically based on bay type
     sessionCategory: [""] // Optional parcel category for sorters and dispatchers
@@ -218,6 +221,7 @@ export class ScanningSessionStartComponent implements AfterViewInit {
             createdAt: s.createdAt,
             status: s.closedAt ? "Completed" : "Draft",
             totalScans: s._count?.scans || 0,
+            town: s.town || null,
           }));
           this.totalSessions = data.total || 0;
         },
@@ -254,6 +258,8 @@ export class ScanningSessionStartComponent implements AfterViewInit {
       ...(bayType ? { bayType } : {}),
       // Add session category if selected
       ...(value.sessionCategory ? { sessionCategory: value.sessionCategory } : {}),
+      // Add town if provided
+      ...(value.town ? { town: value.town } : {}),
     };
 
     this._scanningSessionsService.startSession(payload).subscribe({

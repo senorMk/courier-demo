@@ -26,7 +26,8 @@ export class ScanningService {
     mode: "bag" | "individual",
     tripId?: string,
     bayId?: string,
-    sessionCategory?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "DOCUMENT"
+    sessionCategory?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "DOCUMENT",
+    town?: string
   ) {
     // Basic validation: ensure office belongs to route
     const office = await this.prisma.office.findUnique({
@@ -114,6 +115,7 @@ export class ScanningService {
         tripId: tripId || null,
         mailBagCode: mode === "bag" ? `MB-${this.time.now().getTime()}` : null,
         sessionCategory: sessionCategory || null,
+        town: town || null,
       },
     });
     return session;

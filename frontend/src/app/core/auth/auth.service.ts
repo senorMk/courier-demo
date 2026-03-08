@@ -225,11 +225,18 @@ export class AuthService {
       return of(false);
     }
 
-    // If the access token exists, assume it's valid.
+    // Verify user data has a valid role. If not, the session is corrupt —
+    // clear it and require re-authentication to break the redirect loop.
+    const role = this.userSelectionService.getCurrentUser().roleKey;
+    if (!role) {
+      localStorage.removeItem('accessToken');
+      this.userSelectionService.clearUser();
+      return of(false);
+    }
+
+    // If the access token exists and user data is valid, assume it's valid.
     // The server will return 401 if it's expired or invalid,
     // which will be handled by the auth interceptor.
-    // This approach avoids issues with incorrect system time.
-    // Completed: Implement refresh token mechanism
     return of(true);
   }
 }
