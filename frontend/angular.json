@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "platinum-web": {
+    "courier-web": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/platinum-web",
+            "outputPath": "dist/courier-web",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -125,13 +125,13 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "platinum-web:build:production"
+              "buildTarget": "courier-web:build:production"
             },
             "qa": {
-              "buildTarget": "platinum-web:build:qa"
+              "buildTarget": "courier-web:build:qa"
             },
             "development": {
-              "buildTarget": "platinum-web:build:development"
+              "buildTarget": "courier-web:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -11,7 +11,7 @@ RUN npm run build -- --configuration=${BUILD_CONFIGURATION}
 FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
-COPY --from=build /app/dist/platinum-web /usr/share/nginx/html
+COPY --from=build /app/dist/courier-web /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Optional: add your own nginx.conf if needed
 
