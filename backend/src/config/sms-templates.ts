@@ -10,7 +10,7 @@ const CUSTOMER_CARE_FOOTER = `
 
 Should you require any clarification or assistance, please feel free to contact us on +260773483020 or +260773826745.
 
-Thank you for choosing Platinum Courier Services. We look forward to serving you again.`;
+Thank you for choosing our courier service. We look forward to serving you again.`;
 
 export const SmsTemplates = {
   PARCEL: {

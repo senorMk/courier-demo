@@ -1,7 +1,7 @@
 {
-  "name": "platinum-courier-services",
+  "name": "courier-management-system",
   "version": "1.0.0",
-  "description": "Platinum Courier Services backend",
+  "description": "Courier Management System backend",
   "main": "dist/main.js",
   "scripts": {
     "start": "nest start",

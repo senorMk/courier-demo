@@ -190,7 +190,7 @@ export async function generateReceiptsForParcel(
 
     // drawReceiptLogo(doc, t.key);
 
-    doc.font('Helvetica-Bold').fontSize(14).text('Platinum Courier Services', { align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(14).text('Courier Management System', { align: 'center' });
     doc.moveDown(0.3);
     doc.font('Helvetica').fontSize(10).text(`Date: ${formattedDate}`, { align: 'center' });
     doc.moveDown(0.5);
@@ -307,7 +307,7 @@ export async function generateReceiptsForParcel(
       doc.font('Helvetica').fontSize(8);
       drawCenteredText(
         doc,
-        'DISCLAIMER: Platinum Courier Services Shall Only Be Liable For Loss Or Damage Based on The Value Declared',
+        'DISCLAIMER: Courier Management System Shall Only Be Liable For Loss Or Damage Based on The Value Declared',
         { font: 'Helvetica', fontSize: 8 },
       );
     }

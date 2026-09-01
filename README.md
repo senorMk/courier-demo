@@ -1,6 +1,6 @@
-# Platinum Courier Services - Management System
+# Courier Management System
 
-A comprehensive parcel tracking and courier management platform for Platinum Courier Services Zambia. This system provides end-to-end management of courier operations including parcel booking, tracking, office management, trip scheduling, and delivery coordination.
+A comprehensive parcel tracking and courier management platform. This system provides end-to-end management of courier operations including parcel booking, tracking, office management, trip scheduling, and delivery coordination.
 
 ## Overview
 
@@ -331,4 +331,4 @@ When contributing to this repository:
 
 ## License
 
-Copyright (c) 2024 Platinum Courier Services Zambia. All rights reserved.
+Copyright (c) 2024 Courier Management System. All rights reserved.
