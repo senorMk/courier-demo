@@ -9,8 +9,8 @@ permissions:
   packages: write
 
 env:
-  GHCR_BACKEND: ghcr.io/platinumproject2025/pcs-zambia-backend
-  GHCR_FRONTEND: ghcr.io/platinumproject2025/pcs-zambia-frontend
+  GHCR_BACKEND: ghcr.io/${{ github.repository_owner }}/courier-backend
+  GHCR_FRONTEND: ghcr.io/${{ github.repository_owner }}/courier-frontend
 
 jobs:
   build-and-push:
@@ -65,19 +65,16 @@ jobs:
           port: ${{ secrets.SSH_PORT_PRODUCTION_VPS }}
           script: |
             set -Eeuo pipefail
-            cd ~/projects/pcs-zambia
+            cd ~/projects/courier-demo
 
             COMPOSE_FILE=docker-compose.prod.yml
-            export COMPOSE_PROJECT_NAME=pcs-zambia
+            export COMPOSE_PROJECT_NAME=courier
 
             # Login to GHCR for this session (private packages)
             echo "${{ secrets.GHCR_READ_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_READ_USER }}" --password-stdin
 
-            # Stop any old stack (either with our project name or leftovers with fixed names)
+            # Stop any old stack
             sudo docker compose -f ${COMPOSE_FILE} down --remove-orphans || true
-
-            # (safety) remove legacy fixed-name containers if they still exist
-            sudo docker rm -f platinum-db redis_testqueues platinum-app platinum-nginx 2>/dev/null || true
 
             # Ensure external volume exists (no-op if it already exists)
             sudo docker volume create postgres_data >/dev/null
