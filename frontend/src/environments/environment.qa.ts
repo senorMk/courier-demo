@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   hmr: false,
-  serverURL: "https://api.courier.ceofficesolutions.com/api",
+  serverURL: "https://courier.ceofficesolutions.com/api",
   headers: {
     "Content-Type": "application/json",
   },
