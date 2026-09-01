@@ -107,7 +107,7 @@ npm install
 
 # create .env
 cat <<'ENV' > .env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/platinum
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/courier
 NODE_ENV=development
 PORT=3000
 REDIS_HOST=localhost
@@ -250,7 +250,7 @@ npx prisma migrate dev -n add_parcel_sending_office
 The backend requires the following environment variables (create a `.env` file in the `backend/` directory):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/platinum
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/courier
 NODE_ENV=development
 PORT=3000
 REDIS_HOST=localhost
