@@ -61,7 +61,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST_PRODUCTION_VPS }}
           username: ${{ secrets.SSH_USER_PRODUCTION_VPS }}
-          password: ${{ secrets.SSH_PASSWORD_PRODUCTION_VPS }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_PRODUCTION_VPS }}
           port: ${{ secrets.SSH_PORT_PRODUCTION_VPS }}
           script: |
             set -Eeuo pipefail
