@@ -1,3 +1,3 @@
-# Platinum Backend System
+# Courier Management System - Backend
 
 Web based parcel tracking system.

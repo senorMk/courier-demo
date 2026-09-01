@@ -14,57 +14,57 @@ const DEFAULT_PASSWORD = 'ChangeMe123!';
 // User data for each role
 const ROLE_USERS = {
   'managing-director': {
-    email: 'director@platinum.co.zm',
+    email: 'director@courier.co.zm',
     firstName: 'Director',
-    lastName: 'Platinum',
+    lastName: 'Admin',
   },
   'operations-officer': {
-    email: 'operations@platinum.co.zm',
+    email: 'operations@courier.co.zm',
     firstName: 'Operations',
     lastName: 'Officer',
   },
   'dispatcher': {
-    email: 'dispatch@platinum.co.zm',
+    email: 'dispatch@courier.co.zm',
     firstName: 'Dispatch',
     lastName: 'Manager',
   },
   'supervisor': {
-    email: 'supervisor@platinum.co.zm',
+    email: 'supervisor@courier.co.zm',
     firstName: 'Team',
     lastName: 'Supervisor',
   },
   'cashier': {
-    email: 'cashier@platinum.co.zm',
+    email: 'cashier@courier.co.zm',
     firstName: 'Cash',
     lastName: 'Manager',
   },
   'receiver': {
-    email: 'receiver@platinum.co.zm',
+    email: 'receiver@courier.co.zm',
     firstName: 'Parcel',
     lastName: 'Receiver',
   },
   'sorter': {
-    email: 'sorter@platinum.co.zm',
+    email: 'sorter@courier.co.zm',
     firstName: 'Parcel',
     lastName: 'Sorter',
   },
   'driver': {
-    email: 'driver@platinum.co.zm',
+    email: 'driver@courier.co.zm',
     firstName: 'Delivery',
     lastName: 'Driver',
   },
   'assistant-driver': {
-    email: 'assistant@platinum.co.zm',
+    email: 'assistant@courier.co.zm',
     firstName: 'Assistant',
     lastName: 'Driver',
   },
   'customer-service-agent': {
-    email: 'support@platinum.co.zm',
+    email: 'support@courier.co.zm',
     firstName: 'Customer',
     lastName: 'Support',
   },
   'customer-service-director': {
-    email: 'csdirector@platinum.co.zm',
+    email: 'csdirector@courier.co.zm',
     firstName: 'Customer Service',
     lastName: 'Director',
   },

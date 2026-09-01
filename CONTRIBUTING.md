@@ -1,4 +1,4 @@
-# Contributing to Platinum Courier Services
+# Contributing to Courier Management System
 
 This document provides guidelines and instructions for contributing to the project.
 

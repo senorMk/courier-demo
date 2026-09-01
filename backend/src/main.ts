@@ -52,8 +52,8 @@ async function bootstrap() {
   }));
 
   const config = new DocumentBuilder()
-    .setTitle("Platinum Backend API")
-    .setDescription("API documentation for Platinum Backend")
+    .setTitle("Courier Management System API")
+    .setDescription("API documentation for Courier Management System")
     .setVersion("1.0")
     .build();
   const document = SwaggerModule.createDocument(app, config);
@@ -62,12 +62,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       "http://localhost:4200",
-      "https://platinumcourier.co.zm",
-      "https://www.platinumcourier.co.zm",
-      /^https?:\/\/([a-z0-9-]+\.)?platinumcourier\.co\.zm$/i, // allow any subdomain
-      "https://pcs-zambia.com",
-      "https://www.pcs-zambia.com",
-      /^https?:\/\/([a-z0-9-]+\.)?pcs-zambia\.com$/i, // allow any subdomain
+      "https://courier.ceofficesolutions.com",
+      "https://www.courier.ceofficesolutions.com",
+      /^https?:\/\/([a-z0-9-]+\.)?courier\.ceofficesolutions\.com$/i, // allow any subdomain
     ],
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

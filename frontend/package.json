@@ -1,7 +1,7 @@
 {
-    "name": "platinum-web",
+    "name": "courier-web",
     "version": "21.0.0",
-    "description": "Platinum Courier Services - Web Application",
+    "description": "Courier Management System - Web Application",
     "private": true,
     "scripts": {
         "ng": "ng",
