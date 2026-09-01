@@ -21,7 +21,7 @@ function resolveCandidates(): string[] {
   }
 
   list.push(
-    path.resolve(process.cwd(), '..', 'frontend', 'public', 'images', 'logo', 'Platinum Logo.jpg'),
+    path.resolve(process.cwd(), '..', 'frontend', 'public', 'images', 'logo', 'icypeed-logo.png'),
     path.resolve(process.cwd(), '..', 'frontend', 'public', 'images', 'logo', 'logo.svg'),
     path.resolve(process.cwd(), '..', 'frontend', 'public', 'images', 'logo', 'logo.png'),
     path.resolve(process.cwd(), 'assets', 'logo.svg'),
