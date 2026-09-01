@@ -9,8 +9,8 @@ permissions:
   packages: write
 
 env:
-  GHCR_BACKEND: ghcr.io/${{ github.repository_owner }}/courier-backend
-  GHCR_FRONTEND: ghcr.io/${{ github.repository_owner }}/courier-frontend
+  GHCR_BACKEND: ghcr.io/senormk/courier-backend
+  GHCR_FRONTEND: ghcr.io/senormk/courier-frontend
 
 jobs:
   build-and-push:
