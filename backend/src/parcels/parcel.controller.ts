@@ -85,6 +85,9 @@ export class ParcelController {
         value: number;
         size?: "SMALL" | "MEDIUM" | "LARGE";
         cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
+        vendorName?: string;
+        vendorTrackingNumber?: string;
+        vendorContactInfo?: string;
         payment?: {
           method: "CASH" | "MOBILE_MONEY" | "CARD";
           amount: number;
@@ -92,12 +95,10 @@ export class ParcelController {
         };
       }
       | {
-        customer: {
-          firstName: string;
-          lastName: string;
-          phoneNumber: string;
-          emailAddress?: string;
-          idNumber?: string;
+        vendor: {
+          name: string;
+          trackingNumber?: string;
+          contactInfo?: string;
         };
         receiver: {
           firstName: string;
@@ -390,24 +391,15 @@ export class ParcelController {
 
       const cleanCode = trackingCode.trim().toUpperCase();
 
-      // First try strict validation for new format (no dashes)
-      // Format: routeCode + destinationCode + branchCode + parcelNumber
-      // Example: ABCDEFGHI123
-      const strictPattern = /^[A-Z0-9]{6,36}\d+$/;
-
-      if (strictPattern.test(cleanCode)) {
-        return await this.parcelService.getPublicTrackingInfo(cleanCode);
-      }
-
-      // Fallback: try old format with dashes for backward compatibility
-      const legacyPattern = /^[A-Z0-9]{2,12}-[A-Z0-9]{2,12}-[A-Z0-9]{2,12}-\d+$/;
-      if (legacyPattern.test(cleanCode)) {
-        // Try direct database lookup for old format
+      // Try direct database lookup for any reasonable-looking code
+      // This supports both new format (no dashes) and legacy formats (with dashes)
+      const reasonablePattern = /^[A-Z0-9\-]{3,40}$/;
+      if (reasonablePattern.test(cleanCode)) {
         try {
           return await this.parcelService.getPublicTrackingInfo(cleanCode);
         } catch (dbError) {
-          // If database lookup fails, return invalid format error
-          throw new NotFoundException("Invalid tracking code format");
+          // If database lookup fails, return not found
+          throw new NotFoundException("Parcel not found");
         }
       }
 
@@ -596,6 +588,18 @@ export class ParcelController {
       return await this.parcelService.fixParcelsWithNullCreatedBy();
     } catch (e) {
       console.error("ParcelController.fixParcelCreatedBy error:", e);
+      throw e;
+    }
+  }
+
+  @Post("backfill-vendor-details")
+  @UseGuards(AuthGuard("jwt"), RolesGuard)
+  @SetMetadata("roles", ["managing-director"])
+  async backfillVendorDetails() {
+    try {
+      return await this.parcelService.backfillVendorDetails();
+    } catch (e) {
+      console.error("ParcelController.backfillVendorDetails error:", e);
       throw e;
     }
   }

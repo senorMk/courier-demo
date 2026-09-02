@@ -6,15 +6,15 @@ import { environment } from '../../../../environments/environment';
 export interface Customer {
   id: string;
   firstName: string;
-  lastName: string;
+  lastName?: string | null;
   phoneNumber: string;
-  emailAddress?: string;
-  idNumber?: string;
+  emailAddress?: string | null;
+  idNumber?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class CustomersSearchService {
-  constructor(private _http: HttpClient) {}
+  constructor(private _http: HttpClient) { }
 
   getToken() {
     return localStorage.getItem('accessToken');
@@ -29,7 +29,7 @@ export class CustomersSearchService {
     return httpOptions;
   }
 
-  searchCustomers(query: string) {
+  searchCustomers(query: string): Observable<Customer[]> {
     const baseUrl = environment.serverURL;
     return this._http.get<Customer[]>(`${baseUrl}/v1/customers/search?q=${encodeURIComponent(query)}`, this.getHeader());
   }

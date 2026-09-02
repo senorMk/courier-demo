@@ -8,73 +8,74 @@
 </h1>
 <div mat-dialog-content [formGroup]="form" class="flex flex-col gap-4">
   <mat-horizontal-stepper [linear]="true" #stepper>
-    <mat-step [stepControl]="form.controls['customer']" label="Sender">
-      <form [formGroup]="form.controls['customer']">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <mat-step [stepControl]="form.controls['vendor']" label="Vendor">
+      <form [formGroup]="form.controls['vendor']">
+        <div class="flex flex-col gap-4">
           <mat-form-field appearance="fill">
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="firstName" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-error *ngIf="form.get('customer.firstName')?.hasError('required')">Name is required</mat-error>
+            <mat-label>Vendor Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. Amazon, eBay, Takealot" style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <mat-error *ngIf="form.get('vendor.name')?.hasError('required')">Vendor name is required</mat-error>
           </mat-form-field>
           <mat-form-field appearance="fill">
-            <mat-label>Phone Number</mat-label>
-            <span matPrefix style="
-                margin-right: 4px;
-                font-size: 0.875rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              ">+260</span>
-            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('required')">Phone number is
-              required</mat-error>
-            <mat-error *ngIf="form.get('customer.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g.
-              971234567)</mat-error>
+            <mat-label>Vendor Tracking Number</mat-label>
+            <input matInput formControlName="trackingNumber" placeholder="Vendor's tracking reference" style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Vendor Contact Info</mat-label>
+            <input matInput formControlName="contactInfo" placeholder="Phone, email, or address" style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
           </mat-form-field>
         </div>
       </form>
       <div class="flex justify-end gap-2 mt-2">
-        <button mat-stroked-button matStepperNext [disabled]="form.controls['customer'].invalid">
+        <button mat-stroked-button matStepperNext [disabled]="form.controls['vendor'].invalid">
           Next
         </button>
       </div>
     </mat-step>
 
-    <mat-step [stepControl]="form.controls['receiver']" label="Receiver">
+    <mat-step [stepControl]="form.controls['receiver']" label="Customer">
       <form [formGroup]="form.controls['receiver']">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-4">
           <mat-form-field appearance="fill">
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="firstName" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">Name is required</mat-error>
+            <mat-label>Search existing customer</mat-label>
+            <input type="text" matInput [matAutocomplete]="customerAuto" [formControl]="customerSearchControl"
+              placeholder="Type name or phone to search" style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
+            <button matSuffix mat-icon-button type="button" aria-label="Clear customer search"
+              *ngIf="customerSearchControl.value" (click)="customerSearchControl.setValue(''); selectedCustomer = null;">
+              <mat-icon>close</mat-icon>
+            </button>
+            <mat-autocomplete #customerAuto="matAutocomplete" [displayWith]="displayCustomer">
+              <mat-option *ngFor="let customer of customers$ | async" [value]="customer">
+                <div class="flex flex-col">
+                  <span class="font-medium">{{ customer.firstName }}<span *ngIf="customer.lastName"> {{ customer.lastName }}</span></span>
+                  <span class="text-xs text-gray-500">{{ customer.phoneNumber }}</span>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
           </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>Phone Number</mat-label>
-            <span matPrefix style="
-                margin-right: 4px;
-                font-size: 0.875rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              ">+260</span>
-            <input matInput formControlName="phoneNumber" maxlength="9" inputmode="numeric" pattern="[0-9]*" style="
-                font-size: 0.875rem;
-                line-height: 1.23rem;
-                font-family: &quot;Inter&quot;, sans-serif;
-              " />
-            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('required')">Phone number is
-              required</mat-error>
-            <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')">Enter 9 digits (e.g.
-              971234567)</mat-error>
-          </mat-form-field>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <mat-form-field appearance="fill">
+              <mat-label>Name</mat-label>
+              <input matInput formControlName="firstName" style="
+                  font-size: 0.875rem;
+                  line-height: 1.23rem;
+                  font-family: &quot;Inter&quot;, sans-serif;
+                " />
+              <mat-error *ngIf="form.get('receiver.firstName')?.hasError('required')">Name is required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>Phone Number</mat-label>
+              <input matInput formControlName="phoneNumber" placeholder="e.g. +27 82 123 4567 or +260 97 123 4567" style="
+                  font-size: 0.875rem;
+                  line-height: 1.23rem;
+                  font-family: &quot;Inter&quot;, sans-serif;
+                " />
+              <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('required')">Phone number is
+                required</mat-error>
+              <mat-error *ngIf="form.get('receiver.phoneNumber')?.hasError('pattern')">Enter a valid phone number with country code</mat-error>
+            </mat-form-field>
+          </div>
         </div>
       </form>
       <div class="flex justify-between gap-2 mt-2">
@@ -85,8 +86,29 @@
       </div>
     </mat-step>
 
-    <mat-step [stepControl]="form" label="Details & Payment">
+    <mat-step [stepControl]="form" label="Parcel Details">
       <div class="flex flex-col gap-4">
+        <!-- Origin Selection -->
+        <div>
+          <div style="
+              font-weight: 600;
+              font-family: &quot;Inter&quot;, sans-serif;
+              margin: 4px 0 6px;
+            ">
+            Origin
+          </div>
+          <mat-form-field appearance="fill" style="width: 100%">
+            <mat-label>Where is this parcel coming from?</mat-label>
+            <mat-select formControlName="originCountry">
+              <mat-option value="SA">South Africa</mat-option>
+              <mat-option value="UK">United Kingdom</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls['originCountry'].hasError('required')">
+              Origin is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
         <mat-form-field appearance="fill">
           <mat-label>Description</mat-label>
           <input type="text" matInput [matAutocomplete]="descAuto" [formControl]="descriptionSearchControl"
@@ -163,9 +185,9 @@
         </div>
 
         <mat-form-field appearance="fill">
-          <mat-label>Destination</mat-label>
+          <mat-label>Destination (Zambia)</mat-label>
           <input type="text" matInput [matAutocomplete]="officeAuto" [formControl]="officeSearchControl"
-            [placeholder]="'Search destination by name, branch, or route'" />
+            [placeholder]="'Search destination office in Zambia'" />
           <button matSuffix mat-icon-button type="button" aria-label="Clear destination search"
             *ngIf="officeSearchControl.value" (click)="officeSearchControl.setValue('')">
             <mat-icon>close</mat-icon>
@@ -187,50 +209,29 @@
           <mat-error *ngIf="form.controls['officeId'].hasError('required')">Destination is required</mat-error>
         </mat-form-field>
 
-        <div [formGroup]="form.controls['payment']">
-          <div style="
-              font-weight: 600;
-              font-family: &quot;Inter&quot;, sans-serif;
-              margin: 4px 0 6px;
-            ">
-            Payment
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <mat-form-field appearance="fill">
-              <mat-label>Method</mat-label>
-              <mat-select formControlName="method">
-                <mat-option value="CASH">Cash</mat-option>
-                <mat-option value="MOBILE_MONEY">Mobile Money</mat-option>
-                <mat-option value="CARD">Card</mat-option>
-              </mat-select>
-              <mat-error *ngIf="form.get('payment.method')?.hasError('required')">Payment method is required</mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Amount</mat-label>
-              <span matPrefix
-                style="margin-right: 4px; font-size: 0.875rem; font-family: 'Inter', sans-serif;">ZMW</span>
-              <input matInput type="number" min="0" formControlName="amount"
-                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
-              <mat-error *ngIf="form.get('payment.amount')?.hasError('required')">Amount is required</mat-error>
-              <mat-error *ngIf="form.get('payment.amount')?.hasError('min')">Amount must be positive</mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Reference</mat-label>
-              <input matInput formControlName="reference"
-                style="font-size: 0.875rem; line-height: 1.23rem; font-family: 'Inter', sans-serif;" />
-            </mat-form-field>
+        <!-- Payment on Collection Notice -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+          <div class="flex items-start gap-3">
+            <mat-icon class="text-blue-600 mt-0.5" style="font-size: 20px; width: 20px; height: 20px;">info</mat-icon>
+            <div class="text-sm" style="font-family: 'Inter', sans-serif;">
+              <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">Payment on Collection</div>
+              <div style="color: #1e40af;">
+                Payment will be collected from the receiver when they collect their parcel in Zambia.
+                The receiver will be notified via SMS when their parcel is ready for collection.
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="text-sm" style="font-family: 'Inter', sans-serif;">
           <div style="font-weight: 600; margin-bottom: 6px;">Review</div>
+          <div>Origin: {{ form.value.originCountry === 'SA' ? 'South Africa' : 'United Kingdom' }}</div>
           <div>Description: {{ form.value.description }}</div>
           <div>Declared Value: ZMW {{ form.value.value }}</div>
-          <div>Sender: {{ form.value.customer.firstName }} · +260{{ form.value.customer.phoneNumber }}</div>
-          <div>Receiver: {{ form.value.receiver.firstName }} · +260{{ form.value.receiver.phoneNumber }}</div>
+          <div>Vendor: {{ form.value.vendor.name }}<span *ngIf="form.value.vendor.trackingNumber"> · Tracking: {{ form.value.vendor.trackingNumber }}</span></div>
+          <div>Customer: {{ form.value.receiver.firstName }} · {{ form.value.receiver.phoneNumber }}</div>
           <div>Destination: {{ selectedOffice ? displayOffice(selectedOffice) : 'Not selected' }}</div>
-          <div>Size: {{ form.value.size }} · Amount: ZMW {{ form.value.payment?.amount }} ({{ form.value.payment?.method
-            }})</div>
+          <div>Size: {{ form.value.size }} · Cargo Type: {{ form.value.cargoType }}</div>
         </div>
       </div>
 
@@ -238,7 +239,7 @@
         <button mat-stroked-button matStepperPrevious>Back</button>
         <button style="background-color: #1D4ED8; color: white;" mat-flat-button (click)="save()"
           class="custom-primary-btn" [disabled]="form.invalid || loading">
-          Save
+          Create Parcel
         </button>
       </div>
     </mat-step>

@@ -137,6 +137,9 @@ model Parcel {
   cargoType          CargoType?              @default(NORMAL)
   description        String
   value              Float                   @default(0)
+  vendorName         String?
+  vendorTrackingNumber String?
+  vendorContactInfo  String?
   arrivedAt          DateTime? // Timestamp when parcel arrived at receiving office
   cancelledAt        DateTime?
   cancellationReason String?

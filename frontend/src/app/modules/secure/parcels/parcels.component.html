@@ -113,9 +113,9 @@
                 </span>
               </td>
             </ng-container>
-            <ng-container matColumnDef="customerId">
-              <th mat-header-cell *matHeaderCellDef>Sender</th>
-              <td mat-cell *matCellDef="let element">{{ element?.customer?.firstName }}</td>
+            <ng-container matColumnDef="vendorName">
+              <th mat-header-cell *matHeaderCellDef>Vendor</th>
+              <td mat-cell *matCellDef="let element">{{ element?.vendorName || '—' }}</td>
             </ng-container>
             <ng-container matColumnDef="receiverId">
               <th mat-header-cell *matHeaderCellDef>Receiver</th>
@@ -350,9 +350,9 @@
                 </span>
               </td>
             </ng-container>
-            <ng-container matColumnDef="customerId">
-              <th mat-header-cell *matHeaderCellDef>Sender</th>
-              <td mat-cell *matCellDef="let element">{{ element?.customer?.firstName }}</td>
+            <ng-container matColumnDef="vendorName">
+              <th mat-header-cell *matHeaderCellDef>Vendor</th>
+              <td mat-cell *matCellDef="let element">{{ element?.vendorName || '—' }}</td>
             </ng-container>
             <ng-container matColumnDef="receiverId">
               <th mat-header-cell *matHeaderCellDef>Receiver</th>

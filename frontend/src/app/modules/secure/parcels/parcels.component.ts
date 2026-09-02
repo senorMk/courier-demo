@@ -75,7 +75,7 @@ export class ParcelsComponent implements OnInit {
     "trackingCode",
     "parcelNumber",
     "description",
-    "customerId",
+    "vendorName",
     "receiverId",
     "sendingOfficeId",
     "destinationId",

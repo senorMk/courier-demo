@@ -22,6 +22,10 @@ import {
   OfficesSearchService,
   Office,
 } from "../offices/offices-search.service";
+import {
+  CustomersSearchService,
+  Customer,
+} from "../customers/customers-search.service";
 import { ParcelDescriptionsSearchService } from "./parcel-descriptions-search.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -59,6 +63,11 @@ export class ParcelDialogComponent {
     nonNullable: true,
   });
   selectedOffice: Office | null = null;
+  customers$: Observable<Customer[]> = of([]);
+  customerSearchControl = new FormControl<string | Customer>("", {
+    nonNullable: true,
+  });
+  selectedCustomer: Customer | null = null;
   descriptions$: Observable<string[]> = of([]);
   descriptionSearchControl = new FormControl<string>("", {
     nonNullable: true,
@@ -70,22 +79,21 @@ export class ParcelDialogComponent {
     private _service: ParcelsService,
     private _dialogRef: MatDialogRef<ParcelDialogComponent>,
     private _officesSearch: OfficesSearchService,
+    private _customersSearch: CustomersSearchService,
     private _descriptionsSearch: ParcelDescriptionsSearchService,
     private _snackBar: MatSnackBar
   ) {
     this.form = this._fb.group({
-      customer: this._fb.group({
-        firstName: ["", Validators.required],
-        phoneNumber: [
-          "",
-          [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
-        ],
+      vendor: this._fb.group({
+        name: ["", Validators.required],
+        trackingNumber: [""],
+        contactInfo: [""],
       }),
       receiver: this._fb.group({
         firstName: ["", Validators.required],
         phoneNumber: [
           "",
-          [Validators.required, Validators.pattern(/^[0-9]{9}$/)],
+          [Validators.required, Validators.pattern(/^\+?[1-9]\d{1,14}$/)],
         ],
       }),
       description: ["", Validators.required],
@@ -93,11 +101,7 @@ export class ParcelDialogComponent {
       officeId: ["", Validators.required],
       size: ["MEDIUM", Validators.required],
       cargoType: ["NORMAL", Validators.required],
-      payment: this._fb.group({
-        method: ["CASH", Validators.required],
-        amount: [null, [Validators.required, Validators.min(0)]],
-        reference: [""],
-      }),
+      originCountry: ["SA", Validators.required],
     });
     this.setupUppercaseTransformers();
     this.offices$ = this.officeSearchControl.valueChanges.pipe(
@@ -117,6 +121,23 @@ export class ParcelDialogComponent {
             map((offices) => this.filterReceivingOffices(offices)),
             catchError(() => of([]))
           )
+      )
+    );
+
+    this.customers$ = this.customerSearchControl.valueChanges.pipe(
+      startWith(""),
+      map((value) =>
+        typeof value === "string"
+          ? value
+          : value?.firstName || value?.phoneNumber || ""
+      ),
+      map((value) => value.trim()),
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((query) =>
+        this._customersSearch
+          .searchCustomers(query)
+          .pipe(catchError(() => of([])))
       )
     );
 
@@ -151,6 +172,22 @@ export class ParcelDialogComponent {
           this.selectedOffice = value;
         }
       });
+
+    this.customerSearchControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (typeof value === "string") {
+          this.selectedCustomer = null;
+          return;
+        }
+        if (value && value.id) {
+          this.selectedCustomer = value;
+          this.form.controls["receiver"].setValue({
+            firstName: value.firstName || "",
+            phoneNumber: value.phoneNumber || "",
+          });
+        }
+      });
   }
 
   displayOffice = (office?: Office | string | null): string => {
@@ -163,6 +200,17 @@ export class ParcelDialogComponent {
     const parts = [office.name, office.branchCode, office.route?.name].filter(
       Boolean
     );
+    return parts.join(" • ");
+  };
+
+  displayCustomer = (customer?: Customer | string | null): string => {
+    if (!customer) {
+      return "";
+    }
+    if (typeof customer === "string") {
+      return customer;
+    }
+    const parts = [customer.firstName, customer.phoneNumber].filter(Boolean);
     return parts.join(" • ");
   };
 
@@ -187,20 +235,23 @@ export class ParcelDialogComponent {
     this.loading = true;
     const raw = this.form.value as any;
     const payload = {
-      ...raw,
+      vendor: {
+        name: (raw.vendor?.name || "").trim(),
+        trackingNumber: (raw.vendor?.trackingNumber || "").trim(),
+        contactInfo: (raw.vendor?.contactInfo || "").trim(),
+      },
+      receiver: {
+        firstName: raw.receiver.firstName,
+        phoneNumber: raw.receiver.phoneNumber,
+      },
       description: (raw.description || "").trim(),
       value: raw.value !== null && raw.value !== undefined ? Number(raw.value) : raw.value,
-      payment: raw.payment
-        ? {
-            ...raw.payment,
-            amount:
-              raw.payment.amount !== null && raw.payment.amount !== undefined
-                ? Number(raw.payment.amount)
-                : raw.payment.amount,
-          }
-        : raw.payment,
+      officeId: raw.officeId,
+      size: raw.size,
+      cargoType: raw.cargoType,
+      originCountry: raw.originCountry,
     };
-    this._service.createParcel(payload).subscribe({
+    this._service.createParcel(payload as any).subscribe({
       next: (created) => {
         this.loading = false;
         const parcelId = (created as any)?.id;
@@ -239,10 +290,8 @@ export class ParcelDialogComponent {
   // Keep cashier-entered text fields consistently uppercased
   private setupUppercaseTransformers(): void {
     const uppercasePaths = [
-      "customer.firstName",
       "receiver.firstName",
       "description",
-      "payment.reference",
     ];
 
     uppercasePaths.forEach((path) => this.uppercaseControl(path));

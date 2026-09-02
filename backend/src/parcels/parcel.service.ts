@@ -32,6 +32,9 @@ export class ParcelService {
           value: number;
           size?: "SMALL" | "MEDIUM" | "LARGE";
           cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
+          vendorName?: string;
+          vendorTrackingNumber?: string;
+          vendorContactInfo?: string;
           payment?: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
             amount: number;
@@ -39,9 +42,10 @@ export class ParcelService {
           };
         }
       | {
-          customer: {
-            firstName: string;
-            phoneNumber: string;
+          vendor: {
+            name: string;
+            trackingNumber?: string;
+            contactInfo?: string;
           };
           receiver: {
             firstName: string;
@@ -53,7 +57,7 @@ export class ParcelService {
           sendingOfficeId?: string;
           size: "SMALL" | "MEDIUM" | "LARGE";
           cargoType?: "NORMAL" | "FRAGILE" | "ELECTRONIC" | "ELECTRONIC_SENSITIVE" | "DOCUMENT";
-          payment: {
+          payment?: {
             method: "CASH" | "MOBILE_MONEY" | "CARD";
             amount: number;
             reference?: string;
@@ -82,7 +86,7 @@ export class ParcelService {
       }
     }
 
-    // Determine whether we received IDs or nested customer objects
+    // Determine whether we received IDs or nested receiver object
     let customerId: string;
     let receiverId: string;
 
@@ -91,36 +95,22 @@ export class ParcelService {
       receiverId = data.receiverId;
     } else {
       const payload = data as any;
-      const customerPhone = normalizeZMBPhone(payload.customer.phoneNumber);
       const receiverPhone = normalizeZMBPhone(payload.receiver.phoneNumber);
-      if (!customerPhone || !receiverPhone) {
-        throw new BadRequestException('Invalid phone number supplied for sender or receiver');
+      if (!receiverPhone) {
+        throw new BadRequestException('Invalid phone number supplied for customer');
       }
-      const [customer, receiver] = await Promise.all([
-        this.prisma.customer.upsert({
-          where: { phoneNumber: customerPhone },
-          create: {
-            firstName: payload.customer.firstName,
-            phoneNumber: customerPhone,
-          },
-          update: {
-            firstName: payload.customer.firstName,
-            phoneNumber: customerPhone,
-          },
-        }),
-        this.prisma.customer.upsert({
-          where: { phoneNumber: receiverPhone },
-          create: {
-            firstName: payload.receiver.firstName,
-            phoneNumber: receiverPhone,
-          },
-          update: {
-            firstName: payload.receiver.firstName,
-            phoneNumber: receiverPhone,
-          },
-        }),
-      ]);
-      customerId = customer.id;
+      const receiver = await this.prisma.customer.upsert({
+        where: { phoneNumber: receiverPhone },
+        create: {
+          firstName: payload.receiver.firstName,
+          phoneNumber: receiverPhone,
+        },
+        update: {
+          firstName: payload.receiver.firstName,
+          phoneNumber: receiverPhone,
+        },
+      });
+      customerId = receiver.id;
       receiverId = receiver.id;
     }
 
@@ -140,6 +130,11 @@ export class ParcelService {
       cargoType = "ELECTRONIC";
     }
 
+    const payload = data as any;
+    const vendorName = payload.vendor?.name?.trim() || null;
+    const vendorTrackingNumber = payload.vendor?.trackingNumber?.trim() || null;
+    const vendorContactInfo = payload.vendor?.contactInfo?.trim() || null;
+
     const parcel = await this.prisma.parcel.create({
       data: {
         customerId,
@@ -150,6 +145,9 @@ export class ParcelService {
         cargoType,
         description,
         value: Number(declaredValueRaw.toFixed(2)),
+        vendorName,
+        vendorTrackingNumber,
+        vendorContactInfo,
         createdById: options?.cashierId || null,
       },
     });
@@ -209,15 +207,12 @@ try {
   console.error("Failed to generate receipts", e);
 }
 
-    // Send SMS notifications (sender & receiver)
+    // Send SMS notification to receiver (customer)
     try {
       const tracking = await this.prisma.trackingCode.findUnique({
         where: { parcelId: parcel.id },
       });
       const code = tracking?.plainTextCode;
-      const sender = await this.prisma.customer.findUnique({
-        where: { id: customerId },
-      });
       const receiver = await this.prisma.customer.findUnique({
         where: { id: receiverId },
       });
@@ -230,22 +225,6 @@ try {
         where: { id: parcel.officeId },
       });
       
-      if (sender?.phoneNumber && code) {
-        const senderMsisdn = normalizeZMBPhone(sender.phoneNumber as any);
-        if (senderMsisdn) {
-          await sendTemplateSms(
-            senderMsisdn,
-            SmsTemplates.PARCEL.CREATED.SENDER,
-            sender.firstName,
-            sender.lastName,
-            sendingOffice?.name || 'Unknown',
-            destinationOffice?.name || 'Unknown',
-            code,
-            `${receiver?.firstName || ''} ${receiver?.lastName || ''}`.trim() || 'Unknown',
-            description
-          );
-        }
-      }
       if (receiver?.phoneNumber && code) {
         const receiverMsisdn = normalizeZMBPhone(receiver.phoneNumber as any);
         if (receiverMsisdn) {
@@ -257,7 +236,7 @@ try {
             sendingOffice?.name || 'Unknown',
             destinationOffice?.name || 'Unknown',
             code,
-            `${sender.firstName} ${sender.lastName}`,
+            vendorName || 'Unknown Vendor',
             description
           );
         }
@@ -1692,6 +1671,43 @@ try {
       parcelsUpdated: updatedCount,
       parcelsSkipped: skippedCount,
       orphanedParcels: orphanedCount,
+    };
+  }
+
+  async backfillVendorDetails() {
+    const parcelsWithoutVendor = await this.prisma.parcel.findMany({
+      where: {
+        vendorName: null,
+      },
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+          },
+        },
+      },
+    });
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const parcel of parcelsWithoutVendor) {
+      if (parcel.customer?.firstName) {
+        await this.prisma.parcel.update({
+          where: { id: parcel.id },
+          data: { vendorName: parcel.customer.firstName },
+        });
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    return {
+      message: 'Vendor details backfill completed',
+      totalParcelsFound: parcelsWithoutVendor.length,
+      parcelsUpdated: updatedCount,
+      parcelsSkipped: skippedCount,
     };
   }
 }

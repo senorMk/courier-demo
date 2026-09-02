@@ -12,6 +12,9 @@ export interface Parcel {
   description?: string;
   value?: number;
   size?: "SMALL" | "MEDIUM" | "LARGE";
+  vendorName?: string | null;
+  vendorTrackingNumber?: string | null;
+  vendorContactInfo?: string | null;
   status?: string;
   createdAt?: string;
   arrivedAt?: string | null;
@@ -58,6 +61,12 @@ export interface Parcel {
       email?: string | null;
     } | null;
   }>;
+}
+
+export interface VendorPayload {
+  name: string;
+  trackingNumber?: string;
+  contactInfo?: string;
 }
 
 export interface CustomerPayload {
@@ -181,13 +190,14 @@ export class ParcelsService {
           };
         }
       | {
-          customer: CustomerPayload;
+          vendor: VendorPayload;
           receiver: CustomerPayload;
           officeId: string;
           description: string;
           value: number;
           size: "SMALL" | "MEDIUM" | "LARGE";
-          payment: {
+          cargoType?: string;
+          payment?: {
             method: PaymentMethod;
             amount: number;
             reference?: string;
